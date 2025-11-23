@@ -34,5 +34,12 @@ router.post('/franchisee-info', authToken.franchisorProtect, accessRoleRights('c
 // Franchisee User Management
 router.post('/franchisee-user', authToken.franchisorProtect, accessRoleRights('createFranchiseeUser'), franchisorController.createFranchiseeUser);
 
+
+// Bulk Insert XP Rules
+router.post('/xp-rules/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertXpRules'), franchisorController.bulkInsertXpRules);
+
+// Bulk Insert Badges
+router.post('/badges/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertBadges'), franchisorController.bulkInsertBadges);
+
 // Export the router
 module.exports = router;

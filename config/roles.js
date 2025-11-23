@@ -10,11 +10,15 @@ const allRoles = {
   ],
   HqStaff: [
     'createFranchisorInfo',
-    'createFranchiseeUser'
+    'createFranchiseeUser',
+    'bulkInsertXpRules',
+    'bulkInsertBadges'
   ],
   admin: [
     'createFranchisorInfo',
     'createFranchiseeUser',
+    'bulkInsertXpRules',
+    'bulkInsertBadges'
   ],
 };
 

@@ -12,9 +12,12 @@ const FranchisorUser = require('../../models/franchisor.user.model');
 const FranchisorInfo = require('../../models/franchisorInfo.model');
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const FranchiseeUser = require('../../models/franchisee.user.model');
-
+const XpRule = require('../../models/xpRule.model');
+const Badge = require('../../models/badges.model');
 
 const { getMessage } = require("../../../config/languageLocalization");
+
+
 
 
 /**
@@ -231,6 +234,42 @@ const createFranchiseeUser = async (req, res) => {
 	}
 };
 
+/**
+ * Bulk insert XP Rules
+ * POST /franchisor/xp-rules/bulk-insert
+ * Body: Array of XP rule objects
+ */
+
+const bulkInsertXpRules = async (req, res) => {
+	try {
+		if (!Array.isArray(req.body) || req.body.length === 0) {
+			return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Request body must be a non-empty array', data: null });
+		}
+		const inserted = await XpRule.insertMany(req.body, { ordered: false });
+		res.status(httpStatus.CREATED).json({ success: true, message: 'XP rules inserted', data: inserted });
+	} catch (err) {
+		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+	}
+};
+
+/**
+ * Bulk insert Badges
+ * POST /franchisor/badges/bulk-insert
+ * Body: Array of badge objects
+ */
+
+const bulkInsertBadges = async (req, res) => {
+	try {
+		if (!Array.isArray(req.body) || req.body.length === 0) {
+			return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Request body must be a non-empty array', data: null });
+		}
+		const inserted = await Badge.insertMany(req.body, { ordered: false });
+		res.status(httpStatus.CREATED).json({ success: true, message: 'Badges inserted', data: inserted });
+	} catch (err) {
+		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+	}
+};
+
 module.exports = {
     createFranchisorInfo,
     updateFranchisorInfo,
@@ -239,5 +278,7 @@ module.exports = {
     signinFranchisorUser,
     signoutFranchisorUser,
     createFranchiseeInfo,
-    createFranchiseeUser
+    createFranchiseeUser,
+    bulkInsertXpRules,
+	bulkInsertBadges
 };

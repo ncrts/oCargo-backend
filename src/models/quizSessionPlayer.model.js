@@ -31,6 +31,19 @@ const quizSessionPlayerSchema = new mongoose.Schema({
     },
 
     /**
+       * 🏢 Franchise Reference
+       * Identifies the franchise location (ÔCargo branch) where the player played.
+       * Helps aggregate XP locally and nationally.
+       */
+    franchiseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FranchiseeInfo",
+        required: true,
+        description: "Reference to the franchise (location) where XP was earned."
+    },
+
+
+    /**
      * 👤 Client Reference
      * Identifies the actual user (player) participating in this session.
      * Can be a registered or guest client.
@@ -71,6 +84,30 @@ const quizSessionPlayerSchema = new mongoose.Schema({
     // ------------------------------------------------
     // 🔹 Player Answers (Per Question)
     // ------------------------------------------------
+
+    /**
+       * 🧩 Quiz Reference
+       * The specific quiz that generated this XP transaction.
+       */
+    quizId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Quiz",
+        required: true,
+        description: "Reference to the quiz where XP was earned."
+    },
+
+    /**
+   * 🌍 Quiz Type
+   * Defines whether this XP was earned in a local franchise game or a national event.
+   * - local → Played in one franchise only
+   * - national → Global HQ-led national event
+   */
+    quizType: {
+        type: String,
+        enum: ["Local", "National"],
+        default: "Local",
+        description: "Type of quiz: local (franchise-level) or national (HQ event)."
+    },
 
     /**
      * 🧠 Answers Array
@@ -133,6 +170,17 @@ const quizSessionPlayerSchema = new mongoose.Schema({
         }
     ],
 
+    /**
+  * 🏅 Final Rank
+  * The player’s final position in the game leaderboard (1 = winner).
+  */
+    finalRank: {
+        type: Number,
+        default: null,
+        description: "Final rank achieved in this quiz session."
+    },
+
+
     // ------------------------------------------------
     // 🔹 Session Lifecycle
     // ------------------------------------------------
@@ -157,6 +205,16 @@ const quizSessionPlayerSchema = new mongoose.Schema({
         type: Number, // Store as Unix timestamp (milliseconds since epoch)
         default: null,
         description: 'Timestamp when the player left or disconnected from the session (milliseconds since epoch).'
+    },
+
+    /**
+   * 🕒 Date Earned
+   * Timestamp for when this XP record was generated.
+   */
+    dateEarned: {
+        type: Date,
+        default: Date.now,
+        description: "Date and time when the XP was earned."
     },
 
     /**
