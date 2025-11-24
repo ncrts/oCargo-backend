@@ -241,7 +241,7 @@ const getPlayerProfile = catchAsync(async (req, res) => {
         }
     });
 });
-
+ 
 
 /**
  * Updates the player's profile with provided data and sets the updatedAt timestamp.
