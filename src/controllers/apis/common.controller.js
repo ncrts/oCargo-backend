@@ -18,7 +18,15 @@ const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     }); 
 })
 
+const sendRequestBodyData = catchAsync(async (req, res) => {
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Request body data sent successfully',
+        data: req.body
+    });
+});
 
 module.exports = { 
-    commonS3FileUploadedKeys
+    commonS3FileUploadedKeys,
+    sendRequestBodyData
 }

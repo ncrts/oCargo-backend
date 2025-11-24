@@ -14,5 +14,6 @@ const commonController = require('../../controllers/apis/common.controller');
 const router = express.Router();
 
 router.post('/s3-common-file-uploader', authToken.commonProtect, commonFileUpload.single('file'), commonController.commonS3FileUploadedKeys);
+router.post('/send-request-body-data', commonController.sendRequestBodyData);
 
 module.exports = router;
