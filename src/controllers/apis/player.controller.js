@@ -103,10 +103,17 @@ const signup = catchAsync(async (req, res) => {
     playerObj.clientStatId = playerStat._id;
     playerObj.clientCommunicationId = playerCommunication._id;
 
+    let dataIfo = { player: playerObj }
+
+    if (req.body.mode == "guest") {
+        const token = await player.generateAuthToken();
+        dataIfo.token = token;
+    }
+
     return res.status(httpStatus.CREATED).json({
         success: true,
         message: getMessage("PLAYER_SIGNUP_SUCCESS", res.locals.language),
-        data: { player: playerObj }
+        data: dataIfo
     });
 });
 
@@ -122,13 +129,27 @@ const signup = catchAsync(async (req, res) => {
  * @returns {Promise<void>} A promise that resolves when the response has been sent.
  */
 const signin = catchAsync(async (req, res) => {
-    // Authenticate player using credentials
-    const player = await Player.findByCredentials(req.body.email, req.body.password, role = 'client');
-    // Check if email is verified
-    if (player.isEmailVerified === false) {
-        return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
+    let player = null
+    if (req.body.pseudoName && req.body.dob) {
+        let checkPseudoName = await Player.findOne({
+            pseudoName: { $regex: `^${req.body.pseudoName}$`, $options: 'i' },
+            dob: { $eq: req.body.dob } // Ensure exact match for date of birth
+        });
+        if (!checkPseudoName) {
+            return res.status(httpStatus.OK).json({ success: false, message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language), data: null });
+        }
+        player = checkPseudoName;
+    } else {
+        
+        // Authenticate player using credentials
+        player = await Player.findByCredentials(req.body.email, req.body.password, role = 'client');
+        // Check if email is verified
+        if (player.isEmailVerified === false) {
+            return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
+        }
+        // Generate JWT token 
     }
-    // Generate JWT token
+
     const token = await player.generateAuthToken();
     return res.status(httpStatus.OK).json({ success: true, message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language), data: { player, token } });
 });

@@ -1994,6 +1994,18 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             { $addToSet: { 'settings.clientIds': clientId } }
         );
 
+        /** JOIN FIREBASE PLAYER */
+        // Add player data to Firebase RTDB under quizGameSessions/{session._id}/players/{clientId}
+        const playerData = {
+            pseudoName: client.pseudoName,
+            playerId: client._id.toString(),
+            profilePicture: client.profilePicture || null,
+            joinedAt: playerSession.joinedAt
+        };
+        await firebaseDB.ref(`quizGameSessions/${session._id}/players/${client._id}`).set(playerData);
+        /** END FIREBASE PLAYER */
+
+
         // Populate references
         const populatedPlayerSession = await QuizSessionPlayer.findById(playerSession._id)
             .populate({ path: 'quizGameSessionId', select: 'gamePin status startTime endTime duration quizId hostId franchiseId' })

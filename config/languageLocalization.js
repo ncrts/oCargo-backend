@@ -1,4 +1,9 @@
 const languageLocalization = {
+    "PLAYER_PSEUDO_NAME_NOT_FOUND":{
+        'en_us': 'Pseudo name is required.',
+        'es_co': 'Se requiere un nombre de usuario.',
+        'fr_fr': 'Le nom d\'utilisateur est requis.'
+    },
     "GENERATED_PSEUDO": {
         'en_us': 'Unique pseudo names generated successfully',
         'es_co': 'Nombres de usuario únicos generados con éxito',
