@@ -1587,14 +1587,14 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     /** add firebase realtime code start */
     // Create quizGameSessions node and set initial data in Firebase
     await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set({
-        answers: [],
-        scores: [],
+        answers: null,
+        scores: null,
         metaData: { ...populatedSession.settings },
-        controls: {},
-        questionResults: [],
-        leaderboard: [],
-        finalResults: [],
-        players: [],
+        currentQuestionId: null,
+        questionResults: null,
+        leaderboard: null,
+        finalResults: null,
+        players: null,
         questions: [...questionList]
     });
     /** add firebase realtime code end */
