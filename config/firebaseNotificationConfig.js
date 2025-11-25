@@ -1,12 +1,12 @@
 let admin = require("firebase-admin");
 // Fetch the service account key JSON file contents
-let serviceAccount = require("./ocargo-cb097-firebase-adminsdk-fbsvc-9af2e32309.json");
+let serviceAccount = require('./'+process.env.OCARGO_FIREBASE_ADMIN_SDK);
 
 // Initialize the app with a service account, granting admin privileges
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     // The database URL depends on the location of the database
-    databaseURL: "https://ocargo-cb097-default-rtdb.europe-west1.firebasedatabase.app"
+    databaseURL: process.env.OCARGO_FIREBASE_DB
 });
 
 // As an admin, the app has access to read and write all data, regardless of Security Rules
