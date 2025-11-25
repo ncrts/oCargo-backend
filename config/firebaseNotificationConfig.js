@@ -1,6 +1,6 @@
 let admin = require("firebase-admin");
 // Fetch the service account key JSON file contents
-let serviceAccount = require("./ocargoFirebaseAdminSDK.json");
+let serviceAccount = require("./ocargo-cb097-firebase-adminsdk-fbsvc-9af2e32309.json");
 
 // Initialize the app with a service account, granting admin privileges
 admin.initializeApp({
