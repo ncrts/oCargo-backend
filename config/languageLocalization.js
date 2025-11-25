@@ -159,6 +159,11 @@ const languageLocalization = {
         'en_us': 'Quiz question deleted successfully!',
         'es_co': '¡Pregunta del cuestionario eliminada con éxito!',
         'fr_fr': 'Question du quiz supprimée avec succès !'
+    },
+    "QUIZ_GAME_SESSIONS_FETCH_SUCCESS":{
+        'en_us': 'Quiz game sessions fetched successfully!',
+        'es_co': '¡Sesiones de juegos de cuestionarios obtenidas con éxito!',
+        'fr_fr': 'Sessions de jeu de quiz récupérées avec succès !'
     }
 };
 

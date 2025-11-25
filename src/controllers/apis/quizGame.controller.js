@@ -27,6 +27,8 @@ const Franchisee = require('../../models/franchisee.user.model');
 
 const { getMessage } = require("../../../config/languageLocalization")
 
+const { firebaseDB } = require('../../../config/firebaseNotificationConfig');
+
 
 /**
  * Helper: Return translated values
@@ -132,7 +134,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
         visibility,
         language: language || 'en_us'
     };
-    if(franchiseeInfoId){
+    if (franchiseeInfoId) {
         quizData.franchiseeInfoId = franchiseeInfoId;
     }
     const quiz = new Quiz(quizData);
@@ -285,20 +287,20 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     }
 
     // ===== VALIDATION HELPERS =====
-    
+
     // Media Validation Helper
     const validateMedia = (mediaObj) => {
         if (!mediaObj || typeof mediaObj !== 'object') {
             return { valid: true, error: null }; // Media is optional
         }
-        
+
         const validMediaTypes = ['Image', 'YouTube', 'None'];
         const mediaType = mediaObj.type || 'None';
-        
+
         if (!validMediaTypes.includes(mediaType)) {
             return { valid: false, error: `Media type must be one of: ${validMediaTypes.join(', ')}` };
         }
-        
+
         if (mediaType === 'Image') {
             if (!mediaObj.image) {
                 return { valid: false, error: 'For Image media type: image URL is required' };
@@ -329,7 +331,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
                 return { valid: false, error: 'For YouTube media type: youtubeEnd must be non-negative' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -338,41 +340,41 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (!sliderObj || typeof sliderObj !== 'object') {
             return { valid: false, error: 'Slider object is required for Slider type' };
         }
-        
+
         // Validate min
         if (sliderObj.min === undefined || typeof sliderObj.min !== 'number') {
             return { valid: false, error: 'Slider.min is required and must be a number' };
         }
-        
+
         // Validate max
         if (sliderObj.max === undefined || typeof sliderObj.max !== 'number') {
             return { valid: false, error: 'Slider.max is required and must be a number' };
         }
-        
+
         // Validate min < max
         if (sliderObj.min >= sliderObj.max) {
             return { valid: false, error: 'Slider.min must be less than Slider.max' };
         }
-        
+
         // Validate correctRange
         if (!Array.isArray(sliderObj.correctRange) || sliderObj.correctRange.length !== 2) {
             return { valid: false, error: 'Slider.correctRange must be an array with exactly 2 numbers [min, max]' };
         }
-        
+
         const [correctMin, correctMax] = sliderObj.correctRange;
         if (typeof correctMin !== 'number' || typeof correctMax !== 'number') {
             return { valid: false, error: 'Slider.correctRange must contain numeric values' };
         }
-        
+
         if (correctMin >= correctMax) {
             return { valid: false, error: 'Slider.correctRange[0] must be less than correctRange[1]' };
         }
-        
+
         // Validate correctRange is within min-max bounds
         if (correctMin < sliderObj.min || correctMax > sliderObj.max) {
             return { valid: false, error: `Slider.correctRange must be within [${sliderObj.min}, ${sliderObj.max}]` };
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -381,12 +383,12 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (!slideContentObj || typeof slideContentObj !== 'object') {
             return { valid: false, error: 'SlideContent object is required for Slide type' };
         }
-        
+
         // At least one of title, text, image, or video must be present
         if (!slideContentObj.title && !slideContentObj.text && !slideContentObj.image && !slideContentObj.video) {
             return { valid: false, error: 'SlideContent must have at least one of: title, text, image, or video' };
         }
-        
+
         // Validate types
         if (slideContentObj.title !== undefined && slideContentObj.title !== null && typeof slideContentObj.title !== 'string') {
             return { valid: false, error: 'SlideContent.title must be a string' };
@@ -400,14 +402,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (slideContentObj.video !== undefined && slideContentObj.video !== null && typeof slideContentObj.video !== 'string') {
             return { valid: false, error: 'SlideContent.video must be a string (URL)' };
         }
-        
+
         // Validate duration if provided
         if (slideContentObj.duration !== undefined && slideContentObj.duration !== null) {
             if (typeof slideContentObj.duration !== 'number' || slideContentObj.duration <= 0) {
                 return { valid: false, error: 'SlideContent.duration must be a positive number (in seconds)' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -416,44 +418,44 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (!explanationObj || typeof explanationObj !== 'object') {
             return { valid: true, error: null }; // Explanation is optional
         }
-        
+
         // Validate text type
         if (explanationObj.text !== undefined && explanationObj.text !== null && typeof explanationObj.text !== 'string') {
             return { valid: false, error: 'Explanation.text must be a string' };
         }
-        
+
         // Validate image type
         if (explanationObj.image !== undefined && explanationObj.image !== null && typeof explanationObj.image !== 'string') {
             return { valid: false, error: 'Explanation.image must be a string (URL)' };
         }
-        
+
         // Validate youtubeId type
         if (explanationObj.youtubeId !== undefined && explanationObj.youtubeId !== null && typeof explanationObj.youtubeId !== 'string') {
             return { valid: false, error: 'Explanation.youtubeId must be a string' };
         }
-        
+
         // Validate youtubeStart if provided
         if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeStart !== null) {
             if (typeof explanationObj.youtubeStart !== 'number' || explanationObj.youtubeStart < 0) {
                 return { valid: false, error: 'Explanation.youtubeStart must be a non-negative number (in seconds)' };
             }
         }
-        
+
         // Validate youtubeEnd if provided
         if (explanationObj.youtubeEnd !== undefined && explanationObj.youtubeEnd !== null) {
             if (typeof explanationObj.youtubeEnd !== 'number' || explanationObj.youtubeEnd < 0) {
                 return { valid: false, error: 'Explanation.youtubeEnd must be a non-negative number (in seconds)' };
             }
         }
-        
+
         // Validate that youtubeStart < youtubeEnd if both are provided
-        if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeEnd !== undefined && 
+        if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeEnd !== undefined &&
             explanationObj.youtubeStart !== null && explanationObj.youtubeEnd !== null) {
             if (explanationObj.youtubeStart >= explanationObj.youtubeEnd) {
                 return { valid: false, error: 'Explanation.youtubeStart must be less than youtubeEnd' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -805,20 +807,20 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     const questionType = type || existingQuestion.type;
 
     // ===== VALIDATION HELPERS (same as createQuizQuestion) =====
-    
+
     // Media Validation Helper
     const validateMedia = (mediaObj) => {
         if (!mediaObj || typeof mediaObj !== 'object') {
             return { valid: true, error: null }; // Media is optional
         }
-        
+
         const validMediaTypes = ['Image', 'YouTube', 'None'];
         const mediaType = mediaObj.type || 'None';
-        
+
         if (!validMediaTypes.includes(mediaType)) {
             return { valid: false, error: `Media type must be one of: ${validMediaTypes.join(', ')}` };
         }
-        
+
         if (mediaType === 'Image') {
             if (!mediaObj.image) {
                 return { valid: false, error: 'For Image media type: image URL is required' };
@@ -849,7 +851,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 return { valid: false, error: 'For YouTube media type: youtubeEnd must be non-negative' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -858,41 +860,41 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (!sliderObj || typeof sliderObj !== 'object') {
             return { valid: false, error: 'Slider object is required for Slider type' };
         }
-        
+
         // Validate min
         if (sliderObj.min === undefined || typeof sliderObj.min !== 'number') {
             return { valid: false, error: 'Slider.min is required and must be a number' };
         }
-        
+
         // Validate max
         if (sliderObj.max === undefined || typeof sliderObj.max !== 'number') {
             return { valid: false, error: 'Slider.max is required and must be a number' };
         }
-        
+
         // Validate min < max
         if (sliderObj.min >= sliderObj.max) {
             return { valid: false, error: 'Slider.min must be less than Slider.max' };
         }
-        
+
         // Validate correctRange
         if (!Array.isArray(sliderObj.correctRange) || sliderObj.correctRange.length !== 2) {
             return { valid: false, error: 'Slider.correctRange must be an array with exactly 2 numbers [min, max]' };
         }
-        
+
         const [correctMin, correctMax] = sliderObj.correctRange;
         if (typeof correctMin !== 'number' || typeof correctMax !== 'number') {
             return { valid: false, error: 'Slider.correctRange must contain numeric values' };
         }
-        
+
         if (correctMin >= correctMax) {
             return { valid: false, error: 'Slider.correctRange[0] must be less than correctRange[1]' };
         }
-        
+
         // Validate correctRange is within min-max bounds
         if (correctMin < sliderObj.min || correctMax > sliderObj.max) {
             return { valid: false, error: `Slider.correctRange must be within [${sliderObj.min}, ${sliderObj.max}]` };
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -901,12 +903,12 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (!slideContentObj || typeof slideContentObj !== 'object') {
             return { valid: false, error: 'SlideContent object is required for Slide type' };
         }
-        
+
         // At least one of title, text, image, or video must be present
         if (!slideContentObj.title && !slideContentObj.text && !slideContentObj.image && !slideContentObj.video) {
             return { valid: false, error: 'SlideContent must have at least one of: title, text, image, or video' };
         }
-        
+
         // Validate types
         if (slideContentObj.title !== undefined && slideContentObj.title !== null && typeof slideContentObj.title !== 'string') {
             return { valid: false, error: 'SlideContent.title must be a string' };
@@ -920,14 +922,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (slideContentObj.video !== undefined && slideContentObj.video !== null && typeof slideContentObj.video !== 'string') {
             return { valid: false, error: 'SlideContent.video must be a string (URL)' };
         }
-        
+
         // Validate duration if provided
         if (slideContentObj.duration !== undefined && slideContentObj.duration !== null) {
             if (typeof slideContentObj.duration !== 'number' || slideContentObj.duration <= 0) {
                 return { valid: false, error: 'SlideContent.duration must be a positive number (in seconds)' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -936,44 +938,44 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (!explanationObj || typeof explanationObj !== 'object') {
             return { valid: true, error: null }; // Explanation is optional
         }
-        
+
         // Validate text type
         if (explanationObj.text !== undefined && explanationObj.text !== null && typeof explanationObj.text !== 'string') {
             return { valid: false, error: 'Explanation.text must be a string' };
         }
-        
+
         // Validate image type
         if (explanationObj.image !== undefined && explanationObj.image !== null && typeof explanationObj.image !== 'string') {
             return { valid: false, error: 'Explanation.image must be a string (URL)' };
         }
-        
+
         // Validate youtubeId type
         if (explanationObj.youtubeId !== undefined && explanationObj.youtubeId !== null && typeof explanationObj.youtubeId !== 'string') {
             return { valid: false, error: 'Explanation.youtubeId must be a string' };
         }
-        
+
         // Validate youtubeStart if provided
         if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeStart !== null) {
             if (typeof explanationObj.youtubeStart !== 'number' || explanationObj.youtubeStart < 0) {
                 return { valid: false, error: 'Explanation.youtubeStart must be a non-negative number (in seconds)' };
             }
         }
-        
+
         // Validate youtubeEnd if provided
         if (explanationObj.youtubeEnd !== undefined && explanationObj.youtubeEnd !== null) {
             if (typeof explanationObj.youtubeEnd !== 'number' || explanationObj.youtubeEnd < 0) {
                 return { valid: false, error: 'Explanation.youtubeEnd must be a non-negative number (in seconds)' };
             }
         }
-        
+
         // Validate that youtubeStart < youtubeEnd if both are provided
-        if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeEnd !== undefined && 
+        if (explanationObj.youtubeStart !== undefined && explanationObj.youtubeEnd !== undefined &&
             explanationObj.youtubeStart !== null && explanationObj.youtubeEnd !== null) {
             if (explanationObj.youtubeStart >= explanationObj.youtubeEnd) {
                 return { valid: false, error: 'Explanation.youtubeStart must be less than youtubeEnd' };
             }
         }
-        
+
         return { valid: true, error: null };
     };
 
@@ -1040,7 +1042,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
 
     // ===== CHECK IF TYPE IS BEING CHANGED =====
     const isTypeChange = type !== undefined && type !== existingQuestion.type;
-    
+
     // If type is being changed, clear all old type-specific fields
     if (isTypeChange) {
         // Clear all old type-specific fields
@@ -1055,7 +1057,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             slideContent: '',
             backgroundImage: ''
         };
-        
+
         // Remove old fields from updateFields if they exist
         Object.keys(fieldsToUnset).forEach(field => {
             delete updateFields[field];
@@ -1066,7 +1068,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     if (questionType === 'Quiz') {
         // If type change: require questionText and options
         // If no type change: allow partial updates
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO QUIZ - All required fields must be provided
             if (!questionText) {
@@ -1100,7 +1102,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 });
             }
         }
-        
+
         // Validate options structure if provided
         if (options !== undefined) {
             const validOptions = options.every(opt => {
@@ -1112,7 +1114,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 }
                 return true;
             });
-            
+
             if (!validOptions) {
                 return res.status(httpStatus.BAD_REQUEST).json({
                     success: false,
@@ -1120,7 +1122,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-            
+
             // Validate at least one correct option
             const hasCorrectOption = options.some(opt => opt.isCorrect === true);
             if (!hasCorrectOption) {
@@ -1130,16 +1132,16 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-            
+
             updateFields.options = options;
         }
-        
+
         if (questionText !== undefined) updateFields.questionText = questionText;
         if (multiSelect !== undefined) updateFields.multiSelect = multiSelect;
-        
+
     } else if (questionType === 'TrueFalse') {
         // If type change: require questionText and trueAnswer
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO TRUEFALSE - All required fields must be provided
             if (!questionText) {
@@ -1173,13 +1175,13 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 });
             }
         }
-        
+
         if (questionText !== undefined) updateFields.questionText = questionText;
         if (trueAnswer !== undefined) updateFields.trueAnswer = trueAnswer;
-        
+
     } else if (questionType === 'TypeAnswer') {
         // If type change: require questionText and acceptedAnswers
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO TYPEANSWER - All required fields must be provided
             if (!questionText) {
@@ -1213,13 +1215,13 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 });
             }
         }
-        
+
         if (questionText !== undefined) updateFields.questionText = questionText;
         if (acceptedAnswers !== undefined) updateFields.acceptedAnswers = acceptedAnswers;
-        
+
     } else if (questionType === 'Puzzle') {
         // If type change: require questionText and puzzleOrder
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO PUZZLE - All required fields must be provided
             if (!questionText) {
@@ -1253,13 +1255,13 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 });
             }
         }
-        
+
         if (questionText !== undefined) updateFields.questionText = questionText;
         if (puzzleOrder !== undefined) updateFields.puzzleOrder = puzzleOrder;
-        
+
     } else if (questionType === 'Slider') {
         // If type change: require questionText and slider
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO SLIDER - All required fields must be provided
             if (!questionText) {
@@ -1276,7 +1278,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-            
+
             // Validate slider object
             const sliderValidation = validateSlider(slider);
             if (!sliderValidation.valid) {
@@ -1308,12 +1310,12 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 updateFields.slider = slider;
             }
         }
-        
+
         if (questionText !== undefined) updateFields.questionText = questionText;
-        
+
     } else if (questionType === 'Slide') {
         // If type change: require slideContent
-        
+
         if (isTypeChange) {
             // TYPE CHANGE TO SLIDE - slideContent is required
             if (!slideContent) {
@@ -1323,7 +1325,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-            
+
             // Validate slideContent
             const slideContentValidation = validateSlideContent(slideContent);
             if (!slideContentValidation.valid) {
@@ -1387,9 +1389,9 @@ const getQuizQuestionsByQuizId = catchAsync(async (req, res) => {
     if (categoryId) filter.categoryId = categoryId;
 
     const questions = await QuizQuestion.find(filter)
-    .populate({ path: 'quizId', select: 'title description' })
-    .populate({ path: 'categoryId', select: 'name description' })
-    .sort({ createdAt: -1 });
+        .populate({ path: 'quizId', select: 'title description' })
+        .populate({ path: 'categoryId', select: 'name description' })
+        .sort({ createdAt: -1 });
 
     return res.status(httpStatus.OK).json({
         success: true,
@@ -1471,34 +1473,14 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     const {
         quizId,
         hostId,
-        franchiseId,
-        startTime,
-        endTime
+        franchiseId
     } = req.body;
 
     // ===== VALIDATION =====
-    if (!quizId || !hostId || !franchiseId || !startTime || !endTime) {
+    if (!quizId || !hostId || !franchiseId) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: 'quizId, hostId, franchiseId, startTime, and endTime are required',
-            data: null
-        });
-    }
-
-    // Validate startTime and endTime are timestamps
-    if (typeof startTime !== 'number' || typeof endTime !== 'number') {
-        return res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: 'startTime and endTime must be valid timestamps (numbers in milliseconds)',
-            data: null
-        });
-    }
-
-    // Validate endTime > startTime
-    if (endTime <= startTime) {
-        return res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: 'endTime must be greater than startTime',
+            message: 'quizId, hostId, franchiseId are required',
             data: null
         });
     }
@@ -1527,8 +1509,6 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     const gamePin = generateGamePin();
     const qrCode = generateQRCode(gamePin);
 
-    // Calculate duration in seconds
-    const duration = Math.floor((endTime - startTime));
 
     // Create game session
     const sessionData = {
@@ -1538,9 +1518,9 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         gamePin,
         qrCode,
         status: 'Lobby',
-        startTime,
-        endTime,
-        duration,
+        startTime: req.body.startTime ? req.body.startTime : Math.floor(Date.now() / 1000) + 15 * 60,
+        endTime: null,
+        duration: null,
         settings: {
             showQuestionsOnClient: true,
             showLeaderboardPerQuestion: true,
@@ -1560,8 +1540,65 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     // Populate references
     const populatedSession = await QuizGameSession.findById(session._id)
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
-        .populate({ path: 'quizId', select: 'title description category' })
+        .populate({ path: 'quizId', select: 'title description category questions language' })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' });
+
+    const getQuetionOfTheQuiz = await QuizQuestion.find({ quizId: quizId })
+        .populate({ path: 'categoryId', select: 'name description' })
+        .populate({ path: 'quizId', select: 'title description category language' });
+
+    console.log("populatedSession", JSON.stringify(getQuetionOfTheQuiz))
+
+    let questionList = getQuetionOfTheQuiz.map(question => ({
+        id: question._id.toString(),
+        quizId: question.quizId._id.toString(),
+        categoryId: question.categoryId._id.toString(),
+        categoryName: question.categoryId.name[question.quizId.language],
+        backgroundImage: question.backgroundImage,
+        type: question.type,
+        difficaltyLavel: question.difficaltyLavel,
+        timeLimit: question.timeLimit,
+        questionText: question.questionText,
+        options:  question.options.map(option => ({
+            id: option._id.toString(), 
+            text: option.text,
+            image: option.image ? option.image : null,
+            isCorrect: option.isCorrect
+        })),
+        multiSelect: question.multiSelect,
+        trueAnswer: question.trueAnswer,
+        media: question.media ? question.media : null,
+        slider: question.slider ? question.slider : null,
+        explanation: question.explanation ? question.explanation : null,
+        slideContent: question.slideContent ? question.slideContent : null,
+        puzzleOrder: question.puzzleOrder ? question.puzzleOrder : null,
+        acceptedAnswers: question.acceptedAnswers ? question.acceptedAnswers : null
+    }));
+
+        
+        // puzzleOrder: question.puzzleOrder,
+        // acceptedAnswers: question.acceptedAnswers,
+        // trueAnswer: question.trueAnswer,
+        // media: question.media,
+        // slider: question.slider,
+        // explanation: question.explanation,
+        // slideContent: question.slideContent
+    // console.log("questionList", questionList)
+    /** add firebase realtime code start */
+    // Create quizGameSessions node and set initial data in Firebase
+    await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set({
+        answers: [],
+        scores: [],
+        metaData: { ...populatedSession.settings },
+        controls: {},
+        questionResults: [],
+        leaderboard: [],
+        finalResults: [],
+        players: [],
+        questions: [...questionList]
+    });
+    /** add firebase realtime code end */
+
 
     return res.status(httpStatus.CREATED).json({
         success: true,
@@ -1583,13 +1620,13 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
         .populate({ path: 'quizId', select: 'title description category' })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' });
-    
-        if (session && session.quizId) {
-            const quiz = await Quiz.findById(session.quizId)
-                .populate({ path: 'questions', populate: { path: 'categoryId', select: 'name description' } })
-                .populate({ path: 'category', select: 'name description' });
-            session.quizId = quiz;
-        }
+
+    if (session && session.quizId) {
+        const quiz = await Quiz.findById(session.quizId)
+            .populate({ path: 'questions', populate: { path: 'categoryId', select: 'name description' } })
+            .populate({ path: 'category', select: 'name description' });
+        session.quizId = quiz;
+    }
 
     if (!session) {
         return res.status(httpStatus.NOT_FOUND).json({
@@ -1650,13 +1687,17 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
 
     const sessions = await QuizGameSession.find(filter)
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
-        .populate({ path: 'quizId', select: 'title description category' })
+        .populate({ 
+            path: 'quizId', 
+            select: 'title description category questions'
+        })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' })
         .sort({ createdAt: -1 });
-
+    
+    
     return res.status(httpStatus.OK).json({
         success: true,
-        message: 'Quiz game sessions fetched successfully',
+        message: getMessage("QUIZ_GAME_SESSIONS_FETCH_SUCCESS", res.locals.language),
         data: sessions,
         count: sessions.length
     });
@@ -2316,7 +2357,7 @@ const getSessionLeaderboard = catchAsync(async (req, res) => {
     const leaderboard = players.map((player, index) => {
         // Update finalRank for each player
         const playerRank = index + 1;
-        QuizSessionPlayer.findByIdAndUpdate(player._id, { finalRank: playerRank }).catch(() => {});
+        QuizSessionPlayer.findByIdAndUpdate(player._id, { finalRank: playerRank }).catch(() => { });
 
         // Determine quizType from quiz visibility
         const quizType = player.quizId?.visibility === 'National' ? 'National' : 'Local';
