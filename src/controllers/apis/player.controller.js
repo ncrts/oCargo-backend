@@ -268,69 +268,76 @@ const getPlayerProfile = catchAsync(async (req, res) => {
  * @function updatePlayerProfile
  */
 const updatePlayerProfile = catchAsync(async (req, res) => {
-    const clientId = req.player._id;
-    if (!clientId) {
-        return res.status(httpStatus.OK).json({
-            status: false,
-            message: getMessage("CLIENTID_REQUIRED", res.locals.language),
-            data: null
-        });
-    }
+    try {
+        const clientId = req.player._id;
 
-    let player = await Player.findOne({ _id: clientId, isDeleted: false });
-    let playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
-
-    if (!player) {
-        return res.status(httpStatus.OK).json({
-            status: false,
-            message: getMessage("PLAYER_NOT_FOUND", res.locals.language),
-            data: null
-        });
-    }
-
-    if (!playerProfile) {
-        return res.status(httpStatus.OK).json({
-            status: false,
-            message: getMessage("PLAYER_PROFILE_NOT_FOUND", res.locals.language),
-            data: null
-        });
-    }
-
-
-    if (req.body.firstName && playerProfile) {
-        playerProfile.firstName = req.body.firstName;
-    }
-    if (req.body.lastName && playerProfile) {
-        playerProfile.lastName = req.body.lastName;
-    }
-    if (req.body.gender && playerProfile) {
-        playerProfile.gender = req.body.gender;
-    }
-
-    if (req.body.profileAvatar) {
-        player.profileAvatar = req.body.profileAvatar;
-    }
-    
-    if (req.body.dob) {
-        isValideAge = await is18Plus(req.body.dob);
-        if (!isValideAge) {
-            return res.status(httpStatus.OK).json({ status: false, message: getMessage("IN_VALIDEAGE", res.locals.language), data: null });
+        if (!clientId) {
+            return res.status(httpStatus.OK).json({
+                status: false,
+                message: getMessage("CLIENTID_REQUIRED", res.locals.language),
+                data: null
+            });
         }
-        player.dob = req.body.dob;
-    }
 
-    await player.save();
-    await playerProfile.save();
+        let player = await Player.findOne({ _id: clientId, isDeleted: false });
+        let playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
 
-    return res.status(httpStatus.OK).json({
-        status: true,
-        message: "Profile updated successfully",
-        data: {
-            player: player,
-            playerProfile: playerProfile
+        if (!player) {
+            return res.status(httpStatus.OK).json({
+                status: false,
+                message: getMessage("PLAYER_NOT_FOUND", res.locals.language),
+                data: null
+            });
         }
-    })
 
+        if (req.body.firstName && playerProfile) {
+            playerProfile.firstName = req.body.firstName;
+        }
+        if (req.body.lastName && playerProfile) {
+            playerProfile.lastName = req.body.lastName;
+        }
+        if (req.body.gender && playerProfile) {
+            playerProfile.gender = req.body.gender;
+        }
+
+        if (req.body.profileAvatar) {
+            player.profileAvatar = req.body.profileAvatar;
+        }
+
+        if (req.body.dob) {
+            const isValideAge = await is18Plus(req.body.dob);
+            if (!isValideAge) {
+                return res.status(httpStatus.OK).json({ status: false, message: getMessage("IN_VALIDEAGE", res.locals.language), data: null });
+            }
+            player.dob = req.body.dob;
+        }
+
+        if (player) {
+            player.updatedAt = Date.now();
+            await player.save();
+        }
+
+        if (playerProfile) {
+            playerProfile.updatedAt = Date.now();
+            await playerProfile.save();
+        }
+
+        return res.status(httpStatus.OK).json({
+            status: true,
+            message: "Profile updated successfully",
+            data: {
+                s3BaseUrl,
+                player: player,
+                playerProfile: playerProfile
+            }
+        });
+    } catch (error) {
+        return res.status(httpStatus.OK).json({
+            status: false,
+            message: "An error occurred while updating profile",
+            data: null
+        });
+    }
 });
 
 

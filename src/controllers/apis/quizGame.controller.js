@@ -29,6 +29,8 @@ const { getMessage } = require("../../../config/languageLocalization")
 
 const { firebaseDB } = require('../../../config/firebaseNotificationConfig');
 
+const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+
 
 /**
  * Helper: Return translated values
@@ -1994,7 +1996,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
         const playerData = {
             pseudoName: client.pseudoName,
             playerId: client._id.toString(),
-            profilePicture: client.profilePicture || null,
+            profileAvatar: client.profileAvatar ? `${s3BaseUrl}${client.profileAvatar}` : null,
             joinedAt: playerSession.joinedAt
         };
         await firebaseDB.ref(`quizGameSessions/${session._id}/players/${client._id}`).set(playerData);

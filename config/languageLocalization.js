@@ -194,6 +194,11 @@ const languageLocalization = {
         'en_us': 'Quiz game sessions fetched successfully!',
         'es_co': '¡Sesiones de juegos de cuestionarios obtenidas con éxito!',
         'fr_fr': 'Sessions de jeu de quiz récupérées avec succès !'
+    },
+    'FOOD_LIST_RETRIEVED_SUCCESSFULLY':{
+        'en_us': 'Food list retrieved successfully',
+        'es_co': 'Lista de alimentos recuperada con éxito',
+        'fr_fr': 'Liste des aliments récupérée avec succès'
     }
 };
 

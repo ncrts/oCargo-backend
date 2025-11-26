@@ -7,6 +7,7 @@ const randomstring = require('randomstring');
 
 const { getMessage } = require("../../../config/languageLocalization");
 const AvatarMaster = require('../../models/avatar.model');
+const Food = require('../../models/food.model');
 
 const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({
@@ -56,9 +57,46 @@ const getAllAvatars = catchAsync(async (req, res) => {
     });
 });
 
+const insertMultipleFoods = catchAsync(async (req, res) => {
+    const foods = req.body.foods;
+    if (!Array.isArray(foods) || foods.length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'Foods array is required in request body',
+        });
+    }
+
+    const insertedFoods = await Food.insertMany(foods);
+
+    return res.status(httpStatus.CREATED).json({
+        success: true,
+        message: 'Foods inserted successfully',
+        data: insertedFoods
+    });
+});
+
+const getAllFoods = catchAsync(async (req, res) => {
+    const language = res.locals.language || 'en_us';
+    const foods = await Food.find({isDeleted: false}).select('_id name').lean();
+    
+    const transformedFoods = foods.map(food => ({
+        id: food._id,
+        name: food.name?.[language] || food.name?.en_us || food.name?.fr_fr || ''
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("FOOD_LIST_RETRIEVED_SUCCESSFULLY", language),
+        data: transformedFoods
+    });
+});
+
+
 module.exports = { 
     commonS3FileUploadedKeys,
     sendRequestBodyData,
     insertMultipleAvatars,
-    getAllAvatars
+    getAllAvatars,
+    insertMultipleFoods,
+    getAllFoods
 }
