@@ -162,29 +162,6 @@ const clientStatSchema = new mongoose.Schema({
     // ------------------------------------------------
 
     /**
-   * 🎯 Top Categories
-   * Categories where the player performs best, based on accuracy rate.
-   */
-
-    /**
-     * 🧩 Quiz Category Interests
-     * Stores categories that the client prefers or frequently plays.
-     * Helps tailor personalized quizzes or recommendations.
-     * Examples: ["Music", "Movies", "Sports", "Culture"]
-     */
-    quizCategoryInterests: [{
-        categoryIds: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "QuizCategory",
-            description: "Reference to the quiz category."
-        },
-        categoryName: {
-            type: String,
-            description: "Category name (e.g., Movies, Sports, History)."
-        }
-    }],
-
-    /**
      * 📈 Top Categories by Accuracy
      * Identifies the categories where the player has the highest answer accuracy.
      * Used for personalized feedback and recommendations.

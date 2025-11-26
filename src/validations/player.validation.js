@@ -5,7 +5,9 @@ const updatePlayerProfile = {
     body: Joi.object({
         firstName: Joi.string().allow(''),
         lastName: Joi.string().allow(''),
-        gender: Joi.string().allow('')
+        gender: Joi.string().allow(''),
+        profileAvatar: Joi.string().allow(''),
+        dob: Joi.string().allow('')
     })
 }
 

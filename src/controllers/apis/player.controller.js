@@ -17,6 +17,9 @@ const PlayerStat = require('../../models/clientStat.model');
 const PlayerCommunication = require('../../models/clientCommunication.model');
 const { getMessage } = require("../../../config/languageLocalization");
 
+const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+
+
 
 /**
  * Generates 10 unique pseudo-names for players.
@@ -46,18 +49,21 @@ const generateFiveUniquePseudoNames = catchAsync(async (req, res) => {
  */
 const signup = catchAsync(async (req, res) => {
     let newPlayerData = {};
-    // Validate age (must be 18+)
     let isValideAge = await is18Plus(req.body.dob);
+
     if (!isValideAge) {
         return res.status(httpStatus.OK).json({ success: false, message: getMessage("IN_VALIDEAGE", res.locals.language), data: null });
     }
-    // Check for unique pseudoName
     if (req.body.pseudoName) {
         const existingPlayer = await Player.findOne({ pseudoName: req.body.pseudoName });
         if (existingPlayer) {
             return res.status(httpStatus.OK).json({ success: false, message: getMessage("EXISTED_PSEUDO_NAME", res.locals.language), data: null });
         }
     }
+    if (!req.body.mode) {
+        return res.status(httpStatus.OK).json({ success: false, message: getMessage("MODE_REQUIRED", res.locals.language), data: null });
+    }
+
     // Handle signup for 'client' mode
     if (req.body.mode == "client") {
         const emailVerificationOtp = randomstring.generate({ length: 6, charset: 'numeric' });
@@ -78,6 +84,7 @@ const signup = catchAsync(async (req, res) => {
         MailHelper.sendVerificationEmail(mailOptions);
         */
     }
+
     // Handle signup for 'guest' mode
     if (req.body.mode == "guest") {
         newPlayerData.pseudoName = req.body.pseudoName;
@@ -86,24 +93,23 @@ const signup = catchAsync(async (req, res) => {
         newPlayerData.dob = req.body.dob;
         newPlayerData.password = 'guest@123'; // Default password for guest users
     }
+
     // Create player and related documents
     let player = new Player(newPlayerData);
     let playerProfile = new PlayerProfile({ clientId: player._id, mode: newPlayerData.mode });
     let playerStat = new PlayerStat({ clientId: player._id, mode: newPlayerData.mode });
     let playerCommunication = new PlayerCommunication({ clientId: player._id });
 
+    player.clientProfileId = playerProfile._id;
+    player.clientStatId = playerStat._id;
+    player.clientCommunicationId = playerCommunication._id;
+
     await player.save();
     await playerProfile.save();
     await playerStat.save();
     await playerCommunication.save();
 
-    // Attach related document IDs to the player object for response
-    const playerObj = player.toObject();
-    playerObj.clientProfileId = playerProfile._id;
-    playerObj.clientStatId = playerStat._id;
-    playerObj.clientCommunicationId = playerCommunication._id;
-
-    let dataIfo = { player: playerObj }
+    let dataIfo = { player: player, token: null }
 
     if (req.body.mode == "guest") {
         const token = await player.generateAuthToken();
@@ -115,6 +121,7 @@ const signup = catchAsync(async (req, res) => {
         message: getMessage("PLAYER_SIGNUP_SUCCESS", res.locals.language),
         data: dataIfo
     });
+
 });
 
 
@@ -140,20 +147,16 @@ const signin = catchAsync(async (req, res) => {
         }
         player = checkPseudoName;
     } else {
-        
-        // Authenticate player using credentials
         player = await Player.findByCredentials(req.body.email, req.body.password, role = 'client');
-        // Check if email is verified
+
         if (player.isEmailVerified === false) {
             return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
         }
-        // Generate JWT token 
     }
 
     const token = await player.generateAuthToken();
-    return res.status(httpStatus.OK).json({ success: true, message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language), data: { player, token } });
+    return res.status(httpStatus.OK).json({ success: true, message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language), data: { s3BaseUrl, player, token } });
 });
-
 
 
 /**
@@ -232,33 +235,28 @@ const signout = catchAsync(async (req, res) => {
  * @function getPlayerProfile
  */
 const getPlayerProfile = catchAsync(async (req, res) => {
-    // Use clientId from query or fallback to authenticated user
     const clientId = req.query.clientId ? req.query.clientId : req.player._id;
     if (!clientId) {
         return res.status(httpStatus.OK).json({ status: false, message: "clientId is required", data: null });
     }
 
-    // Find player and populate clientProfileId
-    const player = await Player.findById(clientId).populate({
-        path: 'clientProfileId'
-    });
+    const player = await Player.findOne({ _id: clientId, isDeleted: false });
+    const playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
     if (!player) {
         return res.status(httpStatus.OK).json({
             status: false,
-            message: "Player not found",
+            message: getMessage("PLAYER_NOT_FOUND", res.locals.language),
             data: null
         });
     }
 
-    // S3 bucket base URL for profile pictures
-    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
-
     return res.status(httpStatus.OK).json({
         status: true,
-        message: "Player profile fetched successfully",
+        message: getMessage("PLAYER_PROFILE_FETCHED_SUCCESS", res.locals.language),
         data: {
             s3BaseUrl,
-            player: player
+            player: player,
+            playerProfile: playerProfile
         }
     });
 });
@@ -274,31 +272,66 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
     if (!clientId) {
         return res.status(httpStatus.OK).json({
             status: false,
-            message: "clientId is required"
+            message: getMessage("CLIENTID_REQUIRED", res.locals.language),
+            data: null
         });
     }
-    // Set updatedAt timestamp
-    req.body.updatedAt = Date.now();
-    // Update player profile
-    const profile = await PlayerProfile.findOneAndUpdate(
-        { clientId, isDeleted: false },
-        { $set: req.body },
-        { new: true } // return updated document
-    );
-    if (!profile) {
+
+    let player = await Player.findOne({ _id: clientId, isDeleted: false });
+    let playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
+
+    if (!player) {
         return res.status(httpStatus.OK).json({
             status: false,
-            message: "Player profile not found"
+            message: getMessage("PLAYER_NOT_FOUND", res.locals.language),
+            data: null
         });
     }
+
+    if (!playerProfile) {
+        return res.status(httpStatus.OK).json({
+            status: false,
+            message: getMessage("PLAYER_PROFILE_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+
+
+    if (req.body.firstName && playerProfile) {
+        playerProfile.firstName = req.body.firstName;
+    }
+    if (req.body.lastName && playerProfile) {
+        playerProfile.lastName = req.body.lastName;
+    }
+    if (req.body.gender && playerProfile) {
+        playerProfile.gender = req.body.gender;
+    }
+
+    if (req.body.profileAvatar) {
+        player.profileAvatar = req.body.profileAvatar;
+    }
+    
+    if (req.body.dob) {
+        isValideAge = await is18Plus(req.body.dob);
+        if (!isValideAge) {
+            return res.status(httpStatus.OK).json({ status: false, message: getMessage("IN_VALIDEAGE", res.locals.language), data: null });
+        }
+        player.dob = req.body.dob;
+    }
+
+    await player.save();
+    await playerProfile.save();
+
     return res.status(httpStatus.OK).json({
         status: true,
         message: "Profile updated successfully",
-        data: profile
-    });
+        data: {
+            player: player,
+            playerProfile: playerProfile
+        }
+    })
+
 });
-
-
 
 
 /**

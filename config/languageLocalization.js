@@ -4,6 +4,26 @@ const languageLocalization = {
         'es_co': 'Se requiere un nombre de usuario.',
         'fr_fr': 'Le nom d\'utilisateur est requis.'
     },
+    'PLAYER_NOT_FOUND':{
+        'en_us': 'Player not found.',
+        'es_co': 'Jugador no encontrado.',
+        'fr_fr': 'Joueur non trouvé.'
+    },
+    'PLAYER_PROFILE_NOT_FOUND':{
+        'en_us': 'Player profile not found.',
+        'es_co': 'Perfil de jugador no encontrado.',
+        'fr_fr': 'Profil du joueur non trouvé.'
+    },
+    'PLAYER_PROFILE_FETCHED_SUCCESS':{
+        'en_us': 'Player profile fetched successfully!',
+        'es_co': '¡Perfil de jugador obtenido con éxito!',
+        'fr_fr': 'Profil du joueur récupéré avec succès !'
+    },
+    'CLIENTID_REQUIRED':{
+        'en_us': 'clientId is required.',
+        'es_co': 'Se requiere clientId.',
+        'fr_fr': 'clientId est requis.'
+    },
     "GENERATED_PSEUDO": {
         'en_us': 'Unique pseudo names generated successfully',
         'es_co': 'Nombres de usuario únicos generados con éxito',
@@ -18,6 +38,11 @@ const languageLocalization = {
         'en_us': 'Pseudo name already taken. Please choose another one.',
         'es_co': 'Nombre de usuario ya tomado. Por favor, elija otro.',
         'fr_fr': 'Nom d\'utilisateur déjà pris. Veuillez en choisir un autre.'
+    },
+    "MODE_REQUIRED":{
+        'en_us': 'Signup mode is required.',
+        'es_co': 'Se requiere el modo de registro.',
+        'fr_fr': 'Le mode d\'inscription est requis.'
     },
     "PLAYER_SIGNUP_SUCCESS": {
         'en_us': 'Player registered successfully!',

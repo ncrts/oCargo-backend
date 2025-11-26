@@ -74,6 +74,17 @@ const clientSchema = new mongoose.Schema({
         description: 'Unique nickname chosen by the player, displayed in the game and leaderboards.'
     },
 
+     /**
+     * 🖼️ Profile Avatar
+     * URL or image path representing the client’s chosen avatar.
+     * Typically selected from the official avatar list (Navy, fun, or food-themed icons).
+     */
+    profileAvatar: {
+        type: String,
+        default: null,
+        description: 'Image URL or file path for the client’s avatar icon.'
+    },
+
     /**
      * 📧 Email Address
      * Optional for guest mode but required for registered clients.

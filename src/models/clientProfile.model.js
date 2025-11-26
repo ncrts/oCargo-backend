@@ -56,17 +56,6 @@ const clientProfileSchema = new mongoose.Schema({
     },
 
     /**
-     * 🖼️ Profile Avatar
-     * URL or image path representing the client’s chosen avatar.
-     * Typically selected from the official avatar list (Navy, fun, or food-themed icons).
-     */
-    profileAvatar: {
-        type: String,
-        default: null,
-        description: 'Image URL or file path for the client’s avatar icon.'
-    },
-
-    /**
      * ⚧ Gender
      * Optional field for demographic insights or personalization.
      * The default value is “Prefer not to share” to comply with privacy standards.
@@ -79,16 +68,23 @@ const clientProfileSchema = new mongoose.Schema({
     },
 
     /**
-     * 🍴 Favorite OCargo Food Court
-     * Stores the client’s favorite OCargo branch (franchise name or ID) for local engagement,
-     * leaderboards, and quiz participation tagging.
+     * 🧩 Quiz Category Interests
+     * Stores categories that the client prefers or frequently plays.
+     * Helps tailor personalized quizzes or recommendations.
+     * Examples: ["Music", "Movies", "Sports", "Culture"]
      */
-    favoriteOCargoFoodCourt: {
-        type: String,
-        default: null,
-        description: 'Name or identifier of the client’s favorite OCargo food court location.'
-    },
-
+    quizCategoryInterests: [{
+        categoryIds: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "QuizCategory",
+            description: "Reference to the quiz category."
+        },
+        categoryName: {
+            type: String,
+            description: "Category name (e.g., Movies, Sports, History)."
+        }
+    }],
+    
     /**
      * 🍕 Favorite Food List
      * Array containing the client’s preferred food items.
@@ -98,6 +94,29 @@ const clientProfileSchema = new mongoose.Schema({
         type: [String],
         default: [],
         description: 'List of favorite foods selected by the client.'
+    },
+
+    /**
+     * 🍴 Favorite OCargo Food Court
+     * Stores the client’s favorite OCargo branch (franchise name or ID) for local engagement,
+     * leaderboards, and quiz participation tagging.
+     */
+    favoriteOCargoFoodCourt: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FranchiseeInfo',
+        description: 'Name or identifier of the client’s favorite OCargo food court location.'
+    },
+    
+    /**
+     * 🍴 Current OCargo Food Court
+     * Stores the OCargo branch (franchise) where the client is currently active.
+     * Used for location-based services, offers, and engagement tracking.
+     */
+    currentOcargoFoodCourt: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FranchiseeInfo',
+        default: null,
+        description: 'Reference to the OCargo food court location where the client is currently active.'
     },
 
     /**
