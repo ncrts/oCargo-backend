@@ -9,15 +9,15 @@ const validate = require('../../middleware/validate');
 const authValidation = require('../../validations/auth.validation');
 const playerValidation = require('../../validations/player.validation');
 
-const accessRoleRights = require('../../middleware/accessRoleRights'); 
+const accessRoleRights = require('../../middleware/accessRoleRights');
 
 const authToken = require('../../middleware/auth');
 const playerController = require('../../controllers/apis/player.controller');
-
+const { languageDetectionMiddleware } = require('../../utils/languageConverter');
 const router = express.Router();
 
 router.post('/auth/signup', playerController.signup);
-router.post('/auth/signin', playerController.signin);
+router.post('/auth/signin', languageDetectionMiddleware, playerController.signin);
 router.post('/auth/signout', authToken.playerProtect, playerController.signout);
 router.post('/auth/send-verification-email', authToken.playerOptionalProtect, playerController.sendOTPforVerificationEmail);
 router.post('/auth/email-otp-verify', authToken.playerOptionalProtect, playerController.verifyEmailOTP);

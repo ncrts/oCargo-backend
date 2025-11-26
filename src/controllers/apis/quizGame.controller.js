@@ -1547,45 +1547,40 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         .populate({ path: 'categoryId', select: 'name description' })
         .populate({ path: 'quizId', select: 'title description category language' });
 
-    console.log("populatedSession", JSON.stringify(getQuetionOfTheQuiz))
+    // Convert questionList to object indexed by question ID
+    let questionList = {};
+    getQuetionOfTheQuiz.forEach(question => {
+        const questionId = question._id.toString();
+        questionList[questionId] = {
+            id: questionId,
+            quizId: question.quizId._id.toString(),
+            categoryId: question.categoryId._id.toString(),
+            categoryName: question.categoryId.name[question.quizId.language],
+            backgroundImage: question.backgroundImage,
+            type: question.type,
+            difficaltyLavel: question.difficaltyLavel,
+            timeLimit: question.timeLimit,
+            questionText: question.questionText,
+            options: question.options.map(option => ({
+                id: option._id.toString(), 
+                text: option.text,
+                image: option.image ? option.image : null,
+                isCorrect: option.isCorrect
+            })),
+            multiSelect: question.multiSelect,
+            trueAnswer: question.trueAnswer,
+            media: question.media ? question.media : null,
+            slider: question.slider ? question.slider : null,
+            explanation: question.explanation ? question.explanation : null,
+            slideContent: question.slideContent ? question.slideContent : null,
+            puzzleOrder: question.puzzleOrder ? question.puzzleOrder : null,
+            acceptedAnswers: question.acceptedAnswers ? question.acceptedAnswers : null
+        };
+    });
 
-    let questionList = getQuetionOfTheQuiz.map(question => ({
-        id: question._id.toString(),
-        quizId: question.quizId._id.toString(),
-        categoryId: question.categoryId._id.toString(),
-        categoryName: question.categoryId.name[question.quizId.language],
-        backgroundImage: question.backgroundImage,
-        type: question.type,
-        difficaltyLavel: question.difficaltyLavel,
-        timeLimit: question.timeLimit,
-        questionText: question.questionText,
-        options:  question.options.map(option => ({
-            id: option._id.toString(), 
-            text: option.text,
-            image: option.image ? option.image : null,
-            isCorrect: option.isCorrect
-        })),
-        multiSelect: question.multiSelect,
-        trueAnswer: question.trueAnswer,
-        media: question.media ? question.media : null,
-        slider: question.slider ? question.slider : null,
-        explanation: question.explanation ? question.explanation : null,
-        slideContent: question.slideContent ? question.slideContent : null,
-        puzzleOrder: question.puzzleOrder ? question.puzzleOrder : null,
-        acceptedAnswers: question.acceptedAnswers ? question.acceptedAnswers : null
-    }));
-
-        
-        // puzzleOrder: question.puzzleOrder,
-        // acceptedAnswers: question.acceptedAnswers,
-        // trueAnswer: question.trueAnswer,
-        // media: question.media,
-        // slider: question.slider,
-        // explanation: question.explanation,
-        // slideContent: question.slideContent
-    // console.log("questionList", questionList)
     /** add firebase realtime code start */
     // Create quizGameSessions node and set initial data in Firebase
+    // Questions are indexed by questionId for efficient access
     await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set({
         answers: null,
         scores: null,
@@ -1595,7 +1590,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         leaderboard: null,
         finalResults: null,
         players: null,
-        questions: [...questionList]
+        questions: questionList
     });
     /** add firebase realtime code end */
 
@@ -2421,6 +2416,246 @@ const getSessionLeaderboard = catchAsync(async (req, res) => {
     });
 });
 
+// ================================
+// 📌 SCORING & POINTS CALCULATION
+// ================================
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 🎯 Calculate Points for Quiz Question Answer
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * Purpose: Calculate points earned by a player for answering a quiz question
+ * Based on: Difficulty Level, Response Time, Correctness
+ * 
+ * Scoring Formula:
+ * ────────────────────────────────────────────────────────────────────────────────
+ * Base Points = 100
+ * 
+ * Difficulty Multiplier:
+ *   - Easy: 1.0x (100 points max)
+ *   - Medium: 1.5x (150 points max)
+ *   - Hard: 2.0x (200 points max)
+ *   - VeryHard: 2.5x (250 points max)
+ * 
+ * Time Bonus/Penalty (based on % of timeLimit):
+ *   - Fast (0-30%): +20% bonus
+ *   - Normal (30-70%): +10% bonus
+ *   - Slow (70-100%): 0% (no bonus/penalty)
+ *   - Timeout (>100%): -50% penalty (minimum 0)
+ * 
+ * Correctness:
+ *   - Correct answer: Full points
+ *   - Incorrect answer: 0 points (no partial credit)
+ * 
+ * Final Formula:
+ * Points = (BasePoints × DifficultyMultiplier) × (1 + TimeBonus) × CorrectnessMultiplier
+ * ────────────────────────────────────────────────────────────────────────────────
+ * 
+ * POST /quiz/calculate-points
+ * 
+ * Request Body:
+ * {
+ *   sessionId (required - quiz game session ID),
+ *   quizId (required - quiz ID),
+ *   questionId (required - question ID),
+ *   playerId (required - player/client ID),
+ *   answer (required - player's answer),
+ *   responseTime (required - time taken in seconds),
+ *   isCorrect (required - boolean, whether answer is correct)
+ * }
+ * 
+ * Response Example:
+ * {
+ *   "success": true,
+ *   "message": "Points calculated successfully",
+ *   "data": {
+ *     "basePoints": 100,
+ *     "difficulty": "Medium",
+ *     "difficultyMultiplier": 1.5,
+ *     "responseTime": 25,
+ *     "timeLimit": 40,
+ *     "timePercentage": 62.5,
+ *     "timeCategory": "Normal",
+ *     "timeBonus": 0.1,
+ *     "isCorrect": true,
+ *     "correctnessMultiplier": 1,
+ *     "finalPoints": 165,
+ *     "breakdown": {
+ *       "step1_basePoints": 100,
+ *       "step2_afterDifficulty": 150,
+ *       "step3_afterTimeBonus": 165,
+ *       "step4_afterCorrectness": 165
+ *     }
+ *   }
+ * }
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+const calculateQuestionPoints = catchAsync(async (req, res) => {
+    const {
+        sessionId,
+        quizId,
+        questionId,
+        playerId,
+        answer,
+        responseTime,
+        isCorrect
+    } = req.body;
+
+    // ===== VALIDATION =====
+    if (!sessionId || !quizId || !questionId || !playerId || answer === undefined || responseTime === undefined || isCorrect === undefined) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'Missing required fields: sessionId, quizId, questionId, playerId, answer, responseTime, isCorrect',
+            data: null
+        });
+    }
+
+    // Validate responseTime is a non-negative number
+    if (typeof responseTime !== 'number' || responseTime < 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'responseTime must be a non-negative number (in seconds)',
+            data: null
+        });
+    }
+
+    // Validate isCorrect is boolean
+    if (typeof isCorrect !== 'boolean') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'isCorrect must be a boolean',
+            data: null
+        });
+    }
+
+    try {
+        // ===== FETCH DATA =====
+        // Fetch quiz game session
+        const session = await QuizGameSession.findById(sessionId);
+        if (!session) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: 'Quiz game session not found',
+                data: null
+            });
+        }
+
+        // Verify quizId matches session
+        if (session.quizId.toString() !== quizId) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'quizId does not match the session quiz',
+                data: null
+            });
+        }
+
+        // Fetch question
+        const question = await QuizQuestion.findById(questionId);
+        if (!question) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: 'Quiz question not found',
+                data: null
+            });
+        }
+
+        // Verify question belongs to quiz
+        if (question.quizId.toString() !== quizId) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'questionId does not belong to the specified quiz',
+                data: null
+            });
+        }
+
+        // ===== SCORING CALCULATION =====
+        const BASE_POINTS = 100;
+
+        // STEP 1: Determine difficulty multiplier
+        const difficultyMultipliers = {
+            'Easy': 1.0,
+            'Medium': 1.5,
+            'Hard': 2.0,
+            'VeryHard': 2.5
+        };
+
+        const difficulty = question.difficaltyLavel || 'Easy';
+        const difficultyMultiplier = difficultyMultipliers[difficulty] || 1.0;
+
+        // STEP 2: Calculate base points after difficulty
+        const pointsAfterDifficulty = BASE_POINTS * difficultyMultiplier;
+
+        // STEP 3: Calculate time bonus/penalty
+        const timeLimit = question.timeLimit || 30; // Default 30 seconds if not set
+        const timePercentage = (responseTime / timeLimit) * 100;
+        
+        let timeBonus = 0;
+        let timeCategory = 'Normal';
+
+        if (timePercentage <= 30) {
+            // Fast: 0-30% of time limit = +20% bonus
+            timeBonus = 0.20;
+            timeCategory = 'Fast';
+        } else if (timePercentage <= 70) {
+            // Normal: 30-70% of time limit = +10% bonus
+            timeBonus = 0.10;
+            timeCategory = 'Normal';
+        } else if (timePercentage <= 100) {
+            // Slow: 70-100% of time limit = no bonus
+            timeBonus = 0;
+            timeCategory = 'Slow';
+        } else {
+            // Timeout: >100% of time limit = -50% penalty
+            timeBonus = -0.50;
+            timeCategory = 'Timeout';
+        }
+
+        // STEP 4: Calculate points after time bonus/penalty
+        const pointsAfterTime = pointsAfterDifficulty * (1 + timeBonus);
+
+        // STEP 5: Apply correctness multiplier
+        const correctnessMultiplier = isCorrect ? 1 : 0;
+        const finalPoints = pointsAfterTime * correctnessMultiplier;
+
+        // ===== BUILD RESPONSE =====
+        const pointsBreakdown = {
+            basePoints: BASE_POINTS,
+            difficulty: difficulty,
+            difficultyMultiplier: difficultyMultiplier,
+            responseTime: responseTime,
+            timeLimit: timeLimit,
+            timePercentage: parseFloat(timePercentage.toFixed(2)),
+            timeCategory: timeCategory,
+            timeBonus: timeBonus,
+            isCorrect: isCorrect,
+            correctnessMultiplier: correctnessMultiplier,
+            finalPoints: Math.round(finalPoints),
+            breakdown: {
+                step1_basePoints: BASE_POINTS,
+                step2_afterDifficulty: parseFloat(pointsAfterDifficulty.toFixed(2)),
+                step3_afterTimeBonus: parseFloat(pointsAfterTime.toFixed(2)),
+                step4_afterCorrectness: Math.round(finalPoints)
+            }
+        };
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Points calculated successfully',
+            data: pointsBreakdown
+        });
+
+    } catch (error) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: 'Error calculating points',
+            error: error.message,
+            data: null
+        });
+    }
+});
+
 
 
 
@@ -2443,5 +2678,6 @@ module.exports = {
     submitQuizAnswer,
     leaveQuizGameSession,
     getPlayerSessionData,
-    getSessionLeaderboard
+    getSessionLeaderboard,
+    calculateQuestionPoints
 }
