@@ -15,5 +15,7 @@ const router = express.Router();
 
 router.post('/s3-common-file-uploader', authToken.commonProtect, commonFileUpload.single('file'), commonController.commonS3FileUploadedKeys);
 router.post('/send-request-body-data', commonController.sendRequestBodyData);
+router.post('/avatars/bulk-insert', commonController.insertMultipleAvatars);
+router.get('/avatars', commonController.getAllAvatars);
 
 module.exports = router;
