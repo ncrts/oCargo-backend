@@ -257,13 +257,19 @@ const quizQuestionSchema = new mongoose.Schema({
       description: 'Maximum value allowed on the slider.'
     },
 
+    step: { 
+      type: Number, 
+      default: 1,
+      description: 'Step value for the slider.'
+    },
+
     /**
      * Correct range of values (e.g., [45, 50] for correct answers).
      */
     correctRange: { 
-      type: [Number], 
-      default: [],
-      description: 'Array defining acceptable answer range (min and max).'
+      type: Number, 
+      default: null,
+      description: 'acceptable answer value between range (min and max).'
     }
   },
 

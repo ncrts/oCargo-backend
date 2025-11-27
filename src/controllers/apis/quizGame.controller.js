@@ -358,23 +358,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
             return { valid: false, error: 'Slider.min must be less than Slider.max' };
         }
 
-        // Validate correctRange
-        if (!Array.isArray(sliderObj.correctRange) || sliderObj.correctRange.length !== 2) {
-            return { valid: false, error: 'Slider.correctRange must be an array with exactly 2 numbers [min, max]' };
+        // Validate step
+        if (sliderObj.step === undefined || typeof sliderObj.step !== 'number' || sliderObj.step <= 0) {
+            return { valid: false, error: 'Slider.step is required and must be a positive number' };
         }
 
-        const [correctMin, correctMax] = sliderObj.correctRange;
-        if (typeof correctMin !== 'number' || typeof correctMax !== 'number') {
-            return { valid: false, error: 'Slider.correctRange must contain numeric values' };
-        }
-
-        if (correctMin >= correctMax) {
-            return { valid: false, error: 'Slider.correctRange[0] must be less than correctRange[1]' };
-        }
-
-        // Validate correctRange is within min-max bounds
-        if (correctMin < sliderObj.min || correctMax > sliderObj.max) {
-            return { valid: false, error: `Slider.correctRange must be within [${sliderObj.min}, ${sliderObj.max}]` };
+        // Validate step
+        if (sliderObj.correctRange === undefined || typeof sliderObj.correctRange !== 'number' || sliderObj.correctRange <= sliderObj.min || sliderObj.correctRange >= sliderObj.max) {
+            return { valid: false, error: 'Slider.correctRange is required and must be in range' };
         }
 
         return { valid: true, error: null };
@@ -1553,31 +1544,60 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     let questionList = {};
     getQuetionOfTheQuiz.forEach(question => {
         const questionId = question._id.toString();
-        questionList[questionId] = {
+        
+        // Build base question data
+        const questionData = {
             id: questionId,
             quizId: question.quizId._id.toString(),
             categoryId: question.categoryId._id.toString(),
             categoryName: question.categoryId.name[question.quizId.language],
-            backgroundImage: question.backgroundImage,
             type: question.type,
             difficaltyLavel: question.difficaltyLavel,
             timeLimit: question.timeLimit,
-            questionText: question.questionText,
-            options: question.options.map(option => ({
+            sessionStatus: "created"
+        };
+
+        // Add optional fields only if they exist
+        if (question.backgroundImage) questionData.backgroundImage = question.backgroundImage;
+        if (question.questionText) questionData.questionText = question.questionText;
+        if (question.media) questionData.media = question.media;
+        if (question.explanation) questionData.explanation = question.explanation;
+
+        // Add type-specific fields
+        if (question.type === 'Quiz') {
+            questionData.options = question.options.map(option => ({
                 id: option._id.toString(), 
                 text: option.text,
-                image: option.image ? option.image : null,
+                image: option.image || null,
                 isCorrect: option.isCorrect
-            })),
-            multiSelect: question.multiSelect,
-            trueAnswer: question.trueAnswer,
-            media: question.media ? question.media : null,
-            slider: question.slider ? question.slider : null,
-            explanation: question.explanation ? question.explanation : null,
-            slideContent: question.slideContent ? question.slideContent : null,
-            puzzleOrder: question.puzzleOrder ? question.puzzleOrder : null,
-            acceptedAnswers: question.acceptedAnswers ? question.acceptedAnswers : null
-        };
+            }));
+            if (question.multiSelect !== undefined) questionData.multiSelect = question.multiSelect;
+        }
+
+        if (question.type === 'TrueFalse') {
+            if (question.trueAnswer !== undefined) questionData.trueAnswer = question.trueAnswer;
+        }
+
+        if (question.type === 'TypeAnswer') {
+            if (question.acceptedAnswers) questionData.acceptedAnswers = question.acceptedAnswers;
+        }
+
+        if (question.type === 'Puzzle') {
+            if (question.puzzleOrder) {
+                questionData.puzzleOrder = question.puzzleOrder;
+                questionData.puzzleSuffleOrder = getShuffledArray(question.puzzleOrder);
+            }
+        }
+
+        if (question.type === 'Slider') {
+            if (question.slider) questionData.slider = question.slider;
+        }
+
+        if (question.type === 'Slide') {
+            if (question.slideContent) questionData.slideContent = question.slideContent;
+        }
+
+        questionList[questionId] = questionData;
     });
 
     /** add firebase realtime code start */
@@ -1603,6 +1623,16 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         data: populatedSession
     });
 });
+
+const getShuffledArray = (array) => {
+    if (!Array.isArray(array)) return [];
+    const shuffled = array.slice(); // Create a copy of the array
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
+    }
+    return shuffled;
+}
 
 /**
  * Gets a single quiz game session by ID.
