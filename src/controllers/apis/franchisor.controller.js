@@ -80,9 +80,7 @@ const getFranchisorInfo = catchAsync(async (req, res) => {
  */
 const createFranchisorUser = async (req, res) => {
 	try {
-		const { franchisorInfoId, firstName, lastName, email, phonenoPrefix, phoneno, role, creatorId } = req.body;
-		let password = 'admin@123';
-		let userData = {
+		const {
 			franchisorInfoId,
 			firstName,
 			lastName,
@@ -90,19 +88,199 @@ const createFranchisorUser = async (req, res) => {
 			phonenoPrefix,
 			phoneno,
 			role,
+			creatorId,
+			password
+		} = req.body;
+
+		const normalizedEmail = email ? email.trim().toLowerCase() : null;
+
+		if (normalizedEmail) {
+			const emailExists = await FranchisorUser.findOne({ email: normalizedEmail, isDeleted: false });
+			if (emailExists) {
+				return res.status(httpStatus.CONFLICT).json({
+					success: false,
+					message: getMessage("FRANCHISOR_EMAIL_ALREADY_EXISTS", res.locals.language),
+					data: null
+				});
+			}
+		}
+
+		if (phoneno && phonenoPrefix) {
+			const phoneExists = await FranchisorUser.findOne({ phonenoPrefix, phoneno, isDeleted: false });
+			if (phoneExists) {
+				return res.status(httpStatus.CONFLICT).json({
+					success: false,
+					message: getMessage("FRANCHISOR_PHONE_ALREADY_EXISTS", res.locals.language),
+					data: null
+				});
+			}
+		}
+
+		let resolvedPassword = password;
+		if (!resolvedPassword) {
+			resolvedPassword = role === 'HqStaff' ? 'hqstaff@123' : 'admin@123';
+		}
+
+		let userData = {
+			franchisorInfoId,
+			firstName,
+			lastName,
+			email: normalizedEmail,
+			phonenoPrefix,
+			phoneno,
+			role,
 			isEmailVerified: true,
 			isPhonenoVerified: true,
-			password
+			password: resolvedPassword
 		};
 		if (role === 'HqStaff') {
-			userData.password = 'hqstaff@123';
 			if (creatorId) {
 				userData.creatorId = creatorId;
 			}
+		} else if (creatorId) {
+			userData.creatorId = creatorId;
 		}
 		const franchisorUser = new FranchisorUser(userData);
 		await franchisorUser.save();
-		res.status(httpStatus.CREATED).json({ success: true, message: 'Franchisor user created', data: franchisorUser });
+		res.status(httpStatus.CREATED).json({
+			success: true,
+			message: getMessage("FRANCHISOR_USER_CREATED_SUCCESS", res.locals.language),
+			data: franchisorUser
+		});
+	} catch (err) {
+		res.status(httpStatus.OK).json({
+			success: false,
+			message: getMessage("FRANCHISOR_USER_CREATION_FAILED", res.locals.language),
+			data: err?.message || null
+		});
+	}
+};
+
+const updateFranchisorUser = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const updates = req.body || {};
+		const franchisorUser = await FranchisorUser.findById(id);
+		if (!franchisorUser || franchisorUser.isDeleted) {
+			return res.status(httpStatus.OK).json({
+				success: false,
+				message: getMessage("FRANCHISOR_USER_NOT_FOUND", res.locals.language),
+				data: null
+			});
+		}
+
+		if (updates.email !== undefined && updates.email !== null) {
+			const normalizedEmail = updates.email.trim().toLowerCase();
+			const emailExists = await FranchisorUser.findOne({
+				_id: { $ne: franchisorUser._id },
+				email: normalizedEmail,
+				isDeleted: false
+			});
+			if (emailExists) {
+				return res.status(httpStatus.CONFLICT).json({
+					success: false,
+					message: getMessage("FRANCHISOR_EMAIL_ALREADY_EXISTS", res.locals.language),
+					data: null
+				});
+			}
+			franchisorUser.email = normalizedEmail;
+		}
+
+		const targetPhonePrefix = updates.phonenoPrefix !== undefined ? updates.phonenoPrefix : franchisorUser.phonenoPrefix;
+		const targetPhone = updates.phoneno !== undefined ? updates.phoneno : franchisorUser.phoneno;
+		if (targetPhonePrefix && targetPhone) {
+			const phoneExists = await FranchisorUser.findOne({
+				_id: { $ne: franchisorUser._id },
+				phonenoPrefix: targetPhonePrefix,
+				phoneno: targetPhone,
+				isDeleted: false
+			});
+			if (phoneExists) {
+				return res.status(httpStatus.CONFLICT).json({
+					success: false,
+					message: getMessage("FRANCHISOR_PHONE_ALREADY_EXISTS", res.locals.language),
+					data: null
+				});
+			}
+		}
+
+		const updatableFields = [
+			'franchisorInfoId',
+			'firstName',
+			'lastName',
+			'phonenoPrefix',
+			'phoneno',
+			'role',
+			'isEmailVerified',
+			'isPhonenoVerified',
+			'creatorId',
+			'isActive'
+		];
+
+		updatableFields.forEach(field => {
+			if (updates[field] !== undefined) {
+				franchisorUser[field] = updates[field];
+			}
+		});
+
+		if (updates.password) {
+			franchisorUser.password = updates.password;
+		}
+
+		franchisorUser.updatedAt = Date.now();
+		await franchisorUser.save();
+
+		res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("FRANCHISOR_USER_UPDATED_SUCCESS", res.locals.language),
+			data: franchisorUser
+		});
+	} catch (err) {
+		res.status(httpStatus.OK).json({
+			success: false,
+			message: err.message,
+			data: null
+		});
+	}
+};
+
+const getFranchisorUser = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const franchisorUser = await FranchisorUser.findOne({ _id: id, isDeleted: false });
+		if (!franchisorUser) {
+			return res.status(httpStatus.OK).json({
+				success: false,
+				message: getMessage("FRANCHISOR_USER_NOT_FOUND", res.locals.language),
+				data: null
+			});
+		}
+		res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("FRANCHISOR_USER_FETCH_SUCCESS", res.locals.language),
+			data: franchisorUser
+		});
+	} catch (err) {
+		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+	}
+};
+
+const getFranchisorUsersList = async (req, res) => {
+	try {
+		const { role, isActive, franchisorInfoId } = req.query;
+		const filter = { isDeleted: false };
+		if (role) filter.role = role;
+		if (franchisorInfoId) filter.franchisorInfoId = franchisorInfoId;
+		if (isActive !== undefined) {
+			filter.isActive = String(isActive).toLowerCase() === 'true';
+		}
+		const franchisorUsers = await FranchisorUser.find(filter).sort({ createdAt: -1 });
+		res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("FRANCHISOR_USERS_LIST_FETCH_SUCCESS", res.locals.language),
+			data: franchisorUsers,
+			count: franchisorUsers.length
+		});
 	} catch (err) {
 		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
 	}
@@ -117,7 +295,7 @@ const createFranchisorUser = async (req, res) => {
 const signinFranchisorUser = async (req, res) => {
 	try {
 		const { email, password, role } = req.body;
-		const franchisorUser = await FranchisorUser.findByCredentials(email, password, role);
+		const franchisorUser = await FranchisorUser.findByCredentials(email, password);
 		if (!franchisorUser.isEmailVerified) {
 			return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
 		}
@@ -275,6 +453,9 @@ module.exports = {
     updateFranchisorInfo,
     getFranchisorInfo,
     createFranchisorUser,
+	updateFranchisorUser,
+	getFranchisorUser,
+	getFranchisorUsersList,
     signinFranchisorUser,
     signoutFranchisorUser,
     createFranchiseeInfo,

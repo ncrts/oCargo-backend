@@ -1747,10 +1747,6 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         questions: questionList
     };
 
-    if (Object.keys(imagePinAreasByQuestionId).length) {
-        firebasePayload.imagePinArrObj = imagePinAreasByQuestionId;
-    }
-
     await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set(firebasePayload);
     /** add firebase realtime code end */
 

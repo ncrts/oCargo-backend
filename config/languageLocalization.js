@@ -199,6 +199,46 @@ const languageLocalization = {
         'en_us': 'Food list retrieved successfully',
         'es_co': 'Lista de alimentos recuperada con éxito',
         'fr_fr': 'Liste des aliments récupérée avec succès'
+    },
+    "FRANCHISOR_USER_FETCH_SUCCESS":{
+        'en_us': 'Franchisor user fetched successfully!',
+        'es_co': '¡Usuario del franquiciador obtenido con éxito!',
+        'fr_fr': 'Utilisateur franchiseur récupéré avec succès !'
+    },
+    "FRANCHISOR_USERS_LIST_FETCH_SUCCESS":{
+        'en_us': 'Franchisor users fetched successfully!',
+        'es_co': '¡Usuarios del franquiciador obtenidos con éxito!',
+        'fr_fr': 'Utilisateurs franchiseurs récupérés avec succès !'
+    },
+    "FRANCHISOR_USER_NOT_FOUND":{
+        'en_us': 'Franchisor user not found.',
+        'es_co': 'Usuario del franquiciador no encontrado.',
+        'fr_fr': 'Utilisateur franchiseur introuvable.'
+    },
+    "FRANCHISOR_USER_CREATED_SUCCESS":{
+        'en_us': 'Franchisor user created successfully!',
+        'es_co': '¡Usuario del franquiciador creado con éxito!',
+        'fr_fr': 'Utilisateur du franchiseur créé avec succès !'
+    },
+    "FRANCHISOR_EMAIL_ALREADY_EXISTS":{
+        'en_us': 'Email already in use.',
+        'es_co': 'El correo electrónico ya está en uso.',
+        'fr_fr': 'E-mail déjà utilisé.'
+    },
+    "FRANCHISOR_PHONE_ALREADY_EXISTS":{
+        'en_us': 'Phone number already in use.',
+        'es_co': 'El número de teléfono ya está en uso.',
+        'fr_fr': 'Le numéro de téléphone est déjà utilisé.'
+    },
+    "FRANCHISOR_USER_CREATION_FAILED":{
+        'en_us': 'Unable to create franchisor user. Please try again.',
+        'es_co': 'No se pudo crear el usuario del franquiciador. Inténtalo de nuevo.',
+        'fr_fr': 'Impossible de créer l’utilisateur franchiseur. Veuillez réessayer.'
+    },
+    "FRANCHISOR_USER_UPDATED_SUCCESS":{
+        'en_us': 'Franchisor user updated successfully!',
+        'es_co': '¡Usuario del franquiciador actualizado con éxito!',
+        'fr_fr': 'Utilisateur franchiseur mis à jour avec succès !'
     }
 };
 

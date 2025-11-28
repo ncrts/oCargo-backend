@@ -26,8 +26,8 @@ const { getMessage } = require("../../../config/languageLocalization");
  */
 const signinFranchiseeUser = async (req, res) => {
 	try {
-		const { email, password, role } = req.body;
-		const franchiseeUser = await FranchiseeUser.findByCredentials(email, password, role);
+		const { email, password } = req.body;
+		const franchiseeUser = await FranchiseeUser.findByCredentials(email, password);
 		if (!franchiseeUser.isEmailVerified) {
 			return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
 		}

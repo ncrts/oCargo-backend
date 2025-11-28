@@ -18,7 +18,11 @@ const allRoles = {
     'createFranchisorInfo',
     'createFranchiseeUser',
     'bulkInsertXpRules',
-    'bulkInsertBadges'
+    'bulkInsertBadges',
+    'createFranchisorUser',
+    'updateFranchisorUser',
+    'getFranchisorUser',
+    'getFranchisorUsersList'
   ],
 };
 

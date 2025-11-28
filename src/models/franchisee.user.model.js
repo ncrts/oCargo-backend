@@ -287,8 +287,8 @@ franchiseeUserSchema.methods.generateAuthToken = async function () {
  * Authenticates a franchisee user based on email, password, and role.
  * Returns the user if credentials are valid, otherwise throws an error.
  */
-franchiseeUserSchema.statics.findByCredentials = async (email, password, role) => {
-    const findCond = { email, isDeleted: false, role };
+franchiseeUserSchema.statics.findByCredentials = async (email, password) => {
+    const findCond = { email, isDeleted: false };
     const franchiseeUser = await FranchiseeUser.findOne(findCond);
 
     if (!franchiseeUser) {
