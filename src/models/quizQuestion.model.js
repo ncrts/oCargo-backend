@@ -410,23 +410,28 @@ const quizQuestionSchema = new mongoose.Schema({
    * Maximum duration (in seconds) players have to answer this question.
    */
   timeLimit: {
-  type: Number,
-  default: 30,
-  description: 'Time limit to answer the question (in seconds).'
-},
+    type: Number,
+    default: 30,
+    description: 'Time limit to answer the question (in seconds).'
+  },
 
   /**
    * 💪 Difficulty Level
    * Indicates question complexity (used in XP calculation and analytics).
    */
   difficaltyLavel: {
-  type: String,
-  enum: ['Easy', 'Medium', 'Hard', 'VeryHard'],
-  default: 'Easy',
-  description: 'Difficulty level of the question.'
-},
+    type: String,
+    enum: ['Easy', 'Medium', 'Hard', 'VeryHard'],
+    default: 'Easy',
+    description: 'Difficulty level of the question.'
+  },
 
-
+  maxScore: {
+    type: Number,
+    default: 100,
+    description: 'Maximum score achievable for this question.'
+  },
+  
   // ------------------------------------------------
   // 🔹 Metadata
   // ------------------------------------------------
@@ -436,10 +441,10 @@ const quizQuestionSchema = new mongoose.Schema({
    * Automatically records when the question was created.
    */
   createdAt: {
-  type: Date,
-  default: Date.now,
-  description: 'Timestamp when this question was created.'
-}
+    type: Date,
+    default: Date.now,
+    description: 'Timestamp when this question was created.'
+  }
 });
 
 module.exports = mongoose.model('QuizQuestion', quizQuestionSchema);

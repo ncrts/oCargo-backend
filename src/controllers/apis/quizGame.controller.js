@@ -259,7 +259,8 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         timeLimit,
         difficaltyLavel,
         imagePinFile,
-        imagePinArrObj
+        imagePinArrObj,
+        maxScore
     } = req.body;
 
     let normalizedImagePins = null;
@@ -775,7 +776,8 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         categoryId,
         type,
         timeLimit: timeLimit || 30,
-        difficaltyLavel: difficaltyLavel || 'Easy'
+        difficaltyLavel: difficaltyLavel || 'Easy',
+        maxScore: maxScore || parseInt(getPerQuestionPointConfig(difficaltyLavel || 'Easy')),
     };
 
     // Add type-specific fields
@@ -1670,7 +1672,8 @@ const createQuizGameSession = catchAsync(async (req, res) => {
             type: question.type,
             difficaltyLavel: question.difficaltyLavel,
             timeLimit: question.timeLimit,
-            sessionStatus: "created"
+            sessionStatus: "created",
+            maxScore: question.maxScore || 100
         };
 
         // Add optional fields only if they exist
