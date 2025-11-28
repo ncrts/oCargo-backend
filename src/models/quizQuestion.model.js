@@ -24,9 +24,9 @@ const quizQuestionSchema = new mongoose.Schema({
    * 🧩 Quiz Reference
    * Links this question to its parent `Quiz` document.
    */
-  quizId: { 
-    type: mongoose.SchemaTypes.ObjectId, 
-    ref: 'Quiz', 
+  quizId: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: 'Quiz',
     default: null,
     description: 'Reference to the parent quiz containing this question.'
   },
@@ -54,7 +54,7 @@ const quizQuestionSchema = new mongoose.Schema({
    */
   type: {
     type: String,
-    enum: ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide'],
+    enum: ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide', 'imagePin'],
     default: null,
     description: 'Type of question defining interaction and answer format.'
   },
@@ -63,8 +63,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * 📝 Question Text
    * The main question prompt displayed to players.
    */
-  questionText: { 
-    type: String, 
+  questionText: {
+    type: String,
     default: null,
     description: 'Primary text displayed as the question prompt.'
   },
@@ -73,8 +73,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * 🖼️ Background Image
    * Optional image displayed as the background during the question.
    */
-  backgroundImage: { 
-    type: String, 
+  backgroundImage: {
+    type: String,
     default: null,
     description: 'Optional background image displayed during the question.'
   },
@@ -93,9 +93,9 @@ const quizQuestionSchema = new mongoose.Schema({
      * 📺 Media Type
      * Defines whether the media is an image, YouTube video, or none.
      */
-    type: { 
-      type: String, 
-      enum: ['Image', 'YouTube', 'None'], 
+    type: {
+      type: String,
+      enum: ['Image', 'YouTube', 'None'],
       default: 'None',
       description: 'Specifies the type of media attached to this question.'
     },
@@ -104,8 +104,8 @@ const quizQuestionSchema = new mongoose.Schema({
      * 🖼️ Image URL
      * Link to an image file if `type` is "Image".
      */
-    image: { 
-      type: String, 
+    image: {
+      type: String,
       default: null,
       description: 'Image URL for media display (if applicable).'
     },
@@ -114,8 +114,8 @@ const quizQuestionSchema = new mongoose.Schema({
      * ▶️ YouTube Video
      * ID of the embedded YouTube video.
      */
-    youtubeId: { 
-      type: String, 
+    youtubeId: {
+      type: String,
       default: null,
       description: 'YouTube video ID used for embedding media.'
     },
@@ -124,8 +124,8 @@ const quizQuestionSchema = new mongoose.Schema({
      * ⏱️ YouTube Start Time
      * Start time in seconds for video playback.
      */
-    youtubeStart: { 
-      type: Number, 
+    youtubeStart: {
+      type: Number,
       default: null,
       description: 'Start time (in seconds) for YouTube video playback.'
     },
@@ -134,8 +134,8 @@ const quizQuestionSchema = new mongoose.Schema({
      * ⏹️ YouTube End Time
      * End time in seconds for video playback.
      */
-    youtubeEnd: { 
-      type: Number, 
+    youtubeEnd: {
+      type: Number,
       default: null,
       description: 'End time (in seconds) for YouTube video playback.'
     }
@@ -154,16 +154,16 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Text for the option (e.g., "Paris", "Einstein").
      */
-    text: { 
-      type: String, 
+    text: {
+      type: String,
       description: 'Displayed text of the option.'
     },
 
     /**
      * Optional image for visual options.
      */
-    image: { 
-      type: String, 
+    image: {
+      type: String,
       default: null,
       description: 'Optional image URL for the answer option.'
     },
@@ -171,8 +171,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Boolean flag indicating whether this option is correct.
      */
-    isCorrect: { 
-      type: Boolean, 
+    isCorrect: {
+      type: Boolean,
       default: false,
       description: 'Marks this option as correct (true) or incorrect (false).'
     }
@@ -182,8 +182,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * ✅ Multi-Select Option
    * When true, players can select multiple correct answers.
    */
-  multiSelect: { 
-    type: Boolean, 
+  multiSelect: {
+    type: Boolean,
     default: false,
     description: 'Allows multiple correct selections (for Quiz type).'
   },
@@ -196,8 +196,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * 🔘 True/False Answer
    * Boolean answer for True/False question types.
    */
-  trueAnswer: { 
-    type: Boolean, 
+  trueAnswer: {
+    type: Boolean,
     default: null,
     description: 'Correct boolean answer for True/False questions.'
   },
@@ -211,8 +211,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * Array of acceptable text responses for open-ended questions.
    * Comparisons are case-insensitive and trimmed.
    */
-  acceptedAnswers: [{ 
-    type: String, 
+  acceptedAnswers: [{
+    type: String,
     description: 'List of valid text answers (case-insensitive matching).'
   }],
 
@@ -225,8 +225,8 @@ const quizQuestionSchema = new mongoose.Schema({
    * Defines the correct sequence of elements for puzzle-type questions.
    * Example: ["Step 1", "Step 2", "Step 3"]
    */
-  puzzleOrder: [{ 
-    type: String, 
+  puzzleOrder: [{
+    type: String,
     description: 'Defines the correct order for puzzle-type questions.'
   }],
 
@@ -242,8 +242,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Minimum slider value.
      */
-    min: { 
-      type: Number, 
+    min: {
+      type: Number,
       default: null,
       description: 'Minimum value allowed on the slider.'
     },
@@ -251,14 +251,14 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Maximum slider value.
      */
-    max: { 
-      type: Number, 
+    max: {
+      type: Number,
       default: null,
       description: 'Maximum value allowed on the slider.'
     },
 
-    step: { 
-      type: Number, 
+    step: {
+      type: Number,
       default: 1,
       description: 'Step value for the slider.'
     },
@@ -266,8 +266,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Correct range of values (e.g., [45, 50] for correct answers).
      */
-    correctRange: { 
-      type: Number, 
+    correctRange: {
+      type: Number,
       default: null,
       description: 'acceptable answer value between range (min and max).'
     }
@@ -285,8 +285,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Title text of the slide.
      */
-    title: { 
-      type: String, 
+    title: {
+      type: String,
       default: null,
       description: 'Title displayed on informational slides.'
     },
@@ -294,8 +294,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Main body text of the slide.
      */
-    text: { 
-      type: String, 
+    text: {
+      type: String,
       default: null,
       description: 'Supporting text displayed on the slide.'
     },
@@ -303,8 +303,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Optional image for visual slides.
      */
-    image: { 
-      type: String, 
+    image: {
+      type: String,
       default: null,
       description: 'Optional image displayed on the slide.'
     },
@@ -312,8 +312,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Optional video for dynamic slides.
      */
-    video: { 
-      type: String, 
+    video: {
+      type: String,
       default: null,
       description: 'Optional video link for slide display.'
     },
@@ -321,8 +321,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Duration (in seconds) before automatically moving to next slide.
      */
-    duration: { 
-      type: Number, 
+    duration: {
+      type: Number,
       default: 5,
       description: 'How long (in seconds) the slide remains visible.'
     }
@@ -341,8 +341,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Text-based explanation.
      */
-    text: { 
-      type: String, 
+    text: {
+      type: String,
       default: null,
       description: 'Text explanation for the answer.'
     },
@@ -350,8 +350,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Optional illustrative image.
      */
-    image: { 
-      type: String, 
+    image: {
+      type: String,
       default: null,
       description: 'Image to support the explanation.'
     },
@@ -359,8 +359,8 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * YouTube video ID for video-based explanations.
      */
-    youtubeId: { 
-      type: String, 
+    youtubeId: {
+      type: String,
       default: null,
       description: 'YouTube video ID used for explanation media.'
     },
@@ -368,18 +368,38 @@ const quizQuestionSchema = new mongoose.Schema({
     /**
      * Start and end times for video explanation playback.
      */
-    youtubeStart: { 
-      type: Number, 
+    youtubeStart: {
+      type: Number,
       default: null,
       description: 'Start time for video explanation (in seconds).'
     },
-    youtubeEnd: { 
-      type: Number, 
+    youtubeEnd: {
+      type: Number,
       default: null,
       description: 'End time for video explanation (in seconds).'
     }
   },
 
+  imagePinFile: {
+    type: String,
+    default: null,
+    description: 'File path or URL for the image pin.'
+  },
+
+  imagePinArrObj: [{
+    polygonCoordinates: [{
+      xAxis: {
+        type: Number,
+        default: null,
+        description: 'X-axis coordinate for polygon point.'
+      },
+      yAxis: {
+        type: Number,
+        default: null,
+        description: 'Y-axis coordinate for polygon point.'
+      }
+    }]
+  }],
 
   // ------------------------------------------------
   // 🔹 Timing & Difficulty
@@ -389,22 +409,22 @@ const quizQuestionSchema = new mongoose.Schema({
    * ⏰ Time Limit
    * Maximum duration (in seconds) players have to answer this question.
    */
-  timeLimit: { 
-    type: Number, 
-    default: 30,
-    description: 'Time limit to answer the question (in seconds).'
-  },
+  timeLimit: {
+  type: Number,
+  default: 30,
+  description: 'Time limit to answer the question (in seconds).'
+},
 
   /**
    * 💪 Difficulty Level
    * Indicates question complexity (used in XP calculation and analytics).
    */
-  difficaltyLavel: { 
-    type: String, 
-    enum: ['Easy', 'Medium', 'Hard', 'VeryHard'], 
-    default: 'Easy',
-    description: 'Difficulty level of the question.'
-  },
+  difficaltyLavel: {
+  type: String,
+  enum: ['Easy', 'Medium', 'Hard', 'VeryHard'],
+  default: 'Easy',
+  description: 'Difficulty level of the question.'
+},
 
 
   // ------------------------------------------------
@@ -415,11 +435,11 @@ const quizQuestionSchema = new mongoose.Schema({
    * 🕒 Created Timestamp
    * Automatically records when the question was created.
    */
-  createdAt: { 
-    type: Date, 
-    default: Date.now,
-    description: 'Timestamp when this question was created.'
-  }
+  createdAt: {
+  type: Date,
+  default: Date.now,
+  description: 'Timestamp when this question was created.'
+}
 });
 
 module.exports = mongoose.model('QuizQuestion', quizQuestionSchema);

@@ -226,7 +226,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
  *   quizId, categoryId, type (required)
  *   questionText, backgroundImage (optional), media (optional),
  *   options, multiSelect, trueAnswer, acceptedAnswers, puzzleOrder, slider, slideContent,
- *   explanation (optional), timeLimit, difficaltyLavel
+ *   explanation (optional), timeLimit, difficaltyLavel, imagePinFile, imagePinArrObj
  * }
  * 
  * Type-specific validation:
@@ -236,6 +236,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
  * - Puzzle: questionText, puzzleOrder (required); backgroundImage, media, explanation (optional)
  * - Slider: questionText, slider (required); backgroundImage, media, explanation (optional)
  * - Slide: slideContent (required)
+ * - imagePin: imagePinFile, imagePinArrObj (required); questionText, backgroundImage, media, explanation (optional)
  * 
  * Returns: created question with populated quizId and categoryId
  */
@@ -256,8 +257,12 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         slideContent,
         explanation,
         timeLimit,
-        difficaltyLavel
+        difficaltyLavel,
+        imagePinFile,
+        imagePinArrObj
     } = req.body;
+
+    let normalizedImagePins = null;
 
     // ===== BASIC VALIDATION =====
     if (!quizId || !categoryId || !type) {
@@ -269,7 +274,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     }
 
     // Validate type is one of allowed types
-    const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide'];
+    const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide', 'imagePin'];
     if (!validTypes.includes(type)) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
@@ -694,6 +699,74 @@ const createQuizQuestion = catchAsync(async (req, res) => {
                 });
             }
         }
+    } else if (type === 'imagePin') {
+        if (!imagePinFile || typeof imagePinFile !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'For imagePin type: imagePinFile is required and must be a string',
+                data: null
+            });
+        }
+        if (!Array.isArray(imagePinArrObj) || imagePinArrObj.length === 0) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'For imagePin type: imagePinArrObj must be a non-empty array',
+                data: null
+            });
+        }
+
+        const polygonsValid = imagePinArrObj.every(area => {
+            if (!area || typeof area !== 'object') {
+                return false;
+            }
+            if (!Array.isArray(area.polygonCoordinates) || area.polygonCoordinates.length === 0) {
+                return false;
+            }
+            return area.polygonCoordinates.every(point => {
+                if (!point || typeof point !== 'object') {
+                    return false;
+                }
+                const { xAxis, yAxis } = point;
+                return typeof xAxis === 'number' && typeof yAxis === 'number';
+            });
+        });
+
+        if (!polygonsValid) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'For imagePin type: polygonCoordinates must contain numeric xAxis and yAxis values',
+                data: null
+            });
+        }
+
+        normalizedImagePins = imagePinArrObj.map(area => ({
+            polygonCoordinates: area.polygonCoordinates.map(point => ({
+                xAxis: point.xAxis,
+                yAxis: point.yAxis
+            }))
+        }));
+
+        if (media) {
+            const mediaValidation = validateMedia(media);
+            if (!mediaValidation.valid) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: mediaValidation.error,
+                    data: null
+                });
+            }
+        }
+
+        if (explanation) {
+            const explanationValidation = validateExplanation(explanation);
+            if (!explanationValidation.valid) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: explanationValidation.error,
+                    data: null
+                });
+            }
+        }
     }
 
     // ===== BUILD QUESTION DATA =====
@@ -739,6 +812,13 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) questionData.explanation = explanation;
     } else if (type === 'Slide') {
         questionData.slideContent = slideContent;
+    } else if (type === 'imagePin') {
+        questionData.imagePinFile = imagePinFile;
+        questionData.imagePinArrObj = normalizedImagePins || [];
+        if (questionText) questionData.questionText = questionText;
+        if (backgroundImage) questionData.backgroundImage = backgroundImage;
+        if (media) questionData.media = media;
+        if (explanation) questionData.explanation = explanation;
     }
 
     // Create question instance
@@ -1448,6 +1528,41 @@ const generateQRCode = (gamePin) => {
 };
 
 /**
+ * Helper: Normalize imagePin polygons for safe RTDB storage
+ */
+const normalizeImagePinArrObj = (areas) => {
+    if (!Array.isArray(areas)) {
+        return [];
+    }
+
+    return areas.reduce((normalized, area) => {
+        if (!area || typeof area !== 'object') {
+            return normalized;
+        }
+
+        const polygonCoordinates = Array.isArray(area.polygonCoordinates)
+            ? area.polygonCoordinates.reduce((coords, point) => {
+                if (!point || typeof point !== 'object') {
+                    return coords;
+                }
+
+                const xAxis = typeof point.xAxis === 'number' ? point.xAxis : null;
+                const yAxis = typeof point.yAxis === 'number' ? point.yAxis : null;
+
+                if (xAxis !== null && yAxis !== null) {
+                    coords.push({ xAxis, yAxis });
+                }
+
+                return coords;
+            }, [])
+            : [];
+
+        normalized.push({ polygonCoordinates });
+        return normalized;
+    }, []);
+};
+
+/**
  * Creates a new quiz game session.
  * POST /quiz/game-session
  * 
@@ -1542,6 +1657,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
 
     // Convert questionList to object indexed by question ID
     let questionList = {};
+    const imagePinAreasByQuestionId = {};
     getQuetionOfTheQuiz.forEach(question => {
         const questionId = question._id.toString();
         
@@ -1597,13 +1713,26 @@ const createQuizGameSession = catchAsync(async (req, res) => {
             if (question.slideContent) questionData.slideContent = question.slideContent;
         }
 
+        if (question.type === 'imagePin') {
+            if (question.imagePinFile) {
+                questionData.imagePinFile = question.imagePinFile;
+            }
+
+            const sanitizedImagePins = normalizeImagePinArrObj(question.imagePinArrObj);
+            questionData.imagePinArrObj = sanitizedImagePins;
+
+            if (sanitizedImagePins.length) {
+                imagePinAreasByQuestionId[questionId] = sanitizedImagePins;
+            }
+        }
+        
         questionList[questionId] = questionData;
     });
 
     /** add firebase realtime code start */
     // Create quizGameSessions node and set initial data in Firebase
     // Questions are indexed by questionId for efficient access
-    await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set({
+    const firebasePayload = {
         answers: null,
         scores: null,
         metaData: { ...populatedSession.settings },
@@ -1613,7 +1742,13 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         finalResults: null,
         players: null,
         questions: questionList
-    });
+    };
+
+    if (Object.keys(imagePinAreasByQuestionId).length) {
+        firebasePayload.imagePinArrObj = imagePinAreasByQuestionId;
+    }
+
+    await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set(firebasePayload);
     /** add firebase realtime code end */
 
 
