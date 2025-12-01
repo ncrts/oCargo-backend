@@ -70,6 +70,18 @@ const franchiseeInfoSchema = new mongoose.Schema({
     },
 
     /**
+     * 🖼️ Icon
+     * Optional small icon or logo representing the franchisee (e.g., a URL to an image).
+     */
+    icon: {
+        type: String,
+        default: null,
+        description: 'URL for the franchisee icon or logo.'
+    },
+
+    
+
+    /**
      * 📍 Address
      * Physical address details of the franchise location.
      * Used for reports, mapping, and client location tagging.

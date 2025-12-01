@@ -12,7 +12,14 @@ const allRoles = {
     'createFranchisorInfo',
     'createFranchiseeUser',
     'bulkInsertXpRules',
-    'bulkInsertBadges'
+    'bulkInsertBadges',
+    'getFranchisorInfoList',
+    'createFranchiseeInfo',
+    'updateFranchiseeInfo',
+    'getFranchiseeInfoList',
+    'updateFranchiseeUser',
+    'getFranchiseeUser',
+    'getFranchiseeUsersList'
   ],
   admin: [
     'createFranchisorInfo',
@@ -22,7 +29,13 @@ const allRoles = {
     'createFranchisorUser',
     'updateFranchisorUser',
     'getFranchisorUser',
-    'getFranchisorUsersList'
+    'getFranchisorUsersList',
+    'createFranchiseeInfo',
+    'updateFranchiseeInfo',
+    'getFranchiseeInfoList',
+    'updateFranchiseeUser',
+    'getFranchiseeUser',
+    'getFranchiseeUsersList'
   ],
 };
 

@@ -215,6 +215,41 @@ const languageLocalization = {
         'es_co': 'Usuario del franquiciador no encontrado.',
         'fr_fr': 'Utilisateur franchiseur introuvable.'
     },
+    "FRANCHISOR_NOT_FOUND":{
+        'en_us': 'Active franchisor not found.',
+        'es_co': 'No se encontró un franquiciador activo.',
+        'fr_fr': 'Aucun franchiseur actif trouvé.'
+    },
+    "FRANCHISEE_INPUT_INVALID":{
+        'en_us': 'Invalid input. Required fields missing or incorrect.',
+        'es_co': 'Entrada inválida. Faltan campos requeridos o son incorrectos.',
+        'fr_fr': 'Entrée invalide. Champs requis manquants ou incorrects.'
+    },
+    "FRANCHISEE_PHONE_ALREADY_EXISTS":{
+        'en_us': 'Phone number already in use for another franchisee.',
+        'es_co': 'El número de teléfono ya está en uso por otro franquiciado.',
+        'fr_fr': 'Le numéro de téléphone est déjà utilisé par un autre franchisé.'
+    },
+    "FRANCHISEE_EMAIL_ALREADY_EXISTS":{
+        'en_us': 'Email already in use for another franchisee.',
+        'es_co': 'El correo electrónico ya está en uso por otro franquiciado.',
+        'fr_fr': 'L\'e-mail est déjà utilisé par un autre franchisé.'
+    },
+    "FRANCHISEE_INFO_UPDATED_SUCCESS":{
+        'en_us': 'Franchisee info updated successfully!',
+        'es_co': '¡Información del franquiciado actualizada con éxito!',
+        'fr_fr': 'Informations du franchisé mises à jour avec succès !'
+    },
+    "FRANCHISEE_INFO_LIST_FETCH_SUCCESS":{
+        'en_us': 'Franchisee info list fetched successfully!',
+        'es_co': '¡Lista de información del franquiciado obtenida con éxito!',
+        'fr_fr': 'Liste des informations du franchisé récupérée avec succès !'
+    },
+    "FRANCHISEE_INFO_NOT_FOUND":{
+        'en_us': 'Franchisee info not found.',
+        'es_co': 'Información del franquiciado no encontrada.',
+        'fr_fr': 'Informations du franchisé introuvables.'
+    },
     "FRANCHISOR_USER_CREATED_SUCCESS":{
         'en_us': 'Franchisor user created successfully!',
         'es_co': '¡Usuario del franquiciador creado con éxito!',
@@ -239,6 +274,121 @@ const languageLocalization = {
         'en_us': 'Franchisor user updated successfully!',
         'es_co': '¡Usuario del franquiciador actualizado con éxito!',
         'fr_fr': 'Utilisateur franchiseur mis à jour avec succès !'
+    },
+    "FRANCHISEE_INPUT_INVALID_NAME":{
+        'en_us': 'Invalid input. Name is required.',
+        'es_co': 'Entrada inválida. Se requiere el nombre.',
+        'fr_fr': 'Entrée invalide. Le nom est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_PHONE_PREFIX":{
+        'en_us': 'Invalid input. Phone prefix is required.',
+        'es_co': 'Entrada inválida. Se requiere el prefijo telefónico.',
+        'fr_fr': 'Entrée invalide. L’indicatif téléphonique est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_PHONE":{
+        'en_us': 'Invalid input. Phone number is required.',
+        'es_co': 'Entrada inválida. Se requiere el número de teléfono.',
+        'fr_fr': 'Entrée invalide. Le numéro de téléphone est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_VALID_FRANCHISEEINFO_ID":{
+        'en_us': 'Invalid input. Valid franchiseeInfoId is required.',
+        'es_co': 'Entrada inválida. Se requiere un franchiseeInfoId válido.',
+        'fr_fr': 'Entrée invalide. Un franchiseeInfoId valide est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_FIRSTNAME":{
+        'en_us': 'Invalid input. First name is required.',
+        'es_co': 'Entrada inválida. Se requiere el nombre.',
+        'fr_fr': 'Entrée invalide. Le prénom est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_LASTNAME":{
+        'en_us': 'Invalid input. Last name is required.',
+        'es_co': 'Entrada inválida. Se requiere el apellido.',
+        'fr_fr': 'Entrée invalide. Le nom de famille est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_EMAIL_REQUIRED":{
+        'en_us': 'Invalid input. Email is required.',
+        'es_co': 'Entrada inválida. Se requiere el correo electrónico.',
+        'fr_fr': 'Entrée invalide. L’e-mail est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_EMAIL_FORMAT":{
+        'en_us': 'Invalid input. Email format is incorrect.',
+        'es_co': 'Entrada inválida. El formato del correo electrónico es incorrecto.',
+        'fr_fr': 'Entrée invalide. Le format de l’e-mail est incorrect.'
+    },
+    "FRANCHISEE_INPUT_INVALID_PHONENOPREFIX":{
+        'en_us': 'Invalid input. Phone number prefix is required.',
+        'es_co': 'Entrada inválida. Se requiere el prefijo del número de teléfono.',
+        'fr_fr': 'Entrée invalide. Le préfixe du numéro de téléphone est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_PHONENO":{
+        'en_us': 'Invalid input. Phone number is required.',
+        'es_co': 'Entrada inválida. Se requiere el número de teléfono.',
+        'fr_fr': 'Entrée invalide. Le numéro de téléphone est requis.'
+    },
+    "FRANCHISEE_INPUT_INVALID_ROLE":{
+        'en_us': 'Invalid input. Role must be either "manager" or "staff".',
+        'es_co': 'Entrada inválida. El rol debe ser "manager" o "staff".',
+        'fr_fr': 'Entrée invalide. Le rôle doit être "manager" ou "staff".'
+    },
+    "FRANCHISEE_INPUT_INVALID_PASSWORD":{
+        'en_us': 'Invalid input. Password must be between 8 and 100 characters and contain at least one letter and one number.',
+        'es_co': 'Entrada inválida. La contraseña debe tener entre 8 y 100 caracteres y contener al menos una letra y un número.',
+        'fr_fr': 'Entrée invalide. Le mot de passe doit comporter entre 8 et 100 caractères et contenir au moins une lettre et un chiffre.'
+    },
+    "FRANCHISEE_INPUT_INVALID_CREATOROBJ":{
+        'en_us': 'Invalid input. creatorObj must be an object.',
+        'es_co': 'Entrada inválida. creatorObj debe ser un objeto.',
+        'fr_fr': 'Entrée invalide. creatorObj doit être un objet.'
+    },
+    "FRANCHISEE_INPUT_INVALID_CREATORID":{
+        'en_us': 'Invalid input. creatorObj.creatorId is required and must be a valid ID.',
+        'es_co': 'Entrada inválida. Se requiere creatorObj.creatorId y debe ser un ID válido.',
+        'fr_fr': 'Entrée invalide. creatorObj.creatorId est requis et doit être un ID valide.'
+    },
+    "FRANCHISEE_INPUT_INVALID_CREATORROLE":{
+        'en_us': 'Invalid input. creatorObj.creatorRole must be either "FranchiseeUser" or "FranchisorUser".',
+        'es_co': 'Entrada inválida. creatorObj.creatorRole debe ser "FranchiseeUser" o "FranchisorUser".',
+        'fr_fr': 'Entrée invalide. creatorObj.creatorRole doit être "FranchiseeUser" ou "FranchisorUser".'
+    },
+    "FRANCHISEE_INPUT_INVALID_FRANCHISEEUSER_NOT_FOUND":{
+        'en_us': 'Invalid input. Creator FranchiseeUser not found.',
+        'es_co': 'Entrada inválida. Usuario del franquiciado creador no encontrado.',
+        'fr_fr': 'Entrée invalide. Utilisateur du franchisé créateur non trouvé.'
+    },
+    "FRANCHISEE_INPUT_INVALID_FRANCHISORUSER_NOT_FOUND":{
+        'en_us': 'Invalid input. Creator FranchisorUser not found.',
+        'es_co': 'Entrada inválida. Usuario del franquiciador creador no encontrado.',
+        'fr_fr': 'Entrée invalide. Utilisateur du franchiseur créateur non trouvé.'
+    },
+    "FRANCHISEE_USER_NOT_FOUND":{
+        'en_us': 'Franchisee user not found.',
+        'es_co': 'Usuario del franquiciado no encontrado.',
+        'fr_fr': 'Utilisateur franchisé non trouvé.'
+    },
+    "FRANCHISEE_USER_FETCH_SUCCESS":{
+        'en_us': 'Franchisee user fetched successfully.',
+        'es_co': 'Usuario del franquiciado obtenido con éxito.',
+        'fr_fr': 'Utilisateur franchisé récupéré avec succès.'
+    },
+    "FRANCHISEE_USER_UPDATED_SUCCESS":{
+        'en_us': 'Franchisee user updated successfully.',
+        'es_co': 'Usuario del franquiciado actualizado con éxito.',
+        'fr_fr': 'Utilisateur franchisé mis à jour avec succès.'
+    },
+    "FRANCHISEE_USER_LIST_FETCH_SUCCESS":{
+        'en_us': 'Franchisee users list fetched successfully.',
+        'es_co': 'Lista de usuarios del franquiciado obtenida con éxito.',
+        'fr_fr': 'Liste des utilisateurs franchisés récupérée avec succès.'
+    },
+    "FRANCHISEE_PASSWORD_LENGTH_INVALID":{
+        'en_us': 'Password must be between 8 and 100 characters.',
+        'es_co': 'La contraseña debe tener entre 8 y 100 caracteres.',
+        'fr_fr': 'Le mot de passe doit comporter entre 8 et 100 caractères.'
+    },
+    "FRANCHISEE_PASSWORD_FORMAT_INVALID":{
+        'en_us': 'Password must contain at least one letter and one number.',
+        'es_co': 'La contraseña debe contener al menos una letra y un número.',
+        'fr_fr': 'Le mot de passe doit contenir au moins une lettre et un chiffre.'
     }
 };
 

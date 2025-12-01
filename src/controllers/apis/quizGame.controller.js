@@ -1662,7 +1662,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     const imagePinAreasByQuestionId = {};
     getQuetionOfTheQuiz.forEach(question => {
         const questionId = question._id.toString();
-        
+
         // Build base question data
         const questionData = {
             id: questionId,
@@ -1685,7 +1685,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         // Add type-specific fields
         if (question.type === 'Quiz') {
             questionData.options = question.options.map(option => ({
-                id: option._id.toString(), 
+                id: option._id.toString(),
                 text: option.text,
                 image: option.image || null,
                 isCorrect: option.isCorrect
@@ -1728,7 +1728,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
                 imagePinAreasByQuestionId[questionId] = sanitizedImagePins;
             }
         }
-        
+
         questionList[questionId] = questionData;
     });
 
@@ -1848,14 +1848,14 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
 
     const sessions = await QuizGameSession.find(filter)
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
-        .populate({ 
-            path: 'quizId', 
+        .populate({
+            path: 'quizId',
             select: 'title description category questions'
         })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' })
         .sort({ createdAt: -1 });
-    
-    
+
+
     return res.status(httpStatus.OK).json({
         success: true,
         message: getMessage("QUIZ_GAME_SESSIONS_FETCH_SUCCESS", res.locals.language),
@@ -2128,32 +2128,53 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
         // Determine quizType from quiz visibility (local or national)
         const quizType = quiz.visibility === 'National' ? 'National' : 'Local';
 
-        // Create player session record
-        const playerSessionData = {
+        // Check if player session already exists for this game session
+        let playerSession = await QuizSessionPlayer.findOne({
             quizGameSessionId: session._id,
-            franchiseId: session.franchiseId,
-            quizId: session.quizId,
-            quizType: quizType, // Fetched from Quiz model visibility
             clientId: clientId,
-            totalScore: 0,
-            streak: 0,
-            answers: [],
-            finalRank: null,
-            dateEarned: Date.now(),
-            joinedAt: Date.now(),
-            leftAt: null,
-            isActive: true,
             isDeleted: false
-        };
+        });
 
-        const playerSession = new QuizSessionPlayer(playerSessionData);
-        await playerSession.save();
+        if (playerSession) {
+            // Update joinedAt time and set isActive to true
+            playerSession.joinedAt = Date.now();
+            playerSession.isActive = true;
+            playerSession.leftAt = null;
+            await playerSession.save();
 
-        // Add clientId to session's settings.clientIds array
-        await QuizGameSession.findByIdAndUpdate(
-            session._id,
-            { $addToSet: { 'settings.clientIds': clientId } }
-        );
+            // Add clientId to session's settings.clientIds array (if not already present)
+            await QuizGameSession.findByIdAndUpdate(
+                session._id,
+                { $addToSet: { 'settings.clientIds': clientId } }
+            );
+        } else {
+            // Create player session record
+            const playerSessionData = {
+                quizGameSessionId: session._id,
+                franchiseId: session.franchiseId,
+                quizId: session.quizId,
+                quizType: quizType, // Fetched from Quiz model visibility
+                clientId: clientId,
+                totalScore: 0,
+                streak: 0,
+                answers: [],
+                finalRank: null,
+                dateEarned: Date.now(),
+                joinedAt: Date.now(),
+                leftAt: null,
+                isActive: true,
+                isDeleted: false
+            };
+
+            playerSession = new QuizSessionPlayer(playerSessionData);
+            await playerSession.save();
+
+            // Add clientId to session's settings.clientIds array
+            await QuizGameSession.findByIdAndUpdate(
+                session._id,
+                { $addToSet: { 'settings.clientIds': clientId } }
+            );
+        }
 
         /** JOIN FIREBASE PLAYER */
         // Add player data to Firebase RTDB under quizGameSessions/{session._id}/players/{clientId}
@@ -2161,7 +2182,16 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             pseudoName: client.pseudoName,
             playerId: client._id.toString(),
             profileAvatar: client.profileAvatar ? `${s3BaseUrl}${client.profileAvatar}` : null,
-            joinedAt: playerSession.joinedAt
+            joinedAt: playerSession.joinedAt,
+            statObj: {
+                goodAnswerCount: 0,
+                badAnswerCount: 0,
+                missedAnswerCount: 0,
+                highestStreak: 0,
+                totalGames: 0,
+                successPercent: 10,
+                currentStreakCount: 0
+            }
         };
         await firebaseDB.ref(`quizGameSessions/${session._id}/players/${client._id}`).set(playerData);
         /** END FIREBASE PLAYER */
@@ -2756,7 +2786,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
         // STEP 3: Calculate time bonus/penalty
         const timeLimit = question.timeLimit || 30; // Default 30 seconds if not set
         const timePercentage = (responseTime / timeLimit) * 100;
-        
+
         let timeBonus = 0;
         let timeCategory = 'Normal';
 
