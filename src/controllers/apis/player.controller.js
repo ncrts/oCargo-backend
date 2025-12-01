@@ -109,17 +109,23 @@ const signup = catchAsync(async (req, res) => {
     await playerStat.save();
     await playerCommunication.save();
 
-    let dataIfo = { player: player, token: null }
+
 
     if (req.body.mode == "guest") {
         const token = await player.generateAuthToken();
-        dataIfo.token = token;
+        let dataIfo = { player: player, token: token }
+
+        return res.status(httpStatus.CREATED).json({
+            success: true,
+            message: getMessage("PLAYER_SIGNUP_SUCCESS", res.locals.language),
+            data: dataIfo
+        });
     }
 
     return res.status(httpStatus.CREATED).json({
         success: true,
-        message: getMessage("PLAYER_SIGNUP_SUCCESS", res.locals.language),
-        data: dataIfo
+        message: getMessage("PLAYER_SIGNUP_SUCCESS_VERIFY_EMAIL_TO_CONTINUE", res.locals.language),
+        data: { OTP: newPlayerData.emailVerificationCode }
     });
 
 });

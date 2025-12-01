@@ -389,6 +389,11 @@ const languageLocalization = {
         'en_us': 'Password must contain at least one letter and one number.',
         'es_co': 'La contraseña debe contener al menos una letra y un número.',
         'fr_fr': 'Le mot de passe doit contenir au moins une lettre et un chiffre.'
+    },
+    "PLAYER_SIGNUP_SUCCESS_VERIFY_EMAIL_TO_CONTINUE": {
+        'en_us': 'Player registered successfully! Please verify your email to continue.',
+        'es_co': '¡Jugador registrado exitosamente! Por favor, verifique su correo electrónico para continuar.',
+        'fr_fr': 'Joueur inscrit avec succès ! Veuillez vérifier votre e-mail pour continuer.'
     }
 };
 
