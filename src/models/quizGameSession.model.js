@@ -83,13 +83,14 @@ const quizGameSessionSchema = new mongoose.Schema({
   /**
    * 🎮 Status
    * Indicates the current phase of the game session:
+   * - Scheduled: Session is planned but not yet started
    * - Lobby: Waiting for players to join
    * - InProgress: Game is live
    * - Completed: Game has ended and results are available
    */
   status: { 
     type: String, 
-    enum: ['Lobby', 'InProgress', 'Completed'], 
+    enum: ['Scheduled','Lobby', 'InProgress', 'Completed', 'Cancelled'], 
     default: 'Lobby',
     description: 'Defines the current lifecycle state of the game session.'
   },

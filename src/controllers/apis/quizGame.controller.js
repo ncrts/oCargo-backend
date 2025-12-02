@@ -1573,9 +1573,15 @@ const normalizeImagePinArrObj = (areas) => {
  *   quizId (required),
  *   hostId (required - must be franchisee staff),
  *   franchiseId (required),
- *   startTime (required - unix timestamp in ms),
- *   endTime (required - unix timestamp in ms)
+ *   status (optional - 'Scheduled' or 'Lobby', default: 'Lobby'),
+ *   startTime (optional - unix timestamp in ms)
  * }
+ * 
+ * If status is 'Scheduled' and startTime is provided:
+ *   - Saves the session to database only (no Firebase RTDB)
+ * 
+ * Otherwise (Lobby status or no startTime):
+ *   - Saves to database AND creates Firebase RTDB with questions
  * 
  * Returns: created session with populated hostId, quizId, franchiseId
  */
@@ -1583,7 +1589,8 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     const {
         quizId,
         hostId,
-        franchiseId
+        franchiseId,
+        status
     } = req.body;
 
     // ===== VALIDATION =====
@@ -1615,10 +1622,24 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         });
     }
 
+    // Fetch all quiz questions to calculate total duration
+    const quizQuestions = await QuizQuestion.find({ quizId: quizId });
+    
+    // Calculate total duration (sum of all question time limits in seconds)
+    const totalDurationSeconds = quizQuestions.reduce((sum, question) => {
+        return sum + (question.timeLimit || 30); // Default 30 seconds per question
+    }, 0);
+
+    // Check if session is scheduled
+    const isScheduled = status === 'Scheduled' && req.body.startTime;
+
     // Generate gamePin and QR code
     const gamePin = generateGamePin();
     const qrCode = generateQRCode(gamePin);
 
+    // Calculate startTime and endTime
+    const startTime = req.body.startTime ? req.body.startTime : Math.floor(Date.now() * 1000) + 15 * 60 * 1000; // startTime in ms
+    const endTime = startTime + (totalDurationSeconds * 1000); // endTime = startTime + total duration in ms
 
     // Create game session
     const sessionData = {
@@ -1627,10 +1648,10 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         franchiseId,
         gamePin,
         qrCode,
-        status: 'Lobby',
-        startTime: req.body.startTime ? req.body.startTime : Math.floor(Date.now() / 1000) + 15 * 60,
-        endTime: null,
-        duration: null,
+        status: status || 'Lobby',
+        startTime: startTime,
+        endTime: endTime,
+        duration: totalDurationSeconds,
         settings: {
             showQuestionsOnClient: true,
             showLeaderboardPerQuestion: true,
@@ -1653,6 +1674,16 @@ const createQuizGameSession = catchAsync(async (req, res) => {
         .populate({ path: 'quizId', select: 'title description category questions language' })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' });
 
+    // If session is scheduled, return without Firebase RTDB setup
+    if (isScheduled) {
+        return res.status(httpStatus.CREATED).json({
+            success: true,
+            message: 'Quiz game session scheduled successfully.',
+            data: populatedSession
+        });
+    }
+
+    // For non-scheduled sessions, setup Firebase RTDB
     const getQuetionOfTheQuiz = await QuizQuestion.find({ quizId: quizId })
         .populate({ path: 'categoryId', select: 'name description' })
         .populate({ path: 'quizId', select: 'title description category language' });
@@ -1750,7 +1781,6 @@ const createQuizGameSession = catchAsync(async (req, res) => {
     await firebaseDB.ref(`quizGameSessions/${populatedSession._id}`).set(firebasePayload);
     /** add firebase realtime code end */
 
-
     return res.status(httpStatus.CREATED).json({
         success: true,
         message: 'Quiz game session created successfully',
@@ -1805,7 +1835,7 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
 });
 
 /**
- * Lists quiz game sessions with optional filters.
+ * Lists quiz game sessions with optional filters and pagination.
  * GET /quiz/game-sessions
  * 
  * Query parameters:
@@ -1813,11 +1843,16 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
  * - franchiseId: filter by franchise
  * - hostId: filter by host
  * - status: filter by status (Lobby, InProgress, Completed)
+ * - startTime: filter sessions starting from this time
+ * - endTime: filter sessions ending before this time
+ * - time: filter sessions active at this specific time
+ * - limit: number of records per page (default: 20, max: 100)
+ * - skip: number of records to skip (default: 0)
  * 
- * Returns: array of sessions with populated references
+ * Returns: array of sessions with populated references and pagination info
  */
 const getQuizGameSessions = catchAsync(async (req, res) => {
-    const { quizId, franchiseId, hostId, status } = req.query;
+    const { quizId, franchiseId, hostId, status, limit = 20, skip = 0 } = req.query;
 
     const filter = {};
     if (quizId) filter.quizId = quizId;
@@ -1846,6 +1881,13 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
         }
     }
 
+    // Parse limit and skip as integers
+    const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
+    const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+    // Get total count for pagination info
+    const totalCount = await QuizGameSession.countDocuments(filter);
+
     const sessions = await QuizGameSession.find(filter)
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
         .populate({
@@ -1853,14 +1895,22 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
             select: 'title description category questions'
         })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' })
-        .sort({ createdAt: -1 });
-
+        .sort({ createdAt: -1 })
+        .limit(pageLimit)
+        .skip(pageSkip);
 
     return res.status(httpStatus.OK).json({
         success: true,
         message: getMessage("QUIZ_GAME_SESSIONS_FETCH_SUCCESS", res.locals.language),
         data: sessions,
-        count: sessions.length
+        count: sessions.length,
+        totalCount: totalCount,
+        pagination: {
+            limit: pageLimit,
+            skip: pageSkip,
+            page: Math.floor(pageSkip / pageLimit) + 1,
+            totalPages: Math.ceil(totalCount / pageLimit)
+        }
     });
 });
 
@@ -1870,9 +1920,13 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
  * 
  * Can update:
  * - hostId (before session starts)
- * - status (Lobby → InProgress → Completed)
+ * - status ( Scheduled → Lobby → InProgress → Completed)
  * - startTime, endTime (before session starts)
  * - settings (host controls and options)
+ * 
+ * Special behavior:
+ * - If status is updated to 'Lobby' and startTime is within 15 minutes from now,
+ *   creates Firebase RTDB entry with questions (same as createQuizGameSession)
  * 
  * Returns: updated session with populated references
  */
@@ -1918,9 +1972,12 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
         updateFields.hostId = hostId;
     }
 
+    // Check if status is being updated to Lobby for the FIRST TIME (from Scheduled to Lobby)
+    const isFirstTimeUpdatingToLobby = status !== undefined && status === 'Lobby' && session.status === 'Scheduled';
+
     // Validate and update status
     if (status !== undefined) {
-        const validStatuses = ['Lobby', 'InProgress', 'Completed'];
+        const validStatuses = ['Lobby', 'InProgress', 'Completed', 'Scheduled'];
         if (!validStatuses.includes(status)) {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
@@ -1938,12 +1995,28 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
             });
         }
 
+        // If updating status FROM 'Scheduled', check if startTime is within 15 minutes
+        if (session.status === 'Scheduled' && status !== 'Scheduled') {
+            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+            const sessionStartTime = Math.floor(session.startTime / 1000); // Session start time in seconds
+            const fifteenMinutesInSeconds = 15 * 60; // 15 minutes in seconds
+
+            // Check if startTime is within 15 minutes from now
+            if (sessionStartTime > currentTime + fifteenMinutesInSeconds) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: `Cannot update status yet. Session is scheduled for ${new Date(session.startTime).toISOString()}. Status can only be updated when within 15 minutes of start time.`,
+                    data: null
+                });
+            }
+        }
+
         updateFields.status = status;
     }
 
     // Validate and update startTime/endTime (only before session starts)
     if (startTime !== undefined || endTime !== undefined) {
-        if (session.status !== 'Lobby') {
+        if (session.status !== 'Lobby' && session.status !== 'Scheduled') {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
                 message: 'Cannot change timing after session has started',
@@ -1952,29 +2025,39 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
         }
 
         const newStartTime = startTime !== undefined ? startTime : session.startTime;
-        const newEndTime = endTime !== undefined ? endTime : session.endTime;
 
-        if (typeof newStartTime !== 'number' || typeof newEndTime !== 'number') {
+        if (typeof newStartTime !== 'number') {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
-                message: 'startTime and endTime must be valid timestamps (numbers in milliseconds)',
+                message: 'startTime must be a valid timestamp (number in milliseconds)',
                 data: null
             });
         }
 
+        // Fetch all quiz questions to calculate total duration
+        const quizQuestions = await QuizQuestion.find({ quizId: session.quizId });
+        
+        // Calculate total duration (sum of all question time limits in seconds)
+        const totalDurationSeconds = quizQuestions.reduce((sum, question) => {
+            return sum + (question.timeLimit || 30); // Default 30 seconds per question
+        }, 0);
+
+        // Calculate new endTime = startTime + total duration
+        const newEndTime = newStartTime + (totalDurationSeconds * 1000);
+
         if (newEndTime <= newStartTime) {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
-                message: 'endTime must be greater than startTime',
+                message: 'endTime must be greater than startTime (calculated from quiz duration)',
                 data: null
             });
         }
 
         if (startTime !== undefined) updateFields.startTime = startTime;
-        if (endTime !== undefined) updateFields.endTime = endTime;
-
-        // Recalculate duration
-        updateFields.duration = Math.floor((newEndTime - newStartTime) / 1000);
+        
+        // Always update endTime and duration based on calculated values
+        updateFields.endTime = newEndTime;
+        updateFields.duration = totalDurationSeconds;
     }
 
     // Update settings
@@ -1988,8 +2071,116 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
     // Perform update
     const updatedSession = await QuizGameSession.findByIdAndUpdate(id, { $set: updateFields }, { new: true })
         .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
-        .populate({ path: 'quizId', select: 'title description category' })
+        .populate({ path: 'quizId', select: 'title description category questions language' })
         .populate({ path: 'franchiseId', select: 'franchiseeName location' });
+
+    // Check if status was updated to Lobby for the FIRST TIME (only from Scheduled status)
+    if (isFirstTimeUpdatingToLobby) {
+        const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        const sessionStartTime = Math.floor((startTime || updatedSession.startTime) / 1000); // Session start time in seconds
+        const fifteenMinutesInSeconds = 15 * 60; // 15 minutes in seconds
+
+        // Check if startTime is within 15 minutes from now
+        if (sessionStartTime <= currentTime + fifteenMinutesInSeconds) {
+            // Fetch quiz questions
+            const getQuetionOfTheQuiz = await QuizQuestion.find({ quizId: updatedSession.quizId._id })
+                .populate({ path: 'categoryId', select: 'name description' })
+                .populate({ path: 'quizId', select: 'title description category language' });
+
+            // Convert questionList to object indexed by question ID
+            let questionList = {};
+            const imagePinAreasByQuestionId = {};
+            getQuetionOfTheQuiz.forEach(question => {
+                const questionId = question._id.toString();
+
+                // Build base question data
+                const questionData = {
+                    id: questionId,
+                    quizId: question.quizId._id.toString(),
+                    categoryId: question.categoryId._id.toString(),
+                    categoryName: question.categoryId.name[question.quizId.language],
+                    type: question.type,
+                    difficaltyLavel: question.difficaltyLavel,
+                    timeLimit: question.timeLimit,
+                    sessionStatus: "created",
+                    maxScore: question.maxScore || 100
+                };
+
+                // Add optional fields only if they exist
+                if (question.backgroundImage) questionData.backgroundImage = question.backgroundImage;
+                if (question.questionText) questionData.questionText = question.questionText;
+                if (question.media) questionData.media = question.media;
+                if (question.explanation) questionData.explanation = question.explanation;
+
+                // Add type-specific fields
+                if (question.type === 'Quiz') {
+                    questionData.options = question.options.map(option => ({
+                        id: option._id.toString(),
+                        text: option.text,
+                        image: option.image || null,
+                        isCorrect: option.isCorrect
+                    }));
+                    if (question.multiSelect !== undefined) questionData.multiSelect = question.multiSelect;
+                }
+
+                if (question.type === 'TrueFalse') {
+                    if (question.trueAnswer !== undefined) questionData.trueAnswer = question.trueAnswer;
+                }
+
+                if (question.type === 'TypeAnswer') {
+                    if (question.acceptedAnswers) questionData.acceptedAnswers = question.acceptedAnswers;
+                }
+
+                if (question.type === 'Puzzle') {
+                    if (question.puzzleOrder) {
+                        questionData.puzzleOrder = question.puzzleOrder;
+                        questionData.puzzleSuffleOrder = getShuffledArray(question.puzzleOrder);
+                    }
+                }
+
+                if (question.type === 'Slider') {
+                    if (question.slider) questionData.slider = question.slider;
+                }
+
+                if (question.type === 'Slide') {
+                    if (question.slideContent) questionData.slideContent = question.slideContent;
+                }
+
+                if (question.type === 'imagePin') {
+                    if (question.imagePinFile) {
+                        questionData.imagePinFile = question.imagePinFile;
+                    }
+
+                    const sanitizedImagePins = normalizeImagePinArrObj(question.imagePinArrObj);
+                    questionData.imagePinArrObj = sanitizedImagePins;
+
+                    if (sanitizedImagePins.length) {
+                        imagePinAreasByQuestionId[questionId] = sanitizedImagePins;
+                    }
+                }
+
+                questionList[questionId] = questionData;
+            });
+
+            /** create firebase realtime code start */
+            // Create quizGameSessions node and set initial data in Firebase
+            // Questions are indexed by questionId for efficient access
+            const firebasePayload = {
+                answers: null,
+                scores: null,
+                metaData: { ...updatedSession.settings },
+                currentQuestionId: null,
+                questionResults: null,
+                leaderboard: null,
+                finalResults: null,
+                players: null,
+                questions: questionList
+            };
+
+            await firebaseDB.ref(`quizGameSessions/${updatedSession._id}`).set(firebasePayload);
+            /** create firebase realtime code end */
+        }
+    }
 
     return res.status(httpStatus.OK).json({
         success: true,
@@ -2107,13 +2298,13 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             isDeleted: false
         });
 
-        if (existingPlayer && existingPlayer.isActive) {
-            return res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: 'Player already joined this session',
-                data: null
-            });
-        }
+        // if (existingPlayer && existingPlayer.isActive) {
+        //     return res.status(httpStatus.BAD_REQUEST).json({
+        //         success: false,
+        //         message: 'Player already joined this session',
+        //         data: null
+        //     });
+        // }
 
         // Fetch quiz to get quizType from visibility
         const quiz = await Quiz.findById(session.quizId);
@@ -2182,16 +2373,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             pseudoName: client.pseudoName,
             playerId: client._id.toString(),
             profileAvatar: client.profileAvatar ? `${s3BaseUrl}${client.profileAvatar}` : null,
-            joinedAt: playerSession.joinedAt,
-            statObj: {
-                goodAnswerCount: 0,
-                badAnswerCount: 0,
-                missedAnswerCount: 0,
-                highestStreak: 0,
-                totalGames: 0,
-                successPercent: 10,
-                currentStreakCount: 0
-            }
+            joinedAt: playerSession.joinedAt
         };
         await firebaseDB.ref(`quizGameSessions/${session._id}/players/${client._id}`).set(playerData);
         /** END FIREBASE PLAYER */
