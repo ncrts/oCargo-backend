@@ -4,6 +4,11 @@ const languageLocalization = {
         'es_co': 'Se requiere un nombre de usuario.',
         'fr_fr': 'Le nom d\'utilisateur est requis.'
     },
+    'FIREBASE_CUSTOM_TOKEN_GENERATED_SUCCESS':{
+        'en_us': 'Firebase custom token generated successfully.',
+        'es_co': 'Token personalizado de Firebase generado con éxito.',
+        'fr_fr': 'Jeton personnalisé Firebase généré avec succès.'
+    },
     'PLAYER_NOT_FOUND':{
         'en_us': 'Player not found.',
         'es_co': 'Jugador no encontrado.',
@@ -394,6 +399,11 @@ const languageLocalization = {
         'en_us': 'Player registered successfully! Please verify your email to continue.',
         'es_co': '¡Jugador registrado exitosamente! Por favor, verifique su correo electrónico para continuar.',
         'fr_fr': 'Joueur inscrit avec succès ! Veuillez vérifier votre e-mail pour continuer.'
+    },
+    "PLAYER_PSEUDO_NAME_NOT_FOUND":{
+        'en_us': 'Pseudo name is required.',
+        'es_co': 'Se requiere un nombre de usuario.',
+        'fr_fr': 'Le nom d\'utilisateur est requis.'
     }
 };
 

@@ -34,7 +34,7 @@ const clientProfileSchema = new mongoose.Schema({
         default: 'client',
         description: 'Specifies if the client is playing in guest mode or as a registered user.'
     },
-    
+
     /**
      * 🧍 First Name
      * Client’s first name as entered during registration or imported via Google/Apple login.
@@ -84,17 +84,23 @@ const clientProfileSchema = new mongoose.Schema({
             description: "Category name (e.g., Movies, Sports, History)."
         }
     }],
-    
+
     /**
      * 🍕 Favorite Food List
      * Array containing the client’s preferred food items.
      * Used for personalization, menu suggestions, and survey insights.
      */
-    favoriteFood: {
-        type: [String],
-        default: [],
-        description: 'List of favorite foods selected by the client.'
-    },
+    favoriteFood: [{
+        foodId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Food',
+            description: 'Reference to the food item.'
+        },
+        foodName: {
+            type: String,
+            description: 'Name of the food item.'
+        }
+    }],
 
     /**
      * 🍴 Favorite OCargo Food Court
@@ -106,7 +112,7 @@ const clientProfileSchema = new mongoose.Schema({
         ref: 'FranchiseeInfo',
         description: 'Name or identifier of the client’s favorite OCargo food court location.'
     },
-    
+
     /**
      * 🍴 Current OCargo Food Court
      * Stores the OCargo branch (franchise) where the client is currently active.

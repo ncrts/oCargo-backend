@@ -31,6 +31,8 @@ router
     .patch(authToken.playerProtect, validate(playerValidation.updatePlayerPicture), playerProfilePictureUpload.single('profileAvatar'), playerController.updatePlayerProfilePicture)
     .post(authToken.playerProtect, validate(playerValidation.deletePlayerPicture), playerController.deletePlayerProfilePicture);
 
+router.post('/firebase/custom-token', authToken.playerProtect, playerController.createFirebaseCustomToken);
+router.post('/firebase/signout', authToken.playerProtect, playerController.singoutFirebaseCustomToken);
 
 
 module.exports = router;

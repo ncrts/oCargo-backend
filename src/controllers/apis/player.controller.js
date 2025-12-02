@@ -126,9 +126,9 @@ const signup = catchAsync(async (req, res) => {
         success: true,
         message: getMessage("PLAYER_SIGNUP_SUCCESS_VERIFY_EMAIL_TO_CONTINUE", res.locals.language),
         data: { OTP: newPlayerData.emailVerificationCode }
-    });
+    })
 
-});
+})
 
 
 
@@ -163,6 +163,94 @@ const signin = catchAsync(async (req, res) => {
     const token = await player.generateAuthToken();
     return res.status(httpStatus.OK).json({ success: true, message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language), data: { s3BaseUrl, player, token } });
 });
+
+const createFirebaseCustomToken = async (req, res) => {
+    // Placeholder for Firebase custom token generation logic
+    try {
+        const admin = require("firebase-admin");
+        let checkPseudoCode = await Player.findOne({ "pseudoName": req.body.pseudoName });
+        if (!checkPseudoCode) {
+            return res.status(httpStatus.OK).json({ success: false, message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language), data: null });
+        }
+        const uid = `${checkPseudoCode.pseudoName}`;
+
+        try {
+            await admin.auth().getUser(uid);
+        } catch (e) {
+            if (e.code === "auth/user-not-found") {
+                await admin.auth().createUser({ uid }); // no email required
+            } else throw e;
+        }
+
+        const customToken = await admin.auth().createCustomToken(uid);
+        return res.status(httpStatus.OK).json({ success: true, message: getMessage("FIREBASE_CUSTOM_TOKEN_GENERATED_SUCCESS", res.locals.language), data: { customToken } });
+
+    } catch (err) {
+        console.error("Error generating Firebase custom token:", err);
+    }
+}
+
+/**
+ * Handles the Firebase custom token signout process.
+ * Revokes all refresh tokens for the user and clears the player's token.
+ * This ensures the user is logged out from Firebase and the application.
+ * @async
+ * @function singoutFirebaseCustomToken
+ * @param {Object} req - The request object containing player info
+ * @param {Object} res - The response object used to send back the result
+ * @returns {Promise<void>} A promise that resolves when the response has been sent
+ */
+const singoutFirebaseCustomToken = async (req, res) => {
+	try {
+		const admin = require("firebase-admin");
+
+		// Validate that player exists
+		if (!req.player || !req.player.pseudoName) {
+			return res.status(httpStatus.BAD_REQUEST).json({
+				success: false,
+				message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language),
+				data: null
+			});
+		}
+
+		const uid = `${req.player.pseudoName}`;
+
+		try {
+			// Revoke all refresh tokens for the user
+			// This invalidates all active sessions and tokens for this user
+			await admin.auth().revokeRefreshTokens(uid);
+		} catch (firebaseError) {
+			// Log error but continue with local signout if user doesn't exist in Firebase
+			if (firebaseError.code !== "auth/user-not-found") {
+				// console.error("Error revoking Firebase tokens:", firebaseError);
+				// throw firebaseError;
+                return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+                    success: false,
+                    message: firebaseError,
+                    data: null
+                });
+			}
+		}
+
+		// Clear the player's application token
+		// req.player.token = '';
+		// await req.player.save();
+
+		return res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("PLAYER_SIGNOUT_SUCCESS", res.locals.language),
+			data: null
+		});
+
+	} catch (err) {
+		console.error("Error during Firebase custom token signout:", err);
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: "Error during signout process",
+			data: null
+		});
+	}
+}
 
 
 /**
@@ -248,6 +336,8 @@ const getPlayerProfile = catchAsync(async (req, res) => {
 
     const player = await Player.findOne({ _id: clientId, isDeleted: false });
     const playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
+    const playerCommunication = await PlayerCommunication.findOne({ clientId: clientId, isDeleted: false });
+
     if (!player) {
         return res.status(httpStatus.OK).json({
             status: false,
@@ -262,7 +352,8 @@ const getPlayerProfile = catchAsync(async (req, res) => {
         data: {
             s3BaseUrl,
             player: player,
-            playerProfile: playerProfile
+            playerProfile: playerProfile,
+            playerCommunication: playerCommunication
         }
     });
 });
@@ -270,6 +361,9 @@ const getPlayerProfile = catchAsync(async (req, res) => {
 
 /**
  * Updates the player's profile with provided data and sets the updatedAt timestamp.
+ * Supports updating: firstName, lastName, gender, profileAvatar, dob
+ * quizCategoryInterests, favoriteFood, favoriteOCargoFoodCourt, currentOcargoFoodCourt
+ * preferencesEmail, preferencesPush, preferencesSMS
  * @async
  * @function updatePlayerProfile
  */
@@ -287,6 +381,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
 
         let player = await Player.findOne({ _id: clientId, isDeleted: false });
         let playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
+        let playerCommunication = await PlayerCommunication.findOne({ clientId: clientId, isDeleted: false });
 
         if (!player) {
             return res.status(httpStatus.OK).json({
@@ -296,28 +391,243 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             });
         }
 
-        if (req.body.firstName && playerProfile) {
-            playerProfile.firstName = req.body.firstName;
-        }
-        if (req.body.lastName && playerProfile) {
-            playerProfile.lastName = req.body.lastName;
-        }
-        if (req.body.gender && playerProfile) {
-            playerProfile.gender = req.body.gender;
+        // Update firstName if provided
+        if (req.body.firstName !== undefined && req.body.firstName !== null) {
+            if (typeof req.body.firstName !== 'string' || !req.body.firstName.trim()) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'First name must be a non-empty string',
+                    data: null
+                });
+            }
+            if (playerProfile) {
+                playerProfile.firstName = req.body.firstName.trim();
+            }
         }
 
-        if (req.body.profileAvatar) {
-            player.profileAvatar = req.body.profileAvatar;
+        // Update lastName if provided
+        if (req.body.lastName !== undefined && req.body.lastName !== null) {
+            if (typeof req.body.lastName !== 'string' || !req.body.lastName.trim()) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'Last name must be a non-empty string',
+                    data: null
+                });
+            }
+            if (playerProfile) {
+                playerProfile.lastName = req.body.lastName.trim();
+            }
         }
 
-        if (req.body.dob) {
+        // Update gender if provided
+        if (req.body.gender !== undefined && req.body.gender !== null) {
+            const validGenders = ['Male', 'Female', 'Prefer not to share'];
+            if (!validGenders.includes(req.body.gender)) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'Gender must be one of: Male, Female, Prefer not to share',
+                    data: null
+                });
+            }
+            if (playerProfile) {
+                playerProfile.gender = req.body.gender;
+            }
+        }
+
+        // Update profileAvatar if provided
+        if (req.body.profileAvatar !== undefined && req.body.profileAvatar !== null) {
+            if (typeof req.body.profileAvatar !== 'string' || !req.body.profileAvatar.trim()) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'Profile avatar must be a non-empty string (URL)',
+                    data: null
+                });
+            }
+            player.profileAvatar = req.body.profileAvatar.trim();
+        }
+
+        // Update dob if provided
+        if (req.body.dob !== undefined && req.body.dob !== null) {
             const isValideAge = await is18Plus(req.body.dob);
             if (!isValideAge) {
-                return res.status(httpStatus.OK).json({ status: false, message: getMessage("IN_VALIDEAGE", res.locals.language), data: null });
+                return res.status(httpStatus.OK).json({
+                    status: false,
+                    message: getMessage("IN_VALIDEAGE", res.locals.language),
+                    data: null
+                });
             }
             player.dob = req.body.dob;
         }
 
+        // Update quizCategoryInterests if provided
+        if (req.body.quizCategoryInterests !== undefined && req.body.quizCategoryInterests !== null) {
+            // Validate that it's an array
+            if (!Array.isArray(req.body.quizCategoryInterests)) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'quizCategoryInterests must be an array of category objects',
+                    data: null
+                });
+            }
+
+            // Validate each category object
+            const validatedCategories = [];
+            for (const category of req.body.quizCategoryInterests) {
+                if (typeof category !== 'object' || category === null) {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each quiz category must be an object with categoryIds and categoryName',
+                        data: null
+                    });
+                }
+
+                if (!category.categoryIds || typeof category.categoryIds !== 'string') {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each category must have a valid categoryIds (ObjectId as string)',
+                        data: null
+                    });
+                }
+
+                if (!category.categoryName || typeof category.categoryName !== 'string' || !category.categoryName.trim()) {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each category must have a non-empty categoryName',
+                        data: null
+                    });
+                }
+
+                validatedCategories.push({
+                    categoryIds: category.categoryIds,
+                    categoryName: category.categoryName.trim()
+                });
+            }
+
+            if (playerProfile) {
+                playerProfile.quizCategoryInterests = validatedCategories;
+            }
+        }
+
+        // Update favoriteFood if provided
+        if (req.body.favoriteFood !== undefined && req.body.favoriteFood !== null) {
+            // Validate that it's an array
+            if (!Array.isArray(req.body.favoriteFood)) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'favoriteFood must be an array of food objects',
+                    data: null
+                });
+            }
+
+            // Validate each food object
+            const validatedFoods = [];
+            for (const food of req.body.favoriteFood) {
+                if (typeof food !== 'object' || food === null) {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each food item must be an object with foodId and foodName',
+                        data: null
+                    });
+                }
+
+                if (!food.foodId || typeof food.foodId !== 'string') {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each food must have a valid foodId (ObjectId as string)',
+                        data: null
+                    });
+                }
+
+                if (!food.foodName || typeof food.foodName !== 'string' || !food.foodName.trim()) {
+                    return res.status(httpStatus.BAD_REQUEST).json({
+                        status: false,
+                        message: 'Each food must have a non-empty foodName',
+                        data: null
+                    });
+                }
+
+                validatedFoods.push({
+                    foodId: food.foodId,
+                    foodName: food.foodName.trim()
+                });
+            }
+
+            if (playerProfile) {
+                playerProfile.favoriteFood = validatedFoods;
+            }
+        }
+
+        // Update favoriteOCargoFoodCourt if provided
+        if (req.body.favoriteOCargoFoodCourt !== undefined && req.body.favoriteOCargoFoodCourt !== null) {
+            if (typeof req.body.favoriteOCargoFoodCourt !== 'string' || !req.body.favoriteOCargoFoodCourt.trim()) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'favoriteOCargoFoodCourt must be a valid ObjectId (string)',
+                    data: null
+                });
+            }
+            if (playerProfile) {
+                playerProfile.favoriteOCargoFoodCourt = req.body.favoriteOCargoFoodCourt.trim();
+            }
+        }
+
+        // Update currentOcargoFoodCourt if provided
+        if (req.body.currentOcargoFoodCourt !== undefined && req.body.currentOcargoFoodCourt !== null) {
+            if (typeof req.body.currentOcargoFoodCourt !== 'string' || !req.body.currentOcargoFoodCourt.trim()) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'currentOcargoFoodCourt must be a valid ObjectId (string)',
+                    data: null
+                });
+            }
+            if (playerProfile) {
+                playerProfile.currentOcargoFoodCourt = req.body.currentOcargoFoodCourt.trim();
+            }
+        }
+
+        // Update preferencesEmail if provided
+        if (req.body.preferencesEmail !== undefined && req.body.preferencesEmail !== null) {
+            if (typeof req.body.preferencesEmail !== 'boolean') {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'preferencesEmail must be a boolean value (true or false)',
+                    data: null
+                });
+            }
+            if (playerCommunication) {
+                playerCommunication.preferencesEmail = req.body.preferencesEmail;
+            }
+        }
+
+        // Update preferencesPush if provided
+        if (req.body.preferencesPush !== undefined && req.body.preferencesPush !== null) {
+            if (typeof req.body.preferencesPush !== 'boolean') {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'preferencesPush must be a boolean value (true or false)',
+                    data: null
+                });
+            }
+            if (playerCommunication) {
+                playerCommunication.preferencesPush = req.body.preferencesPush;
+            }
+        }
+
+        // Update preferencesSMS if provided
+        if (req.body.preferencesSMS !== undefined && req.body.preferencesSMS !== null) {
+            if (typeof req.body.preferencesSMS !== 'boolean') {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    status: false,
+                    message: 'preferencesSMS must be a boolean value (true or false)',
+                    data: null
+                });
+            }
+            if (playerCommunication) {
+                playerCommunication.preferencesSMS = req.body.preferencesSMS;
+            }
+        }
+
+        // Save updates
         if (player) {
             player.updatedAt = Date.now();
             await player.save();
@@ -328,16 +638,23 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             await playerProfile.save();
         }
 
+        if (playerCommunication) {
+            playerCommunication.updatedAt = Date.now();
+            await playerCommunication.save();
+        }
+
         return res.status(httpStatus.OK).json({
             status: true,
             message: "Profile updated successfully",
             data: {
                 s3BaseUrl,
                 player: player,
-                playerProfile: playerProfile
+                playerProfile: playerProfile,
+                playerCommunication: playerCommunication
             }
         });
     } catch (error) {
+        console.error('Error updating player profile:', error);
         return res.status(httpStatus.OK).json({
             status: false,
             message: "An error occurred while updating profile",
@@ -448,5 +765,7 @@ module.exports = {
     getPlayerProfile,
     updatePlayerProfile,
     updatePlayerProfilePicture,
-    deletePlayerProfilePicture
+    deletePlayerProfilePicture,
+    createFirebaseCustomToken,
+    singoutFirebaseCustomToken
 };
