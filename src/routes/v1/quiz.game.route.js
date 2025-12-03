@@ -16,57 +16,57 @@ const router = express.Router();
 
 
 // router.post('/quiz-category/create', quizGameController.createCategory);
-router.post('/quiz-category/create-multiple', quizGameController.createMultipleCategories);
+router.post('/quiz-category/create-multiple', languageDetectionMiddleware, quizGameController.createMultipleCategories);
 router.get('/quiz-category', languageDetectionMiddleware, quizGameController.getCategory);
 
 // Instant Quiz Creation
-router.post('/quiz/instant', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizInstant);
+router.post('/quiz/instant', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizInstant);
 
 // Instant Quiz Update
-router.patch('/quiz/instant/:id', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.updateQuizInstant);
+router.patch('/quiz/instant/:id', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.updateQuizInstant);
 
 // Instant Quiz List
-router.get('/quiz/instant/list', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizInstantList);
+router.get('/quiz/instant/list', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizInstantList);
 
 // Quiz Question Creation
-router.post('/quiz/question', authToken.franchiseeProtect, quizGameController.createQuizQuestion);
+router.post('/quiz/question', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizQuestion);
 
 // Quiz Question Update
-router.patch('/quiz/question/:id', authToken.franchiseeProtect, quizGameController.updateQuizQuestion);
+router.patch('/quiz/question/:id', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.updateQuizQuestion);
 
 // Quiz Question Delete
-router.delete('/quiz/question/:id', authToken.franchiseeProtect, quizGameController.deleteQuizQuestion);
+router.delete('/quiz/question/:id', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.deleteQuizQuestion);
 
 // Get Quiz Questions by Quiz ID
-router.get('/quiz/questions', authToken.franchiseeProtect, quizGameController.getQuizQuestionsByQuizId);
+router.get('/quiz/questions', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizQuestionsByQuizId);
 
 
 // Quiz Game Session Routes
-router.post('/quiz/game-session', authToken.franchiseeProtect, quizGameController.createQuizGameSession);
+router.post('/quiz/game-session', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizGameSession);
 
-router.get('/quiz/game-session/:id', authToken.franchiseeProtect, quizGameController.getQuizGameSessionById);
+router.get('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.getQuizGameSessionById);
 
-router.get('/quiz/game-sessions', authToken.franchiseeProtect, quizGameController.getQuizGameSessions);
+router.get('/quiz/game-sessions', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.getQuizGameSessions);
 
-router.patch('/quiz/game-session/:id', authToken.franchiseeProtect, quizGameController.updateQuizGameSession);
+router.patch('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.updateQuizGameSession);
 
-router.delete('/quiz/game-session/:id', authToken.franchiseeProtect, quizGameController.deleteQuizGameSession);
+router.delete('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.deleteQuizGameSession);
 
 
 // Quiz Game Session Player Routes
-router.post('/quiz/game-session/join', authToken.playerProtect, quizGameController.joinQuizGameSession);
+router.post('/quiz/game-session/join', languageDetectionMiddleware, authToken.playerProtect, quizGameController.joinQuizGameSession);
 
-router.post('/quiz/game-session/answer', authToken.playerProtect, quizGameController.submitQuizAnswer);
+router.post('/quiz/game-session/answer', languageDetectionMiddleware, authToken.playerProtect, quizGameController.submitQuizAnswer);
 
-router.post('/quiz/game-session/leave', authToken.playerProtect, quizGameController.leaveQuizGameSession);
-router.get('/quiz/game-session/:sessionId/player/:clientId', authToken.playerProtect, quizGameController.getPlayerSessionData);
+router.post('/quiz/game-session/leave', languageDetectionMiddleware, authToken.playerProtect, quizGameController.leaveQuizGameSession);
+router.get('/quiz/game-session/:sessionId/player/:clientId', languageDetectionMiddleware, authToken.playerProtect, quizGameController.getPlayerSessionData);
 
-router.get('/quiz/game-session/:sessionId/players', authToken.playerProtect, quizGameController.getSessionLeaderboard);
+router.get('/quiz/game-session/:sessionId/players', languageDetectionMiddleware, authToken.playerProtect, quizGameController.getSessionLeaderboard);
 
 // Points Calculation Route
-router.post('/quiz/calculate-points', quizGameController.calculateQuestionPoints);
+router.post('/quiz/calculate-points', languageDetectionMiddleware, quizGameController.calculateQuestionPoints);
 
-router.post('/quiz/player-response-answer', authToken.commonProtect, quizGameController.playerResponseAnswer);
-router.post('/quiz/complete-questions-data', authToken.commonProtect, quizGameController.completeQuizGameSessionQuestionsData);
+router.post('/quiz/player-response-answer', languageDetectionMiddleware, authToken.commonProtect, quizGameController.playerResponseAnswer);
+router.post('/quiz/complete-questions-data', languageDetectionMiddleware, authToken.commonProtect, quizGameController.completeQuizGameSessionQuestionsData);
 
 module.exports = router;
