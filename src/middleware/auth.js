@@ -227,3 +227,42 @@ exports.commonProtect = asyncHandler(async (req, res, next) => {
 
     return next(new ErrorResponse('Not authorize to access this route', 401));
 });
+
+/**
+ * Common protection middleware for Franchisee and Franchisor users only.
+ * Checks for JWT_FOR_FRANCHISEE_USER or JWT_FOR_FRANCHISOR_USER tokens.
+ * Excludes Player/Client tokens.
+ * Sets req.franchiseeUser or req.franchisorUser accordingly.
+ */
+exports.commonProtectForFranchiseeAndFranchisor = asyncHandler(async (req, res, next) => {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    if (!token) {
+        return next(new ErrorResponse('Not authorize to access this route', 401));
+    }
+
+    // Try Franchisee first
+    try {
+        let decoded = jwt.verify(token, process.env.JWT_FOR_FRANCHISEE_USER);
+        const franchiseeUser = await FranchiseeUser.findOne({ _id: decoded._id, token, isDeleted: false });
+        if (franchiseeUser) {
+            req.franchiseeUser = franchiseeUser;
+            return next();
+        }
+    } catch (e) {}
+
+    // Try Franchisor
+    try {
+        let decoded = jwt.verify(token, process.env.JWT_FOR_FRANCHISOR_USER);
+        const franchisorUser = await FranchisorUser.findOne({ _id: decoded._id, token, isDeleted: false });
+        if (franchisorUser) {
+            req.franchisorUser = franchisorUser;
+            return next();
+        }
+    } catch (e) {}
+
+    return next(new ErrorResponse('Not authorize to access this route', 401));
+});
+

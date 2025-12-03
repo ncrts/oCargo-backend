@@ -19,7 +19,8 @@ const allRoles = {
     'getFranchiseeInfoList',
     'updateFranchiseeUser',
     'getFranchiseeUser',
-    'getFranchiseeUsersList'
+    'getFranchiseeUsersList',
+    'deleteFranchiseeUser'
   ],
   admin: [
     'createFranchisorInfo',
@@ -35,7 +36,9 @@ const allRoles = {
     'getFranchiseeInfoList',
     'updateFranchiseeUser',
     'getFranchiseeUser',
-    'getFranchiseeUsersList'
+    'getFranchiseeUsersList',
+    'deleteFranchiseeUser',
+    'deleteFranchisorUser'
   ],
 };
 

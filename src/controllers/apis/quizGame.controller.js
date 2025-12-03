@@ -70,11 +70,12 @@ const createMultipleCategories = catchAsync(async (req, res) => {
  * Examples:
  * ✔ /category        → all categories
  * ✔ /category?id=123 → single category
- * ✔ /category?lang=fr_fr
- * ✔ /category?id=123&lang=fr_fr
+ * Language is detected from request headers (via languageDetectionMiddleware)
+ * ✔ /category with header: Accept-Language: fr_fr
+ * ✔ /category?id=123 with header: Accept-Language: en_us
  */
 const getCategory = catchAsync(async (req, res) => {
-    const lang = req.query.lang || "fr_fr";
+    const lang = res.locals.language || "en_us"; // Get language from headers via middleware
     const id = req.query.id;
 
     // If ID is provided → fetch single category
@@ -108,10 +109,27 @@ const getCategory = catchAsync(async (req, res) => {
 
 
 /**
- * Instantly creates a new quiz with minimal required fields.
+ * Instantly creates a new quiz with comprehensive validation.
  * POST /quiz/instant
- * Input: title, description, author.id, author.authorRole, category, visibility, status (optional)
- * Returns: created quiz document
+ * Input: franchiseeInfoId (required), title (required), description (required), 
+ *        author.id (required), author.authorRole (required), category (required), 
+ *        visibility (required), language (optional, default: en_us)
+ * Returns: created quiz document with validated fields and populated references
+ * 
+ * Validation:
+ * - franchiseeInfoId: Required and must exist in database
+ * - title: Required non-empty string
+ * - description: Required non-empty string
+ * - author: Required object with id and authorRole properties
+ * - author.id: Required, must be valid ObjectId
+ * - author.authorRole: Required, must be "FranchisorUser" or "FranchiseeUser"
+ * - category: Required and must exist in database
+ * - visibility: Required, must be "Local" or "National"
+ * - language: Optional, must be "en_us" or "fr_fr" if provided (default: en_us)
+ * 
+ * Response:
+ * - 201 Created: Successfully created quiz with populated author and category
+ * - 400 Bad Request: Validation failed with descriptive error message
  */
 const createQuizInstant = catchAsync(async (req, res) => {
     const {
@@ -124,67 +142,385 @@ const createQuizInstant = catchAsync(async (req, res) => {
         language
     } = req.body;
 
-    // Build quiz data object
+    // ===== VALIDATION: franchiseeInfoId =====
+    if (!franchiseeInfoId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("FRANCHISEE_INFO_ID_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // Check if franchiseeInfoId exists in database
+    const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
+    if (!franchiseeExists) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: title =====
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: description =====
+    if (!description || typeof description !== 'string' || description.trim().length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_DESCRIPTION_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: author object =====
+    if (!author || typeof author !== 'object') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_AUTHOR_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: author.id =====
+    if (!author.id) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_AUTHOR_ID_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: author.authorRole =====
+    if (!author.authorRole) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_AUTHOR_ROLE_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    const validRoles = ['FranchisorUser', 'FranchiseeUser'];
+    if (!validRoles.includes(author.authorRole)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_AUTHOR_ROLE_INVALID", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: category =====
+    if (!category) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_CATEGORY_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // Check if category exists in database
+    const categoryExists = await QuizCategory.findById(category);
+    if (!categoryExists) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_CATEGORY_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: visibility =====
+    if (!visibility) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_VISIBILITY_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    const validVisibility = ['Local', 'National'];
+    if (!validVisibility.includes(visibility)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_VISIBILITY_INVALID", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: language (optional) =====
+    if (language) {
+        const validLanguages = ['en_us', 'fr_fr'];
+        if (!validLanguages.includes(language)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_LANGUAGE_INVALID", res.locals.language),
+                data: null
+            });
+        }
+    }
+
+    // ===== BUILD VALIDATED QUIZ DATA =====
     const quizData = {
-        title,
-        description,
+        franchiseeInfoId,
+        title: title.trim(),
+        description: description.trim(),
         author: {
-            id: author?.id,
-            authorRole: author?.authorRole
+            id: author.id,
+            authorRole: author.authorRole
         },
         category,
         visibility,
         language: language || 'en_us'
     };
-    if (franchiseeInfoId) {
-        quizData.franchiseeInfoId = franchiseeInfoId;
-    }
+
+    // Create and save quiz
     const quiz = new Quiz(quizData);
     await quiz.save();
+
+    // Populate author and category for response
+    const populatedQuiz = await Quiz.findById(quiz._id)
+        .populate({ path: 'author.id', select: 'firstName lastName email role' })
+        .populate({ path: 'category', select: 'name description' });
+
     return res.status(httpStatus.CREATED).json({
         success: true,
-        message: getMessage ? getMessage("QUIZ_CREATED_SUCCESS", res.locals.language) : "Quiz created successfully",
-        data: quiz
+        message: getMessage("QUIZ_CREATED_SUCCESS", res.locals.language),
+        data: populatedQuiz
     });
 });
 
 /**
- * Updates an existing quiz by ID with provided fields.
+ * Updates an existing quiz by ID with comprehensive validation.
  * PATCH /quiz/instant/:id
- * Input: any updatable quiz fields (title, description, author, category, visibility, status, etc.)
- * Returns: updated quiz document
+ * Input: quizId (required in URL), any updatable quiz fields
+ * Updatable fields: title, description, author, category, visibility, language, status
+ * Returns: updated quiz document with populated references
+ * 
+ * Validation:
+ * - Quiz ID: Required and must exist in database
+ * - At least one field must be provided for update
+ * - title: Must be non-empty string if provided
+ * - description: Must be non-empty string if provided
+ * - author: Must contain id and authorRole if provided
+ * - author.authorRole: Must be "FranchisorUser" or "FranchiseeUser" if provided
+ * - category: Must exist in database if provided
+ * - visibility: Must be "Local" or "National" if provided
+ * - language: Must be "en_us" or "fr_fr" if provided
+ * - status: Must be valid status enum value if provided
+ * 
+ * Response:
+ * - 200 OK: Successfully updated quiz with populated references
+ * - 400 Bad Request: Validation failed with descriptive error message
+ * - 404 Not Found: Quiz ID not found
  */
 const updateQuizInstant = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const updateFields = req.body;
-    const quiz = await Quiz.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
-    if (!quiz) {
-        return res.status(httpStatus.OK).json({
+    const {
+        title,
+        description,
+        author,
+        category,
+        visibility,
+        language,
+        status
+    } = req.body;
+
+    // ===== VALIDATION: Quiz ID =====
+    if (!id) {
+        return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage ? getMessage("QUIZ_NOT_FOUND", res.locals.language) : "Quiz not found",
+            message: getMessage("QUIZ_ID_REQUIRED", res.locals.language),
             data: null
         });
     }
+
+    // Check if quiz exists
+    const existingQuiz = await Quiz.findById(id);
+    if (!existingQuiz) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("QUIZ_NOT_FOUND_FOR_UPDATE", res.locals.language),
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: At least one field provided =====
+    if (!title && !description && !author && !category && !visibility && !language && !status) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_NO_FIELDS_PROVIDED", res.locals.language),
+            data: null
+        });
+    }
+
+    // Build update fields with validation
+    const updateFields = {};
+
+    // ===== VALIDATION: title =====
+    if (title !== undefined) {
+        if (typeof title !== 'string' || title.trim().length === 0) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.title = title.trim();
+    }
+
+    // ===== VALIDATION: description =====
+    if (description !== undefined) {
+        if (typeof description !== 'string' || description.trim().length === 0) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_DESCRIPTION_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.description = description.trim();
+    }
+
+    // ===== VALIDATION: author =====
+    if (author !== undefined) {
+        if (!author || typeof author !== 'object') {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_AUTHOR_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+
+        // Validate author.id and author.authorRole
+        if (!author.id || !author.authorRole) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_AUTHOR_NOT_VALID", res.locals.language),
+                data: null
+            });
+        }
+
+        const validRoles = ['FranchisorUser', 'FranchiseeUser'];
+        if (!validRoles.includes(author.authorRole)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_AUTHOR_ROLE_INVALID", res.locals.language),
+                data: null
+            });
+        }
+
+        updateFields.author = {
+            id: author.id,
+            authorRole: author.authorRole
+        };
+    }
+
+    // ===== VALIDATION: category =====
+    if (category !== undefined) {
+        if (!category) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_CATEGORY_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+
+        // Check if category exists in database
+        const categoryExists = await QuizCategory.findById(category);
+        if (!categoryExists) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_CATEGORY_ID_INVALID", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.category = category;
+    }
+
+    // ===== VALIDATION: visibility =====
+    if (visibility !== undefined) {
+        const validVisibility = ['Local', 'National'];
+        if (!validVisibility.includes(visibility)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_VISIBILITY_INVALID", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.visibility = visibility;
+    }
+
+    // ===== VALIDATION: language =====
+    if (language !== undefined) {
+        const validLanguages = ['en_us', 'fr_fr'];
+        if (!validLanguages.includes(language)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_LANGUAGE_INVALID", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.language = language;
+    }
+
+    // ===== VALIDATION: status =====
+    if (status !== undefined) {
+        const validStatus = ['DraftLocal', 'ActiveLocal', 'DraftNational', 'ActiveNational', 'InModeration', 'ModeratedAccepted', 'ModeratedRejected', 'HiddenLocal', 'HiddenNational'];
+        if (!validStatus.includes(status)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_STATUS_INVALID", res.locals.language),
+                data: null
+            });
+        }
+        updateFields.status = status;
+    }
+
+    // ===== PERFORM UPDATE =====
+    const updatedQuiz = await Quiz.findByIdAndUpdate(id, { $set: updateFields }, { new: true })
+        .populate({ path: 'author.id', select: 'firstName lastName email role' })
+        .populate({ path: 'category', select: 'name description' });
+
     return res.status(httpStatus.OK).json({
         success: true,
-        message: getMessage ? getMessage("QUIZ_UPDATED_SUCCESS", res.locals.language) : "Quiz updated successfully",
-        data: quiz
+        message: getMessage("QUIZ_UPDATED_SUCCESS", res.locals.language),
+        data: updatedQuiz
     });
 });
 
 
 /**
- * Lists quizzes with filters and population.
+ * Lists quizzes with comprehensive filters, validation, and search.
  * GET /quiz/instant/list
- * Filters: id, franchiseeInfoId, franchisorInfoId, title, author.id, category, visibility, status
- * Populates: author.id, category
+ * 
+ * Query Parameters:
+ * - id: Filter by quiz ID (exact match)
+ * - franchiseeInfoId: Filter by franchiseeInfoId (exact match)
+ * - title: Filter by title with regex search (case-insensitive)
+ * - searchKey: Search by title (overrides title parameter if both provided)
+ * - authorId: Filter by author ID (exact match)
+ * - category: Filter by category ID or array of category IDs (comma-separated string or array)
+ * - visibility: Filter by visibility (Local, National, or comma-separated array)
+ * - status: Filter by status (or comma-separated array of statuses)
+ * 
+ * Validation:
+ * - Validates category IDs exist in database
+ * - Validates visibility values (Local, National)
+ * - Validates status values (DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational)
+ * - Validates authorId exists in database
+ * 
+ * Returns: List of quizzes matching filters with populated author and category
  */
 const getQuizInstantList = catchAsync(async (req, res) => {
     const {
         id,
         franchiseeInfoId,
-        franchisorInfoId,
         title,
+        searchKey,
         authorId,
         category,
         visibility,
@@ -192,15 +528,138 @@ const getQuizInstantList = catchAsync(async (req, res) => {
     } = req.query;
 
     const filter = {};
-    if (id) filter._id = id;
-    if (franchiseeInfoId) filter.franchiseeInfoId = franchiseeInfoId;
-    if (franchisorInfoId) filter.franchisorInfoId = franchisorInfoId;
-    if (title) filter.title = { $regex: title, $options: 'i' };
-    if (authorId) filter['author.id'] = authorId;
-    if (category) filter.category = category;
-    if (visibility) filter.visibility = visibility;
-    if (status) filter.status = status;
 
+    // ===== VALIDATION & FILTER: id =====
+    if (id) {
+        filter._id = id;
+    }
+
+    // ===== VALIDATION & FILTER: franchiseeInfoId =====
+    if (franchiseeInfoId) {
+        filter.franchiseeInfoId = franchiseeInfoId;
+    }
+
+    // ===== VALIDATION & FILTER: title and searchKey =====
+    if (searchKey) {
+        // searchKey takes precedence over title
+        if (typeof searchKey !== 'string' || searchKey.trim().length === 0) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+        filter.title = { $regex: searchKey.trim(), $options: 'i' };
+    } else if (title) {
+        // Fallback to title if searchKey not provided
+        if (typeof title !== 'string' || title.trim().length === 0) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+        filter.title = { $regex: title.trim(), $options: 'i' };
+    }
+
+    // ===== VALIDATION & FILTER: authorId =====
+    if (authorId) {
+        filter['author.id'] = authorId;
+    }
+
+    // ===== VALIDATION & FILTER: category (supports single or multiple) =====
+    if (category) {
+        let categoryArray = [];
+        if (typeof category === 'string') {
+            // Parse comma-separated string or single ID
+            categoryArray = category.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        } else if (Array.isArray(category)) {
+            categoryArray = category;
+        }
+
+        if (categoryArray.length > 0) {
+            // Validate that all category IDs exist in database
+            const validCategories = await QuizCategory.find({ _id: { $in: categoryArray } }).select('_id');
+            if (validCategories.length !== categoryArray.length) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: getMessage("QUIZ_LIST_CATEGORY_INVALID", res.locals.language),
+                    data: null
+                });
+            }
+
+            // If only one category, use exact match; if multiple, use $in operator
+            if (categoryArray.length === 1) {
+                filter.category = categoryArray[0];
+            } else {
+                filter.category = { $in: categoryArray };
+            }
+        }
+    }
+
+    // ===== VALIDATION & FILTER: visibility (supports single or multiple) =====
+    if (visibility) {
+        let visibilityArray = [];
+        if (typeof visibility === 'string') {
+            // Parse comma-separated string or single value
+            visibilityArray = visibility.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        } else if (Array.isArray(visibility)) {
+            visibilityArray = visibility;
+        }
+
+        if (visibilityArray.length > 0) {
+            // Validate all visibility values
+            const validVisibilities = ['Local', 'National'];
+            const allValid = visibilityArray.every(v => validVisibilities.includes(v));
+            if (!allValid) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: getMessage("QUIZ_LIST_VISIBILITY_INVALID", res.locals.language),
+                    data: null
+                });
+            }
+
+            // If only one visibility, use exact match; if multiple, use $in operator
+            if (visibilityArray.length === 1) {
+                filter.visibility = visibilityArray[0];
+            } else {
+                filter.visibility = { $in: visibilityArray };
+            }
+        }
+    }
+
+    // ===== VALIDATION & FILTER: status (supports single or multiple) =====
+    if (status) {
+        let statusArray = [];
+        if (typeof status === 'string') {
+            // Parse comma-separated string or single value
+            statusArray = status.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        } else if (Array.isArray(status)) {
+            statusArray = status;
+        }
+
+        if (statusArray.length > 0) {
+            // Validate all status values
+            const validStatus = ['DraftLocal', 'ActiveLocal', 'DraftNational', 'ActiveNational', 'InModeration', 'ModeratedAccepted', 'ModeratedRejected', 'HiddenLocal', 'HiddenNational'];
+            const allValid = statusArray.every(s => validStatus.includes(s));
+            if (!allValid) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: getMessage("QUIZ_LIST_STATUS_INVALID", res.locals.language),
+                    data: null
+                });
+            }
+
+            // If only one status, use exact match; if multiple, use $in operator
+            if (statusArray.length === 1) {
+                filter.status = statusArray[0];
+            } else {
+                filter.status = { $in: statusArray };
+            }
+        }
+    }
+
+    // ===== EXECUTE QUERY =====
     const quizzes = await Quiz.find(filter)
         .populate({ path: 'author.id', select: 'firstName lastName email role' })
         .populate({ path: 'category', select: 'name description' })
@@ -209,8 +668,11 @@ const getQuizInstantList = catchAsync(async (req, res) => {
 
     return res.status(httpStatus.OK).json({
         success: true,
-        message: getMessage ? getMessage("QUIZ_LIST_FETCH_SUCCESS", res.locals.language) : "Quiz list fetched successfully",
-        data: quizzes
+        message: getMessage("QUIZ_LIST_FETCH_SUCCESS", res.locals.language),
+        data: {
+            quizzes,
+            totalCount: quizzes.length
+        }
     });
 });
 

@@ -280,6 +280,11 @@ const languageLocalization = {
         'es_co': '¡Usuario del franquiciador actualizado con éxito!',
         'fr_fr': 'Utilisateur franchiseur mis à jour avec succès !'
     },
+    "FRANCHISOR_USER_DELETED_SUCCESS":{
+        'en_us': 'Franchisor user deleted successfully!',
+        'es_co': '¡Usuario del franquiciador eliminado con éxito!',
+        'fr_fr': 'Utilisateur franchiseur supprimé avec succès !'
+    },
     "FRANCHISEE_INPUT_INVALID_NAME":{
         'en_us': 'Invalid input. Name is required.',
         'es_co': 'Entrada inválida. Se requiere el nombre.',
@@ -380,6 +385,11 @@ const languageLocalization = {
         'es_co': 'Usuario del franquiciado actualizado con éxito.',
         'fr_fr': 'Utilisateur franchisé mis à jour avec succès.'
     },
+    "FRANCHISEE_USER_DELETED_SUCCESS":{
+        'en_us': 'Franchisee user deleted successfully.',
+        'es_co': 'Usuario del franquiciado eliminado con éxito.',
+        'fr_fr': 'Utilisateur franchisé supprimé avec succès.'
+    },
     "FRANCHISEE_USER_LIST_FETCH_SUCCESS":{
         'en_us': 'Franchisee users list fetched successfully.',
         'es_co': 'Lista de usuarios del franquiciado obtenida con éxito.',
@@ -400,10 +410,130 @@ const languageLocalization = {
         'es_co': '¡Jugador registrado exitosamente! Por favor, verifique su correo electrónico para continuar.',
         'fr_fr': 'Joueur inscrit avec succès ! Veuillez vérifier votre e-mail pour continuer.'
     },
+    "FRANCHISEE_INFO_ID_REQUIRED":{
+        'en_us': 'franchiseeInfoId is required.',
+        'es_co': 'franchiseeInfoId es requerido.',
+        'fr_fr': 'franchiseeInfoId est requis.'
+    },
+    "FRANCHISEE_INFO_NOT_FOUND_IN_DB":{
+        'en_us': 'Franchisee not found in database.',
+        'es_co': 'Franquiciado no encontrado en la base de datos.',
+        'fr_fr': 'Franchisé non trouvé dans la base de données.'
+    },
+    "QUIZ_TITLE_REQUIRED":{
+        'en_us': 'Quiz title is required.',
+        'es_co': 'El título del cuestionario es obligatorio.',
+        'fr_fr': 'Le titre du quiz est requis.'
+    },
+    "QUIZ_DESCRIPTION_REQUIRED":{
+        'en_us': 'Quiz description is required.',
+        'es_co': 'La descripción del cuestionario es obligatoria.',
+        'fr_fr': 'La description du quiz est requise.'
+    },
+    "QUIZ_AUTHOR_REQUIRED":{
+        'en_us': 'Author information is required.',
+        'es_co': 'La información del autor es obligatoria.',
+        'fr_fr': 'Les informations de l\'auteur sont requises.'
+    },
+    "QUIZ_AUTHOR_ID_REQUIRED":{
+        'en_us': 'Author ID is required.',
+        'es_co': 'El ID del autor es obligatorio.',
+        'fr_fr': 'L\'ID de l\'auteur est requis.'
+    },
+    "QUIZ_AUTHOR_ROLE_REQUIRED":{
+        'en_us': 'Author role is required.',
+        'es_co': 'El rol del autor es obligatorio.',
+        'fr_fr': 'Le rôle de l\'auteur est requis.'
+    },
+    "QUIZ_AUTHOR_ROLE_INVALID":{
+        'en_us': 'Author role must be either "FranchisorUser" or "FranchiseeUser".',
+        'es_co': 'El rol del autor debe ser "FranchisorUser" o "FranchiseeUser".',
+        'fr_fr': 'Le rôle de l\'auteur doit être "FranchisorUser" ou "FranchiseeUser".'
+    },
+    "QUIZ_CATEGORY_REQUIRED":{
+        'en_us': 'Category is required.',
+        'es_co': 'La categoría es obligatoria.',
+        'fr_fr': 'La catégorie est requise.'
+    },
+    "QUIZ_CATEGORY_NOT_FOUND":{
+        'en_us': 'Category not found in database.',
+        'es_co': 'Categoría no encontrada en la base de datos.',
+        'fr_fr': 'Catégorie non trouvée dans la base de données.'
+    },
+    "QUIZ_VISIBILITY_REQUIRED":{
+        'en_us': 'Visibility is required.',
+        'es_co': 'La visibilidad es obligatoria.',
+        'fr_fr': 'La visibilité est requise.'
+    },
+    "QUIZ_VISIBILITY_INVALID":{
+        'en_us': 'Visibility must be either "Local" or "National".',
+        'es_co': 'La visibilidad debe ser "Local" o "National".',
+        'fr_fr': 'La visibilité doit être "Local" ou "National".'
+    },
+    "QUIZ_LANGUAGE_INVALID":{
+        'en_us': 'Language must be either "en_us" or "fr_fr".',
+        'es_co': 'El idioma debe ser "en_us" o "fr_fr".',
+        'fr_fr': 'La langue doit être "en_us" ou "fr_fr".'
+    },
+    "QUIZ_ID_REQUIRED":{
+        'en_us': 'Quiz ID is required.',
+        'es_co': 'El ID del cuestionario es obligatorio.',
+        'fr_fr': 'L\'ID du quiz est requis.'
+    },
+    "QUIZ_NOT_FOUND_FOR_UPDATE":{
+        'en_us': 'Quiz not found for update.',
+        'es_co': 'Cuestionario no encontrado para actualizar.',
+        'fr_fr': 'Quiz non trouvé pour la mise à jour.'
+    },
+    "QUIZ_NO_FIELDS_PROVIDED":{
+        'en_us': 'At least one field must be provided for update.',
+        'es_co': 'Se debe proporcionar al menos un campo para actualizar.',
+        'fr_fr': 'Au moins un champ doit être fourni pour la mise à jour.'
+    },
+    "QUIZ_AUTHOR_NOT_VALID":{
+        'en_us': 'Author object must contain id and authorRole.',
+        'es_co': 'El objeto de autor debe contener id y authorRole.',
+        'fr_fr': 'L\'objet auteur doit contenir id et authorRole.'
+    },
+    "QUIZ_CATEGORY_ID_INVALID":{
+        'en_us': 'Category ID is invalid or does not exist.',
+        'es_co': 'El ID de categoría es inválido o no existe.',
+        'fr_fr': 'L\'ID de catégorie est invalide ou n\'existe pas.'
+    },
+    "QUIZ_STATUS_INVALID":{
+        'en_us': 'Status must be one of: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.',
+        'es_co': 'El estado debe ser uno de: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.',
+        'fr_fr': 'Le statut doit être l\'un des éléments suivants: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.'
+    },
+    "QUIZ_UPDATED_SUCCESS":{
+        'en_us': 'Quiz updated successfully!',
+        'es_co': '¡Cuestionario actualizado con éxito!',
+        'fr_fr': 'Quiz mis à jour avec succès!'
+    },
     "PLAYER_PSEUDO_NAME_NOT_FOUND":{
         'en_us': 'Pseudo name is required.',
         'es_co': 'Se requiere un nombre de usuario.',
         'fr_fr': 'Le nom d\'utilisateur est requis.'
+    },
+    "QUIZ_LIST_CATEGORY_INVALID":{
+        'en_us': 'Category must be a string or array of valid category IDs.',
+        'es_co': 'La categoría debe ser una cadena o matriz de ID de categorías válidas.',
+        'fr_fr': 'La catégorie doit être une chaîne ou un tableau d\'ID de catégories valides.'
+    },
+    "QUIZ_LIST_VISIBILITY_INVALID":{
+        'en_us': 'Visibility must be Local, National, or array of these values.',
+        'es_co': 'La visibilidad debe ser Local, National o una matriz de estos valores.',
+        'fr_fr': 'La visibilité doit être Local, National ou un tableau de ces valeurs.'
+    },
+    "QUIZ_LIST_STATUS_INVALID":{
+        'en_us': 'Status must be a valid status value or array of valid status values.',
+        'es_co': 'El estado debe ser un valor de estado válido o una matriz de valores de estado válidos.',
+        'fr_fr': 'Le statut doit être une valeur de statut valide ou un tableau de valeurs de statut valides.'
+    },
+    "QUIZ_AUTHOR_ID_INVALID":{
+        'en_us': 'Author ID is invalid or does not exist.',
+        'es_co': 'El ID del autor es inválido o no existe.',
+        'fr_fr': 'L\'ID de l\'auteur est invalide ou n\'existe pas.'
     }
 };
 

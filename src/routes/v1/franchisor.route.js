@@ -31,6 +31,7 @@ router
     .post('/user', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('createFranchisorUser'), franchisorController.createFranchisorUser)
     .patch('/user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('updateFranchisorUser'), franchisorController.updateFranchisorUser)
     .get('/user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchisorUser'), franchisorController.getFranchisorUser)
+    .delete('/user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('deleteFranchisorUser'), franchisorController.deleteFranchisorUser)
     .get('/users', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchisorUsersList'), franchisorController.getFranchisorUsersList);
 
 // Franchisee Info Management
@@ -42,6 +43,7 @@ router.get('/franchisee-info', authToken.franchisorProtect, languageDetectionMid
 router.post('/franchisee-user', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('createFranchiseeUser'), franchisorController.createFranchiseeUser);
 router.patch('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('updateFranchiseeUser'), franchisorController.updateFranchiseeUser);
 router.get('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeUser'), franchisorController.getFranchiseeUser);
+router.delete('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('deleteFranchiseeUser'), franchisorController.deleteFranchiseeUser);
 router.get('/franchisee-users', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeUsersList'), franchisorController.getFranchiseeUsersList);
 
 // Bulk Insert XP Rules

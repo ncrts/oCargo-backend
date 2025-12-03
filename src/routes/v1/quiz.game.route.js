@@ -10,23 +10,23 @@ const accessRoleRights = require('../../middleware/accessRoleRights');
 const { userProfileUpload } = require('../../filesuploder/user.files');
 const commonController = require('../../controllers/apis/common.controller');
 const quizGameController = require('../../controllers/apis/quizGame.controller');
+const languageDetectionMiddleware = require('../../utils/languageConverter').languageDetectionMiddleware;
 
 const router = express.Router();
 
 
 // router.post('/quiz-category/create', quizGameController.createCategory);
 router.post('/quiz-category/create-multiple', quizGameController.createMultipleCategories);
-router.get('/quiz-category', quizGameController.getCategory);
+router.get('/quiz-category', languageDetectionMiddleware, quizGameController.getCategory);
 
 // Instant Quiz Creation
-router.post('/quiz/instant', authToken.franchiseeProtect, quizGameController.createQuizInstant);
+router.post('/quiz/instant', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizInstant);
 
 // Instant Quiz Update
-router.patch('/quiz/instant/:id', authToken.franchiseeProtect, quizGameController.updateQuizInstant);
+router.patch('/quiz/instant/:id', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.updateQuizInstant);
 
 // Instant Quiz List
-router.get('/quiz/instant/list', authToken.franchiseeProtect, quizGameController.getQuizInstantList);
-
+router.get('/quiz/instant/list', authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizInstantList);
 
 // Quiz Question Creation
 router.post('/quiz/question', authToken.franchiseeProtect, quizGameController.createQuizQuestion);

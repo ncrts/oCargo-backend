@@ -268,12 +268,21 @@ const getFranchisorUser = async (req, res) => {
 
 const getFranchisorUsersList = async (req, res) => {
 	try {
-		const { role, isActive, franchisorInfoId, limit = 20, skip = 0 } = req.query;
+		const { role, isActive, franchisorInfoId, searchKey, limit = 20, skip = 0 } = req.query;
 		const filter = { isDeleted: false };
 		if (role) filter.role = role;
 		if (franchisorInfoId) filter.franchisorInfoId = franchisorInfoId;
 		if (isActive !== undefined) {
 			filter.isActive = String(isActive).toLowerCase() === 'true';
+		}
+
+		// Add searchKey filter for firstName, lastName, and email using regex (case-insensitive)
+		if (searchKey) {
+			filter.$or = [
+				{ firstName: { $regex: searchKey, $options: 'i' } },
+				{ lastName: { $regex: searchKey, $options: 'i' } },
+				{ email: { $regex: searchKey, $options: 'i' } }
+			];
 		}
 
 		// Parse limit and skip as integers
@@ -303,6 +312,41 @@ const getFranchisorUsersList = async (req, res) => {
 		});
 	} catch (err) {
 		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+	}
+};
+
+/**
+ * Delete a FranchisorUser (soft delete)
+ * DELETE /franchisor/user/:id
+ * Marks user as deleted without removing from database
+ */
+const deleteFranchisorUser = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const franchisorUser = await FranchisorUser.findById(id);
+		if (!franchisorUser || franchisorUser.isDeleted) {
+			return res.status(httpStatus.NOT_FOUND).json({
+				success: false,
+				message: getMessage("FRANCHISOR_USER_NOT_FOUND", res.locals.language),
+				data: null
+			});
+		}
+
+		franchisorUser.isDeleted = true;
+		franchisorUser.updatedAt = Date.now();
+		await franchisorUser.save();
+
+		res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("FRANCHISOR_USER_DELETED_SUCCESS", res.locals.language),
+			data: null
+		});
+	} catch (err) {
+		res.status(httpStatus.OK).json({
+			success: false,
+			message: err.message,
+			data: null
+		});
 	}
 };
 
@@ -1044,15 +1088,25 @@ const getFranchiseeUser = async (req, res) => {
 /**
  * Get list of FranchiseeUsers with filtering and pagination
  * GET /franchisor/franchisee-users
- * Query parameters: firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, limit, skip
+ * Query parameters: firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, searchKey, limit, skip
+ * searchKey: Search across firstName, lastName, and email fields using case-insensitive regex
  */
 const getFranchiseeUsersList = async (req, res) => {
 	try {
-		const { firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, limit = 20, skip = 0 } = req.query;
+		const { firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, searchKey, limit = 20, skip = 0 } = req.query;
 
 		const filter = { isDeleted: false };
 
-		// Add filters if provided
+		// Add searchKey filter for firstName, lastName, and email using regex (case-insensitive)
+		if (searchKey) {
+			filter.$or = [
+				{ firstName: { $regex: searchKey, $options: 'i' } },
+				{ lastName: { $regex: searchKey, $options: 'i' } },
+				{ email: { $regex: searchKey, $options: 'i' } }
+			];
+		}
+
+		// Add individual filters if provided (overrides searchKey for that field)
 		if (firstName) {
 			filter.firstName = { $regex: firstName, $options: 'i' }; // Case-insensitive regex match
 		}
@@ -1109,6 +1163,40 @@ const getFranchiseeUsersList = async (req, res) => {
 	}
 };
 
+/**
+ * Delete a FranchiseeUser (soft delete)
+ * DELETE /franchisor/franchisee-user/:id
+ * Marks user as deleted without removing from database
+ */
+const deleteFranchiseeUser = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const franchiseeUser = await FranchiseeUser.findOne({ _id: id, isDeleted: false });
+		if (!franchiseeUser) {
+			return res.status(httpStatus.NOT_FOUND).json({
+				success: false,
+				message: getMessage("FRANCHISEE_USER_NOT_FOUND", res.locals.language),
+				data: null
+			});
+		}
+
+		franchiseeUser.isDeleted = true;
+		franchiseeUser.updatedAt = Date.now();
+		await franchiseeUser.save();
+
+		res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage("FRANCHISEE_USER_DELETED_SUCCESS", res.locals.language),
+			data: null
+		});
+	} catch (err) {
+		res.status(httpStatus.OK).json({
+			success: false,
+			message: err.message,
+			data: null
+		});
+	}
+};
 
 
 /**
@@ -1154,6 +1242,7 @@ module.exports = {
 	updateFranchisorUser,
 	getFranchisorUser,
 	getFranchisorUsersList,
+	deleteFranchisorUser,
     signinFranchisorUser,
     signoutFranchisorUser,
     createFranchiseeInfo,
@@ -1163,6 +1252,7 @@ module.exports = {
     updateFranchiseeUser,
     getFranchiseeUser,
     getFranchiseeUsersList,
+    deleteFranchiseeUser,
     bulkInsertXpRules,
 	bulkInsertBadges
 };
