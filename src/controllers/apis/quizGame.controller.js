@@ -3049,7 +3049,21 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
     }
 });
 
+const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => { 
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Complete quiz game session questions data - To be implemented',
+        data: req.body
+    });
+})
 
+const playerResponseAnswer = catchAsync(async (req, res) => {
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Player response answer - To be implemented',
+        data: req.body
+    });
+})
 
 
 module.exports = {
@@ -3072,5 +3086,7 @@ module.exports = {
     leaveQuizGameSession,
     getPlayerSessionData,
     getSessionLeaderboard,
-    calculateQuestionPoints
+    calculateQuestionPoints,
+    completeQuizGameSessionQuestionsData,
+    playerResponseAnswer
 }

@@ -66,4 +66,7 @@ router.get('/quiz/game-session/:sessionId/players', authToken.playerProtect, qui
 // Points Calculation Route
 router.post('/quiz/calculate-points', quizGameController.calculateQuestionPoints);
 
+router.post('/quiz/player-response-answer', authToken.commonProtect, quizGameController.playerResponseAnswer);
+router.post('/quiz/complete-questions-data', authToken.commonProtect, quizGameController.completeQuizGameSessionQuestionsData);
+
 module.exports = router;
