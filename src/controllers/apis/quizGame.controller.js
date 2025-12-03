@@ -2292,11 +2292,11 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
         }
 
         // Check if player is already in this session
-        const existingPlayer = await QuizSessionPlayer.findOne({
-            quizGameSessionId: session._id,
-            clientId: clientId,
-            isDeleted: false
-        });
+        // const existingPlayer = await QuizSessionPlayer.findOne({
+        //     quizGameSessionId: session._id,
+        //     clientId: clientId,
+        //     isDeleted: false
+        // });
 
         // if (existingPlayer && existingPlayer.isActive) {
         //     return res.status(httpStatus.BAD_REQUEST).json({
@@ -2325,6 +2325,9 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             clientId: clientId,
             isDeleted: false
         });
+
+        // Track if this is a new player session for counting purposes
+        const isNewPlayerSession = !playerSession;
 
         if (playerSession) {
             // Update joinedAt time and set isActive to true
@@ -2367,13 +2370,25 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             );
         }
 
+        // Count total games played by this player (all non-deleted sessions)
+        let totalPlayedGamesCount = await QuizSessionPlayer.countDocuments({
+            clientId: clientId,
+            isDeleted: false
+        });
+
+        // If this is a new player session, count it as played game (increment by 1)
+        if (isNewPlayerSession) {
+            totalPlayedGamesCount += 1;
+        }
+
         /** JOIN FIREBASE PLAYER */
         // Add player data to Firebase RTDB under quizGameSessions/{session._id}/players/{clientId}
         const playerData = {
             pseudoName: client.pseudoName,
             playerId: client._id.toString(),
             profileAvatar: client.profileAvatar ? `${s3BaseUrl}${client.profileAvatar}` : null,
-            joinedAt: playerSession.joinedAt
+            joinedAt: playerSession.joinedAt,
+            totalPlayedGamesCount: totalPlayedGamesCount
         };
         await firebaseDB.ref(`quizGameSessions/${session._id}/players/${client._id}`).set(playerData);
         /** END FIREBASE PLAYER */

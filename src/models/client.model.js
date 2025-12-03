@@ -248,16 +248,6 @@ const clientSchema = new mongoose.Schema({
     },
 
     /**
-     * 🔔 Device ID
-     * Used for sending push notifications.
-     */
-    deviceId: {
-        type: String,
-        default: '',
-        description: 'Push notification key/token for this client’s device id.'
-    },
-
-    /**
      * 🌐 Google ID
      * Used when signing in with Google.
      */

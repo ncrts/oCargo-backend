@@ -74,6 +74,16 @@ const signup = catchAsync(async (req, res) => {
         newPlayerData.signinWith = "email";
         newPlayerData.mode = "client";
         newPlayerData.emailVerificationCode = emailVerificationOtp;
+        // Add optional device information
+        if (req.body.deviceType) newPlayerData.deviceType = req.body.deviceType;
+        if (req.body.devicePushKey) newPlayerData.devicePushKey = req.body.devicePushKey;
+        // Add social login IDs if provided
+        if (req.body.signupWith == 'google') {
+            newPlayerData.google_id = req.body.socialId;
+        }
+        if (req.body.signupWith == 'apple') {
+            newPlayerData.apple_id = req.body.socialId;
+        }
         // Optionally send verification email (commented out)
         /*
         const mailOptions = {
@@ -92,6 +102,9 @@ const signup = catchAsync(async (req, res) => {
         newPlayerData.signinWith = "guest";
         newPlayerData.dob = req.body.dob;
         newPlayerData.password = 'guest@123'; // Default password for guest users
+        // Add optional device information
+        if (req.body.deviceType) newPlayerData.deviceType = req.body.deviceType;
+        if (req.body.devicePushKey) newPlayerData.devicePushKey = req.body.devicePushKey;
     }
 
     // Create player and related documents
@@ -160,9 +173,177 @@ const signin = catchAsync(async (req, res) => {
         }
     }
 
+    // Update optional device information if provided
+    if (req.body.deviceType) player.deviceType = req.body.deviceType;
+    if (req.body.devicePushKey) player.devicePushKey = req.body.devicePushKey;
+
+    // Save device updates if any were made
+    if (req.body.deviceType || req.body.devicePushKey) {
+        await player.save();
+    }
+
     const token = await player.generateAuthToken();
     return res.status(httpStatus.OK).json({ success: true, message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language), data: { s3BaseUrl, player, token } });
 });
+
+/**
+ * Handles social login for Google and Apple authentication.
+ * Creates a new player account if social ID doesn't exist, or authenticates existing player.
+ * Updates device information on login.
+ * 
+ * Request body:
+ * {
+ *   signupWith (required - 'google' or 'apple'),
+ *   socialId (required - OAuth ID from provider),
+ *   pseudoName (optional - auto-generated if not provided),
+ *   email (optional for Apple, required for Google),
+ *   dob (optional - date of birth),
+ *   deviceType (optional - iOS, Android, Web),
+ *   devicePushKey (optional - push notification token)
+ * }
+ * 
+ * Returns: player data with JWT token and S3 base URL
+ */
+const socialLogin = catchAsync(async (req, res) => {
+    // Validate required fields
+    if (!req.body.signupWith || !req.body.socialId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'Required fields are missing, please provide signupWith (google or apple) and socialId',
+            data: null
+        });
+    }
+
+    // Validate signupWith is either google or apple
+    const validSocialProviders = ['google', 'apple'];
+    if (!validSocialProviders.includes(req.body.signupWith)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid social provider, please choose either "google" or "apple".',
+            data: null
+        });
+    }
+
+    let findCond = {};
+
+    // Build find condition based on social provider
+    if (req.body.signupWith === 'google') {
+        findCond.google_id = req.body.socialId;
+    } else if (req.body.signupWith === 'apple') {
+        findCond.apple_id = req.body.socialId;
+    }
+
+    // Try to find existing player with this social ID
+    let player = await Player.findOne(findCond);
+
+    // If player exists, authenticate and return
+    if (player) {
+        // Update device information if provided
+        if (req.body.deviceType) player.deviceType = req.body.deviceType;
+        if (req.body.devicePushKey) player.devicePushKey = req.body.devicePushKey;
+
+        // Update signinWith to reflect the social provider used
+        player.signinWith = req.body.signupWith;
+
+        // Save updates
+        await player.save();
+
+        // Generate authentication token
+        const token = await player.generateAuthToken();
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("PLAYER_SIGNIN_SUCCESS", res.locals.language),
+            data: {
+                s3BaseUrl,
+                player: player,
+                token: token
+            }
+        });
+    }
+
+    // Player doesn't exist, create new account
+    // Generate unique pseudo-name if not provided
+    let pseudoName = req.body.pseudoName;
+    if (!pseudoName) {
+        pseudoName = await generateUniquePseudoName();
+    } else {
+        // Verify pseudo-name is unique
+        const existingPlayer = await Player.findOne({ pseudoName: pseudoName });
+        if (existingPlayer) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("EXISTED_PSEUDO_NAME", res.locals.language),
+                details: 'This pseudo-name is already taken. Please choose another.'
+            });
+        }
+    }
+
+    // Create new player data
+    const newPlayerData = {
+        pseudoName: pseudoName,
+        mode: 'client',
+        role: 'client',
+        signinWith: req.body.signupWith,
+        isEmailVerified: true, // Social logins skip email verification
+        password: 'social@' + Math.random().toString(36).slice(-8) // Generate random password
+    };
+
+    // Add social IDs
+    if (req.body.signupWith === 'google') {
+        newPlayerData.google_id = req.body.socialId;
+        newPlayerData.email = req.body.email; // Google typically provides email
+    } else if (req.body.signupWith === 'apple') {
+        newPlayerData.apple_id = req.body.socialId;
+        if (req.body.email) newPlayerData.email = req.body.email; // Apple email is optional
+    }
+
+    // Add date of birth if provided
+    if (req.body.dob) {
+        const isValidAge = await is18Plus(req.body.dob);
+        if (!isValidAge) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("IN_VALIDEAGE", res.locals.language)
+            });
+        }
+        newPlayerData.dob = req.body.dob;
+    }
+
+    // Add optional device information
+    if (req.body.deviceType) newPlayerData.deviceType = req.body.deviceType;
+    if (req.body.devicePushKey) newPlayerData.devicePushKey = req.body.devicePushKey;
+
+    // Create player and related documents
+    let newPlayer = new Player(newPlayerData);
+    let playerProfile = new PlayerProfile({ clientId: newPlayer._id, mode: 'client' });
+    let playerStat = new PlayerStat({ clientId: newPlayer._id, mode: 'client' });
+    let playerCommunication = new PlayerCommunication({ clientId: newPlayer._id });
+
+    newPlayer.clientProfileId = playerProfile._id;
+    newPlayer.clientStatId = playerStat._id;
+    newPlayer.clientCommunicationId = playerCommunication._id;
+
+    await newPlayer.save();
+    await playerProfile.save();
+    await playerStat.save();
+    await playerCommunication.save();
+
+    // Generate authentication token
+    const token = await newPlayer.generateAuthToken();
+
+    return res.status(httpStatus.CREATED).json({
+        success: true,
+        message: 'Player account created and authenticated via ' + req.body.signupWith,
+        data: {
+            s3BaseUrl,
+            player: newPlayer,
+            token: token,
+            isNewAccount: true
+        }
+    });
+})
+
 
 const createFirebaseCustomToken = async (req, res) => {
     // Placeholder for Firebase custom token generation logic
@@ -758,6 +939,7 @@ const globalFileDeleteWithS3 = async (key) => {
 module.exports = {
     signup,
     signin,
+    socialLogin,
     signout,
     generateFiveUniquePseudoNames,
     sendOTPforVerificationEmail,

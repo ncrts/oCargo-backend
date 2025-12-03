@@ -18,6 +18,7 @@ const router = express.Router();
 
 router.post('/auth/signup', playerController.signup);
 router.post('/auth/signin', languageDetectionMiddleware, playerController.signin);
+router.post('/auth/social-login', languageDetectionMiddleware, playerController.socialLogin);
 router.post('/auth/signout', authToken.playerProtect, playerController.signout);
 router.post('/auth/send-verification-email', authToken.playerOptionalProtect, playerController.sendOTPforVerificationEmail);
 router.post('/auth/email-otp-verify', authToken.playerOptionalProtect, playerController.verifyEmailOTP);
