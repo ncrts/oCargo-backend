@@ -55,22 +55,22 @@ const clientStatSchema = new mongoose.Schema({
     local: {
         /**
          * ⚡ Local XP Points
-         * Experience points earned from participating in games at franchise locations.
+         * Experience points earned from participating in games at franchise locations (cumulative across all franchises).
          */
         totalXP: {
             type: Number,
             default: 0,
-            description: 'Total XP earned from all local (franchise-specific) games.'
+            description: 'Total XP earned from all local (franchise-specific) games across all franchises.'
         },
 
         /**
          * 🎮 Total Games Played (Local)
-         * Total number of quizzes participated in at franchise locations.
+         * Total number of quizzes participated in at franchise locations (cumulative across all franchises).
          */
         totalGamesPlayed: {
             type: Number,
             default: 0,
-            description: 'Total number of games played at local franchise locations.'
+            description: 'Total number of games played at all local franchise locations combined.'
         },
 
         /**
@@ -307,6 +307,60 @@ const clientStatSchema = new mongoose.Schema({
             }
         ]
     },
+
+    // ================================================
+    // 🔹 FRANCHISEE-LEVEL STATISTICS
+    // ================================================
+
+    /**
+     * 🏪 Franchisee Gaming Statistics
+     * Contains performance metrics broken down by individual franchise locations.
+     * Tracks XP and game counts for each specific franchise separately.
+     */
+    franchisee: [
+        {
+            /**
+             * 🔗 Franchisee Reference
+             * Reference to the specific franchise location.
+             */
+            franchiseeInfoId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'FranchiseeInfo',
+                required: true,
+                description: 'Reference to the specific franchise location.'
+            },
+
+            /**
+             * ⚡ Franchisee-Specific Total XP
+             * Total XP earned only at this specific franchise location.
+             */
+            totalXp: {
+                type: Number,
+                default: 0,
+                description: 'Total XP earned at this specific franchise.'
+            },
+
+            /**
+             * 🎮 Games Played at Franchisee
+             * Total number of games played at this specific franchise.
+             */
+            totalGamesPlayed: {
+                type: Number,
+                default: 0,
+                description: 'Total number of games played at this specific franchise.'
+            },
+
+            /**
+             * 📅 Last Updated
+             * Timestamp of the last stats update for this franchise.
+             */
+            updatedAt: {
+                type: Date,
+                default: Date.now,
+                description: 'Timestamp when this franchisee stats were last updated.'
+            }
+        }
+    ],
 
     // ================================================
     // 🔹 AGGREGATE STATISTICS (All Types)

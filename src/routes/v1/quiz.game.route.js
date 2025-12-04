@@ -77,4 +77,11 @@ router.post('/quiz/game-session/feedback', languageDetectionMiddleware, authToke
 // Player Game Session History Route
 router.get('/quiz/game-session/history/:clientId', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getPlayerGameSessionHistory);
 
+// Leaderboard Routes
+router.get('/quiz/leaderboard/local', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getLocalLeaderboard);
+
+router.get('/quiz/leaderboard/national', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getNationalLeaderboard);
+
+router.get('/quiz/leaderboard/franchisee/:franchiseeInfoId', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getFranchiseeLeaderboard);
+
 module.exports = router;

@@ -564,6 +564,46 @@ const languageLocalization = {
         'en_us': 'Quiz ID not found for this game session.',
         'es_co': 'ID de cuestionario no encontrado para esta sesión de juego.',
         'fr_fr': 'ID de quiz non trouvé pour cette session de jeu.'
+    },
+    "LOCAL_LEADERBOARD_FETCHED_SUCCESS": {
+        'en_us': 'Local leaderboard fetched successfully.',
+        'es_co': 'Tabla de clasificación local obtenida con éxito.',
+        'fr_fr': 'Classement local récupéré avec succès.'
+    },
+    "LOCAL_LEADERBOARD_FETCH_ERROR": {
+        'en_us': 'Error fetching local leaderboard.',
+        'es_co': 'Error al obtener la tabla de clasificación local.',
+        'fr_fr': 'Erreur lors de la récupération du classement local.'
+    },
+    "NATIONAL_LEADERBOARD_FETCHED_SUCCESS": {
+        'en_us': 'National leaderboard fetched successfully.',
+        'es_co': 'Tabla de clasificación nacional obtenida con éxito.',
+        'fr_fr': 'Classement national récupéré avec succès.'
+    },
+    "NATIONAL_LEADERBOARD_FETCH_ERROR": {
+        'en_us': 'Error fetching national leaderboard.',
+        'es_co': 'Error al obtener la tabla de clasificación nacional.',
+        'fr_fr': 'Erreur lors de la récupération du classement national.'
+    },
+    "FRANCHISEE_LEADERBOARD_FETCHED_SUCCESS": {
+        'en_us': 'Franchisee leaderboard fetched successfully.',
+        'es_co': 'Tabla de clasificación de franquicia obtenida con éxito.',
+        'fr_fr': 'Classement de la franchise récupéré avec succès.'
+    },
+    "FRANCHISEE_LEADERBOARD_FETCH_ERROR": {
+        'en_us': 'Error fetching franchisee leaderboard.',
+        'es_co': 'Error al obtener la tabla de clasificación de franquicia.',
+        'fr_fr': 'Erreur lors de la récupération du classement de la franchise.'
+    },
+    "FRANCHISEE_ID_REQUIRED": {
+        'en_us': 'Franchisee ID is required.',
+        'es_co': 'Se requiere la ID de la franquicia.',
+        'fr_fr': 'L\'ID de la franchise est requis.'
+    },
+    "FRANCHISEE_NOT_FOUND": {
+        'en_us': 'Franchisee not found.',
+        'es_co': 'Franquicia no encontrada.',
+        'fr_fr': 'Franchise non trouvée.'
     }
 };
 

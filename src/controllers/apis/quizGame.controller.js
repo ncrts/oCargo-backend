@@ -20,6 +20,9 @@ const Quiz = require('../../models/quiz.model');
 const QuizGameSession = require('../../models/quizGameSession.model');
 const QuizSessionPlayer = require('../../models/quizSessionPlayer.model');
 const QuizFeedback = require('../../models/quizFeedback.model');
+const LocalLeaderboard = require('../../models/localLeaderboard.model');
+const NationalLeaderboard = require('../../models/nationalLeaderboard.model');
+const FranchiseeLeaderboard = require('../../models/franchiseeLeaderboard.model');
 
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const Franchisee = require('../../models/franchisee.user.model');
@@ -3637,6 +3640,406 @@ const getPlayerGameSessionHistory = catchAsync(async (req, res) => {
 	}
 });
 
+// ================================
+// 📌 LEADERBOARD APIs
+// ================================
+
+/**
+ * Get local leaderboard with optional player position
+ * GET /quiz/leaderboard/local
+ * 
+ * Query parameters:
+ * - clientId: optional - get specific player's current position
+ * - limit: number of records per page (default: 20, max: 100)
+ * - skip: number of records to skip (default: 0)
+ * 
+ * Returns: leaderboard sorted by totalXp (descending)
+ */
+const getLocalLeaderboard = catchAsync(async (req, res) => {
+	try {
+		const { clientId, limit = 20, skip = 0 } = req.query;
+
+		// ===== VALIDATION =====
+		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+		const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+		// ===== BUILD FILTER =====
+		const filter = {
+			isDeleted: false,
+			isActive: true
+		};
+
+		// ===== FETCH LEADERBOARD DATA =====
+		const totalCount = await LocalLeaderboard.countDocuments(filter);
+
+		const leaderboardData = await LocalLeaderboard.find(filter)
+			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+			.sort({ totalXp: -1 })
+			.limit(pageLimit)
+			.skip(pageSkip);
+
+		// ===== FORMAT LEADERBOARD RESPONSE =====
+		const formattedLeaderboard = leaderboardData.map((entry, index) => {
+			const rank = pageSkip + index + 1;
+
+			return {
+				rank: rank,
+				clientId: entry.clientId._id,
+				firstName: entry.clientId.firstName,
+				lastName: entry.clientId.lastName,
+				pseudoName: entry.clientId.pseudoName,
+				profileAvatar: entry.clientId.profileAvatar,
+				xp: entry.totalXp,
+				totalGamesPlayed: entry.totalGamesPlayed,
+				totalFirstPlaceWins: entry.totalFirstPlaceWins,
+				totalSecondPlaceWins: entry.totalSecondPlaceWins,
+				totalThirdPlaceWins: entry.totalThirdPlaceWins,
+				createdAt: entry.createdAt,
+				updatedAt: entry.updatedAt
+			};
+		});
+
+		// ===== GET CLIENT'S POSITION (if clientId provided) =====
+		let clientPosition = null;
+
+		if (clientId && typeof clientId === 'string' && clientId.trim()) {
+			const clientLeaderboardEntry = await LocalLeaderboard.findOne({
+				clientId: clientId,
+				isDeleted: false,
+				isActive: true
+			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
+
+			if (clientLeaderboardEntry) {
+				const higherXpCount = await LocalLeaderboard.countDocuments({
+					isDeleted: false,
+					isActive: true,
+					totalXp: { $gt: clientLeaderboardEntry.totalXp }
+				});
+
+				const clientRank = higherXpCount + 1;
+
+				clientPosition = {
+					rank: clientRank,
+					clientId: clientLeaderboardEntry.clientId._id,
+					firstName: clientLeaderboardEntry.clientId.firstName,
+					lastName: clientLeaderboardEntry.clientId.lastName,
+					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+					xp: clientLeaderboardEntry.totalXp,
+					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+					createdAt: clientLeaderboardEntry.createdAt,
+					updatedAt: clientLeaderboardEntry.updatedAt
+				};
+			}
+		}
+
+		return res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Local leaderboard fetched successfully",
+			data: {
+				type: 'local',
+				totalPlayers: totalCount,
+				displayedPlayers: formattedLeaderboard.length,
+				leaderboard: formattedLeaderboard,
+				clientPosition: clientPosition,
+				pagination: {
+					limit: pageLimit,
+					skip: pageSkip,
+					page: Math.floor(pageSkip / pageLimit) + 1,
+					totalPages: Math.ceil(totalCount / pageLimit)
+				}
+			}
+		});
+	} catch (err) {
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching local leaderboard",
+			error: err.message,
+			data: null
+		});
+	}
+});
+
+/**
+ * Get national leaderboard with optional player position
+ * GET /quiz/leaderboard/national
+ * 
+ * Query parameters:
+ * - clientId: optional - get specific player's current position
+ * - limit: number of records per page (default: 20, max: 100)
+ * - skip: number of records to skip (default: 0)
+ * 
+ * Returns: leaderboard sorted by totalXp (descending)
+ */
+const getNationalLeaderboard = catchAsync(async (req, res) => {
+	try {
+		const { clientId, limit = 20, skip = 0 } = req.query;
+
+		// ===== VALIDATION =====
+		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+		const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+		// ===== BUILD FILTER =====
+		const filter = {
+			isDeleted: false,
+			isActive: true
+		};
+
+		// ===== FETCH LEADERBOARD DATA =====
+		const totalCount = await NationalLeaderboard.countDocuments(filter);
+
+		const leaderboardData = await NationalLeaderboard.find(filter)
+			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+			.sort({ totalXp: -1 })
+			.limit(pageLimit)
+			.skip(pageSkip);
+
+		// ===== FORMAT LEADERBOARD RESPONSE =====
+		const formattedLeaderboard = leaderboardData.map((entry, index) => {
+			const rank = pageSkip + index + 1;
+
+			return {
+				rank: rank,
+				clientId: entry.clientId._id,
+				firstName: entry.clientId.firstName,
+				lastName: entry.clientId.lastName,
+				pseudoName: entry.clientId.pseudoName,
+				profileAvatar: entry.clientId.profileAvatar,
+				xp: entry.totalXp,
+				totalGamesPlayed: entry.totalGamesPlayed,
+				totalFirstPlaceWins: entry.totalFirstPlaceWins,
+				totalSecondPlaceWins: entry.totalSecondPlaceWins,
+				totalThirdPlaceWins: entry.totalThirdPlaceWins,
+				createdAt: entry.createdAt,
+				updatedAt: entry.updatedAt
+			};
+		});
+
+		// ===== GET CLIENT'S POSITION (if clientId provided) =====
+		let clientPosition = null;
+
+		if (clientId && typeof clientId === 'string' && clientId.trim()) {
+			const clientLeaderboardEntry = await NationalLeaderboard.findOne({
+				clientId: clientId,
+				isDeleted: false,
+				isActive: true
+			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
+
+			if (clientLeaderboardEntry) {
+				const higherXpCount = await NationalLeaderboard.countDocuments({
+					isDeleted: false,
+					isActive: true,
+					totalXp: { $gt: clientLeaderboardEntry.totalXp }
+				});
+
+				const clientRank = higherXpCount + 1;
+
+				clientPosition = {
+					rank: clientRank,
+					clientId: clientLeaderboardEntry.clientId._id,
+					firstName: clientLeaderboardEntry.clientId.firstName,
+					lastName: clientLeaderboardEntry.clientId.lastName,
+					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+					xp: clientLeaderboardEntry.totalXp,
+					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+					createdAt: clientLeaderboardEntry.createdAt,
+					updatedAt: clientLeaderboardEntry.updatedAt
+				};
+			}
+		}
+
+		return res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "National leaderboard fetched successfully",
+			data: {
+				type: 'national',
+				totalPlayers: totalCount,
+				displayedPlayers: formattedLeaderboard.length,
+				leaderboard: formattedLeaderboard,
+				clientPosition: clientPosition,
+				pagination: {
+					limit: pageLimit,
+					skip: pageSkip,
+					page: Math.floor(pageSkip / pageLimit) + 1,
+					totalPages: Math.ceil(totalCount / pageLimit)
+				}
+			}
+		});
+	} catch (err) {
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching national leaderboard",
+			error: err.message,
+			data: null
+		});
+	}
+});
+
+/**
+ * Get franchisee-specific leaderboard with optional player position
+ * GET /quiz/leaderboard/franchisee/:franchiseeInfoId
+ * 
+ * Path parameters:
+ * - franchiseeInfoId: ID of the franchise (required)
+ * 
+ * Query parameters:
+ * - clientId: optional - get specific player's current position at this franchise
+ * - limit: number of records per page (default: 20, max: 100)
+ * - skip: number of records to skip (default: 0)
+ * 
+ * Returns: leaderboard sorted by totalXp (descending) for specific franchise
+ */
+const getFranchiseeLeaderboard = catchAsync(async (req, res) => {
+	try {
+		const { franchiseeInfoId } = req.params;
+		const { clientId, limit = 20, skip = 0 } = req.query;
+
+		// ===== VALIDATION =====
+		if (!franchiseeInfoId || typeof franchiseeInfoId !== 'string' || !franchiseeInfoId.trim()) {
+			return res.status(httpStatus.BAD_REQUEST).json({
+				success: false,
+				message: getMessage ? getMessage("FRANCHISEE_ID_REQUIRED", res.locals.language) : "Franchisee ID is required",
+				data: null
+			});
+		}
+
+		// Verify franchisee exists
+		const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
+		if (!franchiseeExists) {
+			return res.status(httpStatus.NOT_FOUND).json({
+				success: false,
+				message: getMessage ? getMessage("FRANCHISEE_NOT_FOUND", res.locals.language) : "Franchisee not found",
+				data: null
+			});
+		}
+
+		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+		const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+		// ===== BUILD FILTER =====
+		const filter = {
+			franchiseeInfoId: franchiseeInfoId,
+			isDeleted: false,
+			isActive: true
+		};
+
+		// ===== FETCH LEADERBOARD DATA =====
+		const totalCount = await FranchiseeLeaderboard.countDocuments(filter);
+
+		const leaderboardData = await FranchiseeLeaderboard.find(filter)
+			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+			.populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' })
+			.sort({ totalXp: -1 })
+			.limit(pageLimit)
+			.skip(pageSkip);
+
+		// ===== FORMAT LEADERBOARD RESPONSE =====
+		const formattedLeaderboard = leaderboardData.map((entry, index) => {
+			const rank = pageSkip + index + 1;
+
+			return {
+				rank: rank,
+				clientId: entry.clientId._id,
+				firstName: entry.clientId.firstName,
+				lastName: entry.clientId.lastName,
+				pseudoName: entry.clientId.pseudoName,
+				profileAvatar: entry.clientId.profileAvatar,
+				xp: entry.totalXp,
+				totalGamesPlayed: entry.totalGamesPlayed,
+				totalFirstPlaceWins: entry.totalFirstPlaceWins,
+				totalSecondPlaceWins: entry.totalSecondPlaceWins,
+				totalThirdPlaceWins: entry.totalThirdPlaceWins,
+				franchiseeInfo: {
+					franchiseeId: entry.franchiseeInfoId._id,
+					franchiseeName: entry.franchiseeInfoId.franchiseeName,
+					location: entry.franchiseeInfoId.location
+				},
+				createdAt: entry.createdAt,
+				updatedAt: entry.updatedAt
+			};
+		});
+
+		// ===== GET CLIENT'S POSITION (if clientId provided) =====
+		let clientPosition = null;
+
+		if (clientId && typeof clientId === 'string' && clientId.trim()) {
+			const clientLeaderboardEntry = await FranchiseeLeaderboard.findOne({
+				clientId: clientId,
+				franchiseeInfoId: franchiseeInfoId,
+				isDeleted: false,
+				isActive: true
+			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+			.populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' });
+
+			if (clientLeaderboardEntry) {
+				const higherXpCount = await FranchiseeLeaderboard.countDocuments({
+					franchiseeInfoId: franchiseeInfoId,
+					isDeleted: false,
+					isActive: true,
+					totalXp: { $gt: clientLeaderboardEntry.totalXp }
+				});
+
+				const clientRank = higherXpCount + 1;
+
+				clientPosition = {
+					rank: clientRank,
+					clientId: clientLeaderboardEntry.clientId._id,
+					firstName: clientLeaderboardEntry.clientId.firstName,
+					lastName: clientLeaderboardEntry.clientId.lastName,
+					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+					xp: clientLeaderboardEntry.totalXp,
+					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+					franchiseeInfo: {
+						franchiseeId: clientLeaderboardEntry.franchiseeInfoId._id,
+						franchiseeName: clientLeaderboardEntry.franchiseeInfoId.franchiseeName,
+						location: clientLeaderboardEntry.franchiseeInfoId.location
+					},
+					createdAt: clientLeaderboardEntry.createdAt,
+					updatedAt: clientLeaderboardEntry.updatedAt
+				};
+			}
+		}
+
+		return res.status(httpStatus.OK).json({
+			success: true,
+			message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Franchisee leaderboard fetched successfully",
+			data: {
+				type: 'franchisee',
+				franchiseeId: franchiseeInfoId,
+				totalPlayers: totalCount,
+				displayedPlayers: formattedLeaderboard.length,
+				leaderboard: formattedLeaderboard,
+				clientPosition: clientPosition,
+				pagination: {
+					limit: pageLimit,
+					skip: pageSkip,
+					page: Math.floor(pageSkip / pageLimit) + 1,
+					totalPages: Math.ceil(totalCount / pageLimit)
+				}
+			}
+		});
+	} catch (err) {
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching franchisee leaderboard",
+			error: err.message,
+			data: null
+		});
+	}
+});
+
+
 module.exports = {
         createMultipleCategories,
         getCategory,
@@ -3660,5 +4063,8 @@ module.exports = {
         calculateQuestionPoints,
         completeQuizGameSessionQuestionsData,
         playerResponseAnswer,
-        getPlayerGameSessionHistory
+        getPlayerGameSessionHistory,
+        getLocalLeaderboard,
+        getNationalLeaderboard,
+        getFranchiseeLeaderboard
     }
