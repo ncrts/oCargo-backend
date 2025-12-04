@@ -38,7 +38,8 @@ const allRoles = {
     'getFranchiseeUser',
     'getFranchiseeUsersList',
     'deleteFranchiseeUser',
-    'deleteFranchisorUser'
+    'deleteFranchisorUser',
+    'bulkInsertBadgeMasters'
   ],
 };
 

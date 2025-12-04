@@ -526,7 +526,7 @@ const signout = catchAsync(async (req, res) => {
 
 /**
  * Fetches the player's profile by clientId (from query or authenticated user),
- * populates clientProfileId, and adds S3 bucket URL for profile picture.
+ * populates clientProfileId, clientStatId, and adds S3 bucket URL for profile picture.
  * @async
  * @function getPlayerProfile
  */
@@ -539,6 +539,7 @@ const getPlayerProfile = catchAsync(async (req, res) => {
     const player = await Player.findOne({ _id: clientId, isDeleted: false });
     const playerProfile = await PlayerProfile.findOne({ clientId: clientId, mode: 'client', isDeleted: false });
     const playerCommunication = await PlayerCommunication.findOne({ clientId: clientId, isDeleted: false });
+    const playerStat = await PlayerStat.findOne({ clientId: clientId, isDeleted: false });
 
     if (!player) {
         return res.status(httpStatus.OK).json({
@@ -555,7 +556,8 @@ const getPlayerProfile = catchAsync(async (req, res) => {
             s3BaseUrl,
             player: player,
             playerProfile: playerProfile,
-            playerCommunication: playerCommunication
+            playerCommunication: playerCommunication,
+            playerStat: playerStat || null
         }
     });
 });

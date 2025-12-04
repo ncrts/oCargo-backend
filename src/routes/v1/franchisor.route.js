@@ -52,5 +52,6 @@ router.post('/xp-rules/bulk-insert', authToken.franchisorProtect, accessRoleRigh
 // Bulk Insert Badges
 router.post('/badges/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertBadges'), franchisorController.bulkInsertBadges);
 
+router.post('/badge-masters/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertBadgeMasters'), franchisorController.bulkInsertBadgeMasters);
 // Export the router
 module.exports = router;

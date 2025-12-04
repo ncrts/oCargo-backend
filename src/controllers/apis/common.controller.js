@@ -8,6 +8,7 @@ const randomstring = require('randomstring');
 const { getMessage } = require("../../../config/languageLocalization");
 const AvatarMaster = require('../../models/avatar.model');
 const Food = require('../../models/food.model');
+const BadgeMaster = require('../../models/badge.master.model');
 
 const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({
@@ -17,7 +18,7 @@ const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
             fileKey: req.file?.key || null,
             fileLocation: req.file?.location || null
         }
-    }); 
+    });
 })
 
 const sendRequestBodyData = catchAsync(async (req, res) => {
@@ -49,11 +50,11 @@ const insertMultipleAvatars = catchAsync(async (req, res) => {
 
 const getAllAvatars = catchAsync(async (req, res) => {
     const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
-    const avatars = await AvatarMaster.find({isDeleted: false}).select('_id name imageUrl').lean();
+    const avatars = await AvatarMaster.find({ isDeleted: false }).select('_id name imageUrl').lean();
     return res.status(httpStatus.OK).json({
         success: true,
         message: 'Avatar list retrieved successfully',
-        data: { s3BaseUrl, avatars}
+        data: { s3BaseUrl, avatars }
     });
 });
 
@@ -77,8 +78,8 @@ const insertMultipleFoods = catchAsync(async (req, res) => {
 
 const getAllFoods = catchAsync(async (req, res) => {
     const language = res.locals.language || 'en_us';
-    const foods = await Food.find({isDeleted: false}).select('_id name').lean();
-    
+    const foods = await Food.find({ isDeleted: false }).select('_id name').lean();
+
     const transformedFoods = foods.map(food => ({
         id: food._id,
         name: food.name?.[language] || food.name?.en_us || food.name?.fr_fr || ''
@@ -92,11 +93,34 @@ const getAllFoods = catchAsync(async (req, res) => {
 });
 
 
-module.exports = { 
+const getAllBadges = catchAsync(async (req, res) => {
+    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+    const badges = await BadgeMaster.find().select('_id name iconUrl')
+
+    let badgeList = [];
+    if (badges.length > 0) {
+        badges.forEach(badge => {
+            badgeList.push({
+                id: badge._id,
+                name: badge.name,
+                iconUrl: badge.iconUrl ? s3BaseUrl + badge.iconUrl : null
+            });
+        });
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Badge list retrieved successfully',
+        data: { s3BaseUrl, badges: badgeList }
+    });
+});
+
+module.exports = {
     commonS3FileUploadedKeys,
     sendRequestBodyData,
     insertMultipleAvatars,
     getAllAvatars,
     insertMultipleFoods,
-    getAllFoods
+    getAllFoods,
+    getAllBadges
 }

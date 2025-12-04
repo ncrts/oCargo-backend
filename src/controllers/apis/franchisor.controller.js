@@ -14,6 +14,7 @@ const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const FranchiseeUser = require('../../models/franchisee.user.model');
 const XpRule = require('../../models/xpRule.model');
 const Badge = require('../../models/badges.model');
+const BadgeMaster = require('../../models/badge.master.model');
 
 const { getMessage } = require("../../../config/languageLocalization");
 const validator = require('validator');
@@ -1234,6 +1235,23 @@ const bulkInsertBadges = async (req, res) => {
 	}
 };
 
+/**
+ * Bulk insert BadgeMaster records
+ * POST /franchisor/badge-masters/bulk-insert
+ * Body: Array of badge master objects
+ */
+const bulkInsertBadgeMasters = async (req, res) => {
+	try {
+		if (!Array.isArray(req.body) || req.body.length === 0) {
+			return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Request body must be a non-empty array', data: null });
+		}
+		const inserted = await BadgeMaster.insertMany(req.body, { ordered: false });
+		res.status(httpStatus.CREATED).json({ success: true, message: 'Badge masters inserted', data: inserted });
+	} catch (err) {
+		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+	}
+};
+
 module.exports = {
     createFranchisorInfo,
     updateFranchisorInfo,
@@ -1254,5 +1272,6 @@ module.exports = {
     getFranchiseeUsersList,
     deleteFranchiseeUser,
     bulkInsertXpRules,
-	bulkInsertBadges
+	bulkInsertBadges,
+	bulkInsertBadgeMasters
 };

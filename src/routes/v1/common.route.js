@@ -22,5 +22,6 @@ router.post('/avatars/bulk-insert', commonController.insertMultipleAvatars);
 router.get('/avatars', commonController.getAllAvatars);
 router.post('/foods/bulk-insert', commonController.insertMultipleFoods);
 router.get('/foods', languageDetectionMiddleware, commonController.getAllFoods);
+router.get('/badges-master', languageDetectionMiddleware, commonController.getAllBadges);
 
 module.exports = router;
