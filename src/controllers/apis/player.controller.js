@@ -207,7 +207,7 @@ const signin = catchAsync(async (req, res) => {
 const socialLogin = catchAsync(async (req, res) => {
     // Validate required fields
     if (!req.body.signupWith || !req.body.socialId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Required fields are missing, please provide signupWith (google or apple) and socialId',
             data: null
@@ -217,7 +217,7 @@ const socialLogin = catchAsync(async (req, res) => {
     // Validate signupWith is either google or apple
     const validSocialProviders = ['google', 'apple'];
     if (!validSocialProviders.includes(req.body.signupWith)) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Invalid social provider, please choose either "google" or "apple".',
             data: null
@@ -260,88 +260,107 @@ const socialLogin = catchAsync(async (req, res) => {
                 token: token
             }
         });
-    }
-
-    // Player doesn't exist, create new account
-    // Generate unique pseudo-name if not provided
-    let pseudoName = req.body.pseudoName;
-    if (!pseudoName) {
-        pseudoName = await generateUniquePseudoName();
     } else {
-        // Verify pseudo-name is unique
-        const existingPlayer = await Player.findOne({ pseudoName: pseudoName });
-        if (existingPlayer) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+        if (req.body.isSignupOnly === true) {
+            // Player doesn't exist, create new account
+            let pseudoName = req.body.pseudoName;
+
+            // Verify pseudo-name is unique
+            const existingPlayer = await Player.findOne({ pseudoName: pseudoName });
+            if (existingPlayer) {
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: getMessage("EXISTED_PSEUDO_NAME", res.locals.language),
+                    details: 'This pseudo-name is already taken. Please choose another.'
+                });
+            }
+
+            // Create new player data
+            const newPlayerData = {
+                pseudoName: pseudoName,
+                mode: 'client',
+                role: 'client',
+                signinWith: req.body.signupWith,
+                isEmailVerified: true, // Social logins skip email verification
+                password: 'social@123' // Generate random password
+            };
+
+            // Add social IDs
+            if (req.body.signupWith === 'google') {
+                newPlayerData.google_id = req.body.socialId;
+            } else if (req.body.signupWith === 'apple') {
+                newPlayerData.apple_id = req.body.socialId;
+            }
+
+            // Add date of birth if provided
+            if (req.body.dob) {
+                const isValidAge = await is18Plus(req.body.dob);
+                if (!isValidAge) {
+                    return res.status(httpStatus.OK).json({
+                        success: false,
+                        message: getMessage("IN_VALIDEAGE", res.locals.language)
+                    });
+                }
+                newPlayerData.dob = req.body.dob;
+            }
+
+            // Add email only if provided (required for Google)
+            if (req.body.email) {
+                const emailExists = await Player.findOne({ email: req.body.email });
+                if (emailExists) {
+                    return res.status(httpStatus.OK).json({
+                        success: false,
+                        message: getMessage("EXISTED_EMAIL", res.locals.language),
+                        details: 'This email is already registered. Please use another email.'
+                    });
+                }
+                newPlayerData.email = req.body.email;
+            }
+
+            // Add optional device information
+            if (req.body.deviceType) newPlayerData.deviceType = req.body.deviceType;
+            if (req.body.devicePushKey) newPlayerData.devicePushKey = req.body.devicePushKey;
+
+            // Create player and related documents
+            let newPlayer = new Player(newPlayerData);
+            let playerProfile = new PlayerProfile({ clientId: newPlayer._id, mode: 'client' });
+            let playerStat = new PlayerStat({ clientId: newPlayer._id, mode: 'client' });
+            let playerCommunication = new PlayerCommunication({ clientId: newPlayer._id });
+
+            newPlayer.clientProfileId = playerProfile._id;
+            newPlayer.clientStatId = playerStat._id;
+            newPlayer.clientCommunicationId = playerCommunication._id;
+
+            await newPlayer.save();
+            await playerProfile.save();
+            await playerStat.save();
+            await playerCommunication.save();
+
+            // Generate authentication token
+            const token = await newPlayer.generateAuthToken();
+
+            return res.status(httpStatus.CREATED).json({
+                success: true,
+                message: 'Player account created and authenticated via ' + req.body.signupWith,
+                data: {
+                    s3BaseUrl,
+                    player: newPlayer,
+                    token: token,
+                    isNewAccount: true
+                }
+            });
+            
+        } else {
+            // If player does not exist, proceed to create a new account
+            return res.status(httpStatus.NOT_FOUND).json({
                 success: false,
-                message: getMessage("EXISTED_PSEUDO_NAME", res.locals.language),
-                details: 'This pseudo-name is already taken. Please choose another.'
+                message: getMessage("PLAYER_NOT_FOUND_SIGNUP_FIRST", res.locals.language),
+                data: null
             });
         }
     }
 
-    // Create new player data
-    const newPlayerData = {
-        pseudoName: pseudoName,
-        mode: 'client',
-        role: 'client',
-        signinWith: req.body.signupWith,
-        isEmailVerified: true, // Social logins skip email verification
-        password: 'social@' + Math.random().toString(36).slice(-8) // Generate random password
-    };
 
-    // Add social IDs
-    if (req.body.signupWith === 'google') {
-        newPlayerData.google_id = req.body.socialId;
-        newPlayerData.email = req.body.email; // Google typically provides email
-    } else if (req.body.signupWith === 'apple') {
-        newPlayerData.apple_id = req.body.socialId;
-        if (req.body.email) newPlayerData.email = req.body.email; // Apple email is optional
-    }
-
-    // Add date of birth if provided
-    if (req.body.dob) {
-        const isValidAge = await is18Plus(req.body.dob);
-        if (!isValidAge) {
-            return res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: getMessage("IN_VALIDEAGE", res.locals.language)
-            });
-        }
-        newPlayerData.dob = req.body.dob;
-    }
-
-    // Add optional device information
-    if (req.body.deviceType) newPlayerData.deviceType = req.body.deviceType;
-    if (req.body.devicePushKey) newPlayerData.devicePushKey = req.body.devicePushKey;
-
-    // Create player and related documents
-    let newPlayer = new Player(newPlayerData);
-    let playerProfile = new PlayerProfile({ clientId: newPlayer._id, mode: 'client' });
-    let playerStat = new PlayerStat({ clientId: newPlayer._id, mode: 'client' });
-    let playerCommunication = new PlayerCommunication({ clientId: newPlayer._id });
-
-    newPlayer.clientProfileId = playerProfile._id;
-    newPlayer.clientStatId = playerStat._id;
-    newPlayer.clientCommunicationId = playerCommunication._id;
-
-    await newPlayer.save();
-    await playerProfile.save();
-    await playerStat.save();
-    await playerCommunication.save();
-
-    // Generate authentication token
-    const token = await newPlayer.generateAuthToken();
-
-    return res.status(httpStatus.CREATED).json({
-        success: true,
-        message: 'Player account created and authenticated via ' + req.body.signupWith,
-        data: {
-            s3BaseUrl,
-            player: newPlayer,
-            token: token,
-            isNewAccount: true
-        }
-    });
 })
 
 
@@ -382,55 +401,55 @@ const createFirebaseCustomToken = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves when the response has been sent
  */
 const singoutFirebaseCustomToken = async (req, res) => {
-	try {
-		const admin = require("firebase-admin");
+    try {
+        const admin = require("firebase-admin");
 
-		// Validate that player exists
-		if (!req.player || !req.player.pseudoName) {
-			return res.status(httpStatus.BAD_REQUEST).json({
-				success: false,
-				message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language),
-				data: null
-			});
-		}
+        // Validate that player exists
+        if (!req.player || !req.player.pseudoName) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language),
+                data: null
+            });
+        }
 
-		const uid = `${req.player.pseudoName}`;
+        const uid = `${req.player.pseudoName}`;
 
-		try {
-			// Revoke all refresh tokens for the user
-			// This invalidates all active sessions and tokens for this user
-			await admin.auth().revokeRefreshTokens(uid);
-		} catch (firebaseError) {
-			// Log error but continue with local signout if user doesn't exist in Firebase
-			if (firebaseError.code !== "auth/user-not-found") {
-				// console.error("Error revoking Firebase tokens:", firebaseError);
-				// throw firebaseError;
+        try {
+            // Revoke all refresh tokens for the user
+            // This invalidates all active sessions and tokens for this user
+            await admin.auth().revokeRefreshTokens(uid);
+        } catch (firebaseError) {
+            // Log error but continue with local signout if user doesn't exist in Firebase
+            if (firebaseError.code !== "auth/user-not-found") {
+                // console.error("Error revoking Firebase tokens:", firebaseError);
+                // throw firebaseError;
                 return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
                     success: false,
                     message: firebaseError,
                     data: null
                 });
-			}
-		}
+            }
+        }
 
-		// Clear the player's application token
-		// req.player.token = '';
-		// await req.player.save();
+        // Clear the player's application token
+        // req.player.token = '';
+        // await req.player.save();
 
-		return res.status(httpStatus.OK).json({
-			success: true,
-			message: getMessage("PLAYER_SIGNOUT_SUCCESS", res.locals.language),
-			data: null
-		});
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("PLAYER_SIGNOUT_SUCCESS", res.locals.language),
+            data: null
+        });
 
-	} catch (err) {
-		console.error("Error during Firebase custom token signout:", err);
-		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: "Error during signout process",
-			data: null
-		});
-	}
+    } catch (err) {
+        console.error("Error during Firebase custom token signout:", err);
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "Error during signout process",
+            data: null
+        });
+    }
 }
 
 
@@ -575,7 +594,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update firstName if provided
         if (req.body.firstName !== undefined && req.body.firstName !== null) {
             if (typeof req.body.firstName !== 'string' || !req.body.firstName.trim()) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'First name must be a non-empty string',
                     data: null
@@ -589,7 +608,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update lastName if provided
         if (req.body.lastName !== undefined && req.body.lastName !== null) {
             if (typeof req.body.lastName !== 'string' || !req.body.lastName.trim()) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'Last name must be a non-empty string',
                     data: null
@@ -604,7 +623,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         if (req.body.gender !== undefined && req.body.gender !== null) {
             const validGenders = ['Male', 'Female', 'Prefer not to share'];
             if (!validGenders.includes(req.body.gender)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'Gender must be one of: Male, Female, Prefer not to share',
                     data: null
@@ -618,7 +637,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update profileAvatar if provided
         if (req.body.profileAvatar !== undefined && req.body.profileAvatar !== null) {
             if (typeof req.body.profileAvatar !== 'string' || !req.body.profileAvatar.trim()) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'Profile avatar must be a non-empty string (URL)',
                     data: null
@@ -644,7 +663,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         if (req.body.quizCategoryInterests !== undefined && req.body.quizCategoryInterests !== null) {
             // Validate that it's an array
             if (!Array.isArray(req.body.quizCategoryInterests)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'quizCategoryInterests must be an array of category objects',
                     data: null
@@ -655,7 +674,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             const validatedCategories = [];
             for (const category of req.body.quizCategoryInterests) {
                 if (typeof category !== 'object' || category === null) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each quiz category must be an object with categoryIds and categoryName',
                         data: null
@@ -663,7 +682,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
                 }
 
                 if (!category.categoryIds || typeof category.categoryIds !== 'string') {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each category must have a valid categoryIds (ObjectId as string)',
                         data: null
@@ -671,7 +690,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
                 }
 
                 if (!category.categoryName || typeof category.categoryName !== 'string' || !category.categoryName.trim()) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each category must have a non-empty categoryName',
                         data: null
@@ -693,7 +712,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         if (req.body.favoriteFood !== undefined && req.body.favoriteFood !== null) {
             // Validate that it's an array
             if (!Array.isArray(req.body.favoriteFood)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'favoriteFood must be an array of food objects',
                     data: null
@@ -704,7 +723,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             const validatedFoods = [];
             for (const food of req.body.favoriteFood) {
                 if (typeof food !== 'object' || food === null) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each food item must be an object with foodId and foodName',
                         data: null
@@ -712,7 +731,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
                 }
 
                 if (!food.foodId || typeof food.foodId !== 'string') {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each food must have a valid foodId (ObjectId as string)',
                         data: null
@@ -720,7 +739,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
                 }
 
                 if (!food.foodName || typeof food.foodName !== 'string' || !food.foodName.trim()) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         status: false,
                         message: 'Each food must have a non-empty foodName',
                         data: null
@@ -741,7 +760,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update favoriteOCargoFoodCourt if provided
         if (req.body.favoriteOCargoFoodCourt !== undefined && req.body.favoriteOCargoFoodCourt !== null) {
             if (typeof req.body.favoriteOCargoFoodCourt !== 'string' || !req.body.favoriteOCargoFoodCourt.trim()) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'favoriteOCargoFoodCourt must be a valid ObjectId (string)',
                     data: null
@@ -755,7 +774,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update currentOcargoFoodCourt if provided
         if (req.body.currentOcargoFoodCourt !== undefined && req.body.currentOcargoFoodCourt !== null) {
             if (typeof req.body.currentOcargoFoodCourt !== 'string' || !req.body.currentOcargoFoodCourt.trim()) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'currentOcargoFoodCourt must be a valid ObjectId (string)',
                     data: null
@@ -769,7 +788,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update preferencesEmail if provided
         if (req.body.preferencesEmail !== undefined && req.body.preferencesEmail !== null) {
             if (typeof req.body.preferencesEmail !== 'boolean') {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'preferencesEmail must be a boolean value (true or false)',
                     data: null
@@ -783,7 +802,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update preferencesPush if provided
         if (req.body.preferencesPush !== undefined && req.body.preferencesPush !== null) {
             if (typeof req.body.preferencesPush !== 'boolean') {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'preferencesPush must be a boolean value (true or false)',
                     data: null
@@ -797,7 +816,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
         // Update preferencesSMS if provided
         if (req.body.preferencesSMS !== undefined && req.body.preferencesSMS !== null) {
             if (typeof req.body.preferencesSMS !== 'boolean') {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     status: false,
                     message: 'preferencesSMS must be a boolean value (true or false)',
                     data: null

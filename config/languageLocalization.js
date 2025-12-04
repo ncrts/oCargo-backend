@@ -534,6 +534,11 @@ const languageLocalization = {
         'en_us': 'Author ID is invalid or does not exist.',
         'es_co': 'El ID del autor es inválido o no existe.',
         'fr_fr': 'L\'ID de l\'auteur est invalide ou n\'existe pas.'
+    },
+    "PLAYER_NOT_FOUND_SIGNUP_FIRST":{
+        'en_us': 'Player not found. Please sign up first.',
+        'es_co': 'Jugador no encontrado. Por favor regístrese primero.',
+        'fr_fr': 'Joueur non trouvé. Veuillez vous inscrire d\'abord.'
     }
 };
 
