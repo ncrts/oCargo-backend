@@ -14,7 +14,7 @@ const mongoose = require('mongoose');
  * Each record represents **one feedback entry per player per game instance**.
  */
 
-const FeedbackStatusEnum = ['pending', 'reviewed', 'flagged', 'hidden'];
+const FeedbackStatusEnum = ['pending', 'reviewed', 'accepted', 'hidden'];
 
 const quizFeedbackSchema = new mongoose.Schema({
     // ------------------------------------------------
@@ -115,7 +115,7 @@ const quizFeedbackSchema = new mongoose.Schema({
     status: { 
         type: String, 
         enum: FeedbackStatusEnum, 
-        default: 'pending',
+        default: 'accepted',
         description: 'Moderation status for this feedback entry.'
     },
 

@@ -15,6 +15,8 @@ const Player = require('../../models/client.model');
 const PlayerProfile = require('../../models/clientProfile.model');
 const PlayerStat = require('../../models/clientStat.model');
 const PlayerCommunication = require('../../models/clientCommunication.model');
+const QuizGameSession = require('../../models/quizGameSession.model');
+const QuizFeedback = require('../../models/quizFeedback.model');
 const { getMessage } = require("../../../config/languageLocalization");
 
 const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
@@ -349,7 +351,7 @@ const socialLogin = catchAsync(async (req, res) => {
                     isNewAccount: true
                 }
             });
-            
+
         } else {
             // If player does not exist, proceed to create a new account
             return res.status(httpStatus.NOT_FOUND).json({
@@ -955,6 +957,92 @@ const globalFileDeleteWithS3 = async (key) => {
     }
 };
 
+/**
+ * Submits feedback and rating for a quiz game session by a player
+ * @route POST /quiz/game-session/feedback
+ * @param {Object} req - Express request object
+ * @param {string} req.body.quizGameSessionId - ID of the quiz game session (required)
+ * @param {string} req.body.playerId - ID of the player (required)
+ * @param {number} req.body.rating - Rating from 1 to 5 (required)
+ * @param {string} req.body.feedbackText - Optional feedback text (optional, max 1000 chars)
+ * @param {string} req.body.franchiseId - ID of franchise (optional)
+ * @returns {Object} Success response with feedback details
+ */
+const submitQuizFeedback = catchAsync(async (req, res) => {
+    const { quizGameSessionId, playerId, rating, feedbackText, franchiseId } = req.body;
+
+    // Validate rating value
+    if (rating < 1 || rating > 5) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage('INVALID_RATING_VALUE', res.locals.language)
+        });
+    }
+
+    // Check if quiz game session exists
+    const quizGameSession = await QuizGameSession.findById(quizGameSessionId);
+    if (!quizGameSession) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage('QUIZ_GAME_SESSION_NOT_FOUND', res.locals.language)
+        });
+    }
+
+    // Verify quiz ID exists in the session
+    if (!quizGameSession.quizId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage('QUIZ_ID_NOT_FOUND', res.locals.language)
+        });
+    }
+
+    // Check if feedback already exists for this player and session (unique constraint)
+    const existingFeedback = await QuizFeedback.findOne({
+        playerId,
+        quizGameSessionId
+    });
+
+    if (existingFeedback) {
+        return res.status(httpStatus.CONFLICT).json({
+            success: false,
+            message: getMessage('QUIZ_FEEDBACK_ALREADY_SUBMITTED', res.locals.language)
+        });
+    }
+
+    // Create new feedback record
+    const newFeedback = new QuizFeedback({
+        quizGameSessionId,
+        quizId: quizGameSession.quizId,
+        playerId,
+        rating,
+        feedbackText: feedbackText || '',
+        franchiseId: franchiseId || quizGameSession.franchiseId,
+        status: 'accepted',
+        submittedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+    });
+
+    // Save feedback to database
+    await newFeedback.save();
+
+    return res.status(httpStatus.CREATED).json({
+        success: true,
+        message: getMessage('QUIZ_FEEDBACK_SUBMITTED_SUCCESS', res.locals.language),
+        data: {
+            feedbackId: newFeedback._id,
+            quizGameSessionId: newFeedback.quizGameSessionId,
+            quizId: newFeedback.quizId,
+            playerId: newFeedback.playerId,
+            rating: newFeedback.rating,
+            feedbackText: newFeedback.feedbackText,
+            status: newFeedback.status,
+            submittedAt: newFeedback.submittedAt
+        }
+    });
+});
+
+
 module.exports = {
     signup,
     signin,
@@ -968,5 +1056,6 @@ module.exports = {
     updatePlayerProfilePicture,
     deletePlayerProfilePicture,
     createFirebaseCustomToken,
-    singoutFirebaseCustomToken
+    singoutFirebaseCustomToken,
+    submitQuizFeedback
 };

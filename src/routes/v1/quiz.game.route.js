@@ -10,6 +10,8 @@ const accessRoleRights = require('../../middleware/accessRoleRights');
 const { userProfileUpload } = require('../../filesuploder/user.files');
 const commonController = require('../../controllers/apis/common.controller');
 const quizGameController = require('../../controllers/apis/quizGame.controller');
+const playerController = require('../../controllers/apis/player.controller');
+const playerValidation = require('../../validations/player.validation');
 const languageDetectionMiddleware = require('../../utils/languageConverter').languageDetectionMiddleware;
 
 const router = express.Router();
@@ -68,5 +70,8 @@ router.post('/quiz/calculate-points', languageDetectionMiddleware, quizGameContr
 
 router.post('/quiz/player-response-answer', languageDetectionMiddleware, authToken.commonProtect, quizGameController.playerResponseAnswer);
 router.post('/quiz/complete-questions-data', languageDetectionMiddleware, authToken.commonProtect, quizGameController.completeQuizGameSessionQuestionsData);
+
+// Quiz Feedback Routes
+router.post('/quiz/game-session/feedback', languageDetectionMiddleware, authToken.playerProtect, validate(playerValidation.submitQuizFeedback), playerController.submitQuizFeedback);
 
 module.exports = router;

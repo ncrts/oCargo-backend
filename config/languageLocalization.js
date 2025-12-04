@@ -539,6 +539,31 @@ const languageLocalization = {
         'en_us': 'Player not found. Please sign up first.',
         'es_co': 'Jugador no encontrado. Por favor regístrese primero.',
         'fr_fr': 'Joueur non trouvé. Veuillez vous inscrire d\'abord.'
+    },
+    "QUIZ_FEEDBACK_SUBMITTED_SUCCESS": {
+        'en_us': 'Quiz feedback submitted successfully!',
+        'es_co': '¡Comentario del cuestionario enviado con éxito!',
+        'fr_fr': 'Retour d\'information sur le quiz soumis avec succès !'
+    },
+    "QUIZ_GAME_SESSION_NOT_FOUND": {
+        'en_us': 'Quiz game session not found.',
+        'es_co': 'Sesión de juego de cuestionario no encontrada.',
+        'fr_fr': 'Session de jeu de quiz non trouvée.'
+    },
+    "INVALID_RATING_VALUE": {
+        'en_us': 'Rating must be between 1 and 5.',
+        'es_co': 'La calificación debe estar entre 1 y 5.',
+        'fr_fr': 'La note doit être entre 1 et 5.'
+    },
+    "QUIZ_FEEDBACK_ALREADY_SUBMITTED": {
+        'en_us': 'Feedback for this quiz session has already been submitted.',
+        'es_co': 'Ya se ha enviado comentarios para esta sesión de cuestionario.',
+        'fr_fr': 'Des commentaires pour cette session de quiz ont déjà été soumis.'
+    },
+    "QUIZ_ID_NOT_FOUND": {
+        'en_us': 'Quiz ID not found for this game session.',
+        'es_co': 'ID de cuestionario no encontrado para esta sesión de juego.',
+        'fr_fr': 'ID de quiz non trouvé pour cette session de jeu.'
     }
 };
 

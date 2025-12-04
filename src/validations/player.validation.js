@@ -37,8 +37,19 @@ const deletePlayerPicture = {
     })
 }
 
+const submitQuizFeedback = {
+    body: Joi.object().keys({
+        quizGameSessionId: Joi.string().custom(objectId).required(),
+        playerId: Joi.string().custom(objectId).required(),
+        rating: Joi.number().min(1).max(5).required(),
+        feedbackText: Joi.string().max(1000).trim().allow(''),
+        franchiseId: Joi.string().custom(objectId).optional()
+    })
+}
+
 module.exports = {
     updatePlayerProfile,
     updatePlayerPicture,
-    deletePlayerPicture
+    deletePlayerPicture,
+    submitQuizFeedback
 }
