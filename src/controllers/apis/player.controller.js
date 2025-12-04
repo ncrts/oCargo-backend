@@ -160,8 +160,7 @@ const signin = catchAsync(async (req, res) => {
     let player = null
     if (req.body.pseudoName && req.body.dob) {
         let checkPseudoName = await Player.findOne({
-            pseudoName: { $regex: `^${req.body.pseudoName}$`, $options: 'i' },
-            dob: { $eq: req.body.dob } // Ensure exact match for date of birth
+            pseudoName: { $regex: `^${req.body.pseudoName}$`, $options: 'i' }
         });
         if (!checkPseudoName) {
             return res.status(httpStatus.OK).json({ success: false, message: getMessage("PLAYER_PSEUDO_NAME_NOT_FOUND", res.locals.language), data: null });
