@@ -74,4 +74,7 @@ router.post('/quiz/complete-questions-data', languageDetectionMiddleware, authTo
 // Quiz Feedback Routes
 router.post('/quiz/game-session/feedback', languageDetectionMiddleware, authToken.playerProtect, validate(playerValidation.submitQuizFeedback), playerController.submitQuizFeedback);
 
+// Player Game Session History Route
+router.get('/quiz/game-session/history/:clientId', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getPlayerGameSessionHistory);
+
 module.exports = router;

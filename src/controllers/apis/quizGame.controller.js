@@ -2086,7 +2086,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
 
     // Fetch all quiz questions to calculate total duration
     const quizQuestions = await QuizQuestion.find({ quizId: quizId });
-    
+
     // Calculate total duration (sum of all question time limits in seconds)
     const totalDurationSeconds = quizQuestions.reduce((sum, question) => {
         return sum + (question.timeLimit || 30); // Default 30 seconds per question
@@ -2498,7 +2498,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
 
         // Fetch all quiz questions to calculate total duration
         const quizQuestions = await QuizQuestion.find({ quizId: session.quizId });
-        
+
         // Calculate total duration (sum of all question time limits in seconds)
         const totalDurationSeconds = quizQuestions.reduce((sum, question) => {
             return sum + (question.timeLimit || 30); // Default 30 seconds per question
@@ -2516,7 +2516,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
         }
 
         if (startTime !== undefined) updateFields.startTime = startTime;
-        
+
         // Always update endTime and duration based on calculated values
         updateFields.endTime = newEndTime;
         updateFields.duration = totalDurationSeconds;
@@ -3511,7 +3511,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
     }
 });
 
-const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => { 
+const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
     res.status(httpStatus.OK).json({
         success: true,
         message: 'Complete quiz game session questions data - To be implemented',
@@ -3528,27 +3528,137 @@ const playerResponseAnswer = catchAsync(async (req, res) => {
 })
 
 
+/**
+ * Get player's quiz game session history
+ * GET /quiz/game-session/history/:clientId
+ * 
+ * Query parameters:
+ * - limit: number of records per page (default: 20, max: 100)
+ * - skip: number of records to skip (default: 0)
+ * 
+ * Returns: array of player's previous game sessions with pagination info
+ */
+const getPlayerGameSessionHistory = catchAsync(async (req, res) => {
+	try {
+		const { clientId } = req.params;
+		const { limit = 20, skip = 0 } = req.query;
+
+		// ===== VALIDATION =====
+		if (!clientId || typeof clientId !== 'string' || !clientId.trim()) {
+			return res.status(httpStatus.BAD_REQUEST).json({
+				success: false,
+				message: 'clientId is required',
+				data: null
+			});
+		}
+
+		// Parse limit and skip as integers
+		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
+		const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+		// ===== FETCH DATA =====
+		const filter = {
+			clientId: clientId,
+			isDeleted: false
+		};
+
+		// Get total count for pagination info
+		const totalCount = await QuizSessionPlayer.countDocuments(filter);
+
+		const playerSessions = await QuizSessionPlayer.find(filter)
+			.populate({
+				path: 'quizId',
+				select: 'title description category visibility'
+			})
+			.populate({ path: 'clientId', select: 'firstName lastName email profilePicture' })
+			.populate({ path: 'franchiseId', select: 'name location' })
+			.sort({ joinedAt: -1 })
+			.limit(pageLimit)
+			.skip(pageSkip);
+
+		// ===== FORMAT RESPONSE =====
+		const formattedHistory = playerSessions.map(session => {
+			return {
+				sessionId: session._id,
+				quizGameSessionId: session.quizGameSessionId,
+				quizInfo: {
+					quizId: session.quizId._id,
+					title: session.quizId.title,
+					description: session.quizId.description,
+					category: session.quizId.category,
+					quizType: session.quizType,
+					visibility: session.quizId.visibility
+				},
+				playerInfo: {
+					clientId: session.clientId._id,
+					firstName: session.clientId.firstName,
+					lastName: session.clientId.lastName,
+					email: session.clientId.email
+				},
+				franchiseInfo: {
+					franchiseId: session.franchiseId._id,
+					name: session.franchiseId.name,
+				},
+				performance: {
+					totalScore: session.totalScore,
+					finalRank: session.finalRank,
+					streak: session.streak
+				},
+				sessionDates: {
+					joinedAt: session.joinedAt,
+					leftAt: session.leftAt,
+					dateEarned: session.dateEarned
+				},
+				isActive: session.isActive,
+				quizType: session.quizType
+			};
+		});
+
+		return res.status(httpStatus.OK).json({
+			success: true,
+			message: 'Player game session history fetched successfully',
+			data: formattedHistory,
+			count: formattedHistory.length,
+			totalCount: totalCount,
+			pagination: {
+				limit: pageLimit,
+				skip: pageSkip,
+				page: Math.floor(pageSkip / pageLimit) + 1,
+				totalPages: Math.ceil(totalCount / pageLimit)
+			}
+		});
+	} catch (err) {
+		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+			success: false,
+			message: 'Error fetching player game session history',
+			error: err.message,
+			data: null
+		});
+	}
+});
+
 module.exports = {
-    createMultipleCategories,
-    getCategory,
-    createQuizInstant,
-    updateQuizInstant,
-    getQuizInstantList,
-    getQuizQuestionsByQuizId,
-    createQuizQuestion,
-    updateQuizQuestion,
-    deleteQuizQuestion,
-    createQuizGameSession,
-    getQuizGameSessionById,
-    getQuizGameSessions,
-    updateQuizGameSession,
-    deleteQuizGameSession,
-    joinQuizGameSession,
-    submitQuizAnswer,
-    leaveQuizGameSession,
-    getPlayerSessionData,
-    getSessionLeaderboard,
-    calculateQuestionPoints,
-    completeQuizGameSessionQuestionsData,
-    playerResponseAnswer
-}
+        createMultipleCategories,
+        getCategory,
+        createQuizInstant,
+        updateQuizInstant,
+        getQuizInstantList,
+        getQuizQuestionsByQuizId,
+        createQuizQuestion,
+        updateQuizQuestion,
+        deleteQuizQuestion,
+        createQuizGameSession,
+        getQuizGameSessionById,
+        getQuizGameSessions,
+        updateQuizGameSession,
+        deleteQuizGameSession,
+        joinQuizGameSession,
+        submitQuizAnswer,
+        leaveQuizGameSession,
+        getPlayerSessionData,
+        getSessionLeaderboard,
+        calculateQuestionPoints,
+        completeQuizGameSessionQuestionsData,
+        playerResponseAnswer,
+        getPlayerGameSessionHistory
+    }
