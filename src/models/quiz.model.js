@@ -37,7 +37,7 @@ const quizSchema = new mongoose.Schema({
     // ------------------------------------------------
     // 🔹 Basic Quiz Information
     // ------------------------------------------------
-    
+
     /**
      * 🏷️ Title
      * Display name of the quiz shown to players and staff during selection.
@@ -166,6 +166,18 @@ const quizSchema = new mongoose.Schema({
         ],
         default: 'DraftLocal',
         description: 'Defines the quiz’s publishing and moderation state.'
+    },
+
+
+    /**
+   * 💪 Difficulty Level
+   * Indicates question complexity (used in XP calculation and analytics).
+   */
+    difficaltyLavel: {
+        type: String,
+        enum: ['Easy', 'Medium', 'Hard', 'VeryHard'],
+        default: 'Easy',
+        description: 'Difficulty level of the question.'
     },
 
     // ------------------------------------------------

@@ -604,6 +604,11 @@ const languageLocalization = {
         'en_us': 'Franchisee not found.',
         'es_co': 'Franquicia no encontrada.',
         'fr_fr': 'Franchise non trouvée.'
+    },
+    "FRANCHISEE_OR_FRANCHISOR_INFO_ID_REQUIRED": {
+        'en_us': 'Franchisee or Franchisor info ID is required.',
+        'es_co': 'Se requiere la ID de información del franquiciado o del franquiciador.',
+        'fr_fr': 'L\'ID d\'information du franchisé ou du franchiseur est requis.'
     }
 };
 

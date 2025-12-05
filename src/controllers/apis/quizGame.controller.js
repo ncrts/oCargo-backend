@@ -26,6 +26,8 @@ const FranchiseeLeaderboard = require('../../models/franchiseeLeaderboard.model'
 
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const Franchisee = require('../../models/franchisee.user.model');
+const Franchisor = require('../../models/franchisor.user.model');
+const FranchisorInfo = require('../../models/franchisorInfo.model');
 
 
 const { getMessage } = require("../../../config/languageLocalization")
@@ -135,33 +137,48 @@ const getCategory = catchAsync(async (req, res) => {
  * - 400 Bad Request: Validation failed with descriptive error message
  */
 const createQuizInstant = catchAsync(async (req, res) => {
+
     const {
         franchiseeInfoId,
+        franchisorInfoId,
         title,
         description,
         author,
         category,
         visibility,
-        language
+        language,
+        difficaltyLavel
     } = req.body;
 
-    // ===== VALIDATION: franchiseeInfoId =====
-    if (!franchiseeInfoId) {
+    // ===== VALIDATION: franchiseeInfoId or franchisorInfoId =====
+    if (!franchiseeInfoId && !franchisorInfoId) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("FRANCHISEE_INFO_ID_REQUIRED", res.locals.language),
+            message: getMessage("FRANCHISEE_OR_FRANCHISOR_INFO_ID_REQUIRED", res.locals.language),
             data: null
         });
     }
-
-    // Check if franchiseeInfoId exists in database
-    const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
-    if (!franchiseeExists) {
-        return res.status(httpStatus.BAD_REQUEST).json({
-            success: false,
-            message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
-            data: null
-        });
+    let franchiseeExists = null;
+    let franchisorExists = null;
+    if (franchiseeInfoId) {
+        franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
+        if (!franchiseeExists) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
+                data: null
+            });
+        }
+    }
+    if (franchisorInfoId) {
+        franchisorExists = await FranchisorInfo.findById(franchisorInfoId);
+        if (!franchisorExists) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("FRANCHISOR_INFO_NOT_FOUND_IN_DB", res.locals.language),
+                data: null
+            });
+        }
     }
 
     // ===== VALIDATION: title =====
@@ -268,8 +285,8 @@ const createQuizInstant = catchAsync(async (req, res) => {
     }
 
     // ===== BUILD VALIDATED QUIZ DATA =====
+
     const quizData = {
-        franchiseeInfoId,
         title: title.trim(),
         description: description.trim(),
         author: {
@@ -280,6 +297,9 @@ const createQuizInstant = catchAsync(async (req, res) => {
         visibility,
         language: language || 'en_us'
     };
+    if (franchiseeInfoId) quizData.franchiseeInfoId = franchiseeInfoId;
+    if (franchisorInfoId) quizData.franchisorInfoId = franchisorInfoId;
+    if (difficaltyLavel) quizData.difficaltyLavel = difficaltyLavel;
 
     // Create and save quiz
     const quiz = new Quiz(quizData);
@@ -323,14 +343,18 @@ const createQuizInstant = catchAsync(async (req, res) => {
  */
 const updateQuizInstant = catchAsync(async (req, res) => {
     const { id } = req.params;
+
     const {
+        franchiseeInfoId,
+        franchisorInfoId,
         title,
         description,
         author,
         category,
         visibility,
         language,
-        status
+        status,
+        difficaltyLavel
     } = req.body;
 
     // ===== VALIDATION: Quiz ID =====
@@ -361,6 +385,29 @@ const updateQuizInstant = catchAsync(async (req, res) => {
         });
     }
 
+
+    // ===== VALIDATION: franchiseeInfoId or franchisorInfoId if provided =====
+    if (franchiseeInfoId) {
+        const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
+        if (!franchiseeExists) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
+                data: null
+            });
+        }
+    }
+    if (franchisorInfoId) {
+        const franchisorExists = await FranchisorInfo.findById(franchisorInfoId);
+        if (!franchisorExists) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("FRANCHISOR_INFO_NOT_FOUND_IN_DB", res.locals.language),
+                data: null
+            });
+        }
+    }
+
     // Build update fields with validation
     const updateFields = {};
 
@@ -375,6 +422,10 @@ const updateQuizInstant = catchAsync(async (req, res) => {
         }
         updateFields.title = title.trim();
     }
+    // Add franchiseeInfoId/franchisorInfoId if provided
+    if (franchiseeInfoId) updateFields.franchiseeInfoId = franchiseeInfoId;
+    if (franchisorInfoId) updateFields.franchisorInfoId = franchisorInfoId;
+    if (difficaltyLavel) updateFields.difficaltyLavel = difficaltyLavel;
 
     // ===== VALIDATION: description =====
     if (description !== undefined) {
@@ -527,24 +578,17 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         authorId,
         category,
         visibility,
-        status
+        status,
+        limit = 20,
+        skip = 0
     } = req.query;
 
     const filter = {};
 
-    // ===== VALIDATION & FILTER: id =====
-    if (id) {
-        filter._id = id;
-    }
-
-    // ===== VALIDATION & FILTER: franchiseeInfoId =====
-    if (franchiseeInfoId) {
-        filter.franchiseeInfoId = franchiseeInfoId;
-    }
-
-    // ===== VALIDATION & FILTER: title and searchKey =====
+    // ...existing code for filters...
+    if (id) filter._id = id;
+    if (franchiseeInfoId) filter.franchiseeInfoId = franchiseeInfoId;
     if (searchKey) {
-        // searchKey takes precedence over title
         if (typeof searchKey !== 'string' || searchKey.trim().length === 0) {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
@@ -554,7 +598,6 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         }
         filter.title = { $regex: searchKey.trim(), $options: 'i' };
     } else if (title) {
-        // Fallback to title if searchKey not provided
         if (typeof title !== 'string' || title.trim().length === 0) {
             return res.status(httpStatus.BAD_REQUEST).json({
                 success: false,
@@ -564,24 +607,15 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         }
         filter.title = { $regex: title.trim(), $options: 'i' };
     }
-
-    // ===== VALIDATION & FILTER: authorId =====
-    if (authorId) {
-        filter['author.id'] = authorId;
-    }
-
-    // ===== VALIDATION & FILTER: category (supports single or multiple) =====
+    if (authorId) filter['author.id'] = authorId;
     if (category) {
         let categoryArray = [];
         if (typeof category === 'string') {
-            // Parse comma-separated string or single ID
             categoryArray = category.split(',').map(c => c.trim()).filter(c => c.length > 0);
         } else if (Array.isArray(category)) {
             categoryArray = category;
         }
-
         if (categoryArray.length > 0) {
-            // Validate that all category IDs exist in database
             const validCategories = await QuizCategory.find({ _id: { $in: categoryArray } }).select('_id');
             if (validCategories.length !== categoryArray.length) {
                 return res.status(httpStatus.BAD_REQUEST).json({
@@ -590,8 +624,6 @@ const getQuizInstantList = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-
-            // If only one category, use exact match; if multiple, use $in operator
             if (categoryArray.length === 1) {
                 filter.category = categoryArray[0];
             } else {
@@ -599,19 +631,14 @@ const getQuizInstantList = catchAsync(async (req, res) => {
             }
         }
     }
-
-    // ===== VALIDATION & FILTER: visibility (supports single or multiple) =====
     if (visibility) {
         let visibilityArray = [];
         if (typeof visibility === 'string') {
-            // Parse comma-separated string or single value
             visibilityArray = visibility.split(',').map(v => v.trim()).filter(v => v.length > 0);
         } else if (Array.isArray(visibility)) {
             visibilityArray = visibility;
         }
-
         if (visibilityArray.length > 0) {
-            // Validate all visibility values
             const validVisibilities = ['Local', 'National'];
             const allValid = visibilityArray.every(v => validVisibilities.includes(v));
             if (!allValid) {
@@ -621,8 +648,6 @@ const getQuizInstantList = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-
-            // If only one visibility, use exact match; if multiple, use $in operator
             if (visibilityArray.length === 1) {
                 filter.visibility = visibilityArray[0];
             } else {
@@ -630,19 +655,14 @@ const getQuizInstantList = catchAsync(async (req, res) => {
             }
         }
     }
-
-    // ===== VALIDATION & FILTER: status (supports single or multiple) =====
     if (status) {
         let statusArray = [];
         if (typeof status === 'string') {
-            // Parse comma-separated string or single value
             statusArray = status.split(',').map(s => s.trim()).filter(s => s.length > 0);
         } else if (Array.isArray(status)) {
             statusArray = status;
         }
-
         if (statusArray.length > 0) {
-            // Validate all status values
             const validStatus = ['DraftLocal', 'ActiveLocal', 'DraftNational', 'ActiveNational', 'InModeration', 'ModeratedAccepted', 'ModeratedRejected', 'HiddenLocal', 'HiddenNational'];
             const allValid = statusArray.every(s => validStatus.includes(s));
             if (!allValid) {
@@ -652,8 +672,6 @@ const getQuizInstantList = catchAsync(async (req, res) => {
                     data: null
                 });
             }
-
-            // If only one status, use exact match; if multiple, use $in operator
             if (statusArray.length === 1) {
                 filter.status = statusArray[0];
             } else {
@@ -662,19 +680,34 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         }
     }
 
-    // ===== EXECUTE QUERY =====
+    // Parse limit and skip as integers
+    const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
+    const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+    // Get total count for pagination info
+    const totalCount = await Quiz.countDocuments(filter);
+
+    // ===== EXECUTE QUERY WITH PAGINATION =====
     const quizzes = await Quiz.find(filter)
         .populate({ path: 'author.id', select: 'firstName lastName email role' })
         .populate({ path: 'category', select: 'name description' })
         .populate({ path: 'questions' })
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .limit(pageLimit)
+        .skip(pageSkip);
 
     return res.status(httpStatus.OK).json({
         success: true,
         message: getMessage("QUIZ_LIST_FETCH_SUCCESS", res.locals.language),
         data: {
             quizzes,
-            totalCount: quizzes.length
+            totalCount: totalCount,
+            pagination: {
+                limit: pageLimit,
+                skip: pageSkip,
+                page: Math.floor(pageSkip / pageLimit) + 1,
+                totalPages: Math.ceil(totalCount / pageLimit)
+            }
         }
     });
 });
@@ -3515,6 +3548,8 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 });
 
 const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
+
+    
     res.status(httpStatus.OK).json({
         success: true,
         message: 'Complete quiz game session questions data - To be implemented',
