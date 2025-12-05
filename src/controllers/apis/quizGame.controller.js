@@ -3740,6 +3740,7 @@ const getLocalLeaderboard = catchAsync(async (req, res) => {
 			success: true,
 			message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Local leaderboard fetched successfully",
 			data: {
+                s3BaseUrl,
 				type: 'local',
 				totalPlayers: totalCount,
 				displayedPlayers: formattedLeaderboard.length,
@@ -3859,6 +3860,7 @@ const getNationalLeaderboard = catchAsync(async (req, res) => {
 			success: true,
 			message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "National leaderboard fetched successfully",
 			data: {
+                s3BaseUrl,
 				type: 'national',
 				totalPlayers: totalCount,
 				displayedPlayers: formattedLeaderboard.length,
@@ -4015,6 +4017,7 @@ const getFranchiseeLeaderboard = catchAsync(async (req, res) => {
 			success: true,
 			message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Franchisee leaderboard fetched successfully",
 			data: {
+                s3BaseUrl,
 				type: 'franchisee',
 				franchiseeId: franchiseeInfoId,
 				totalPlayers: totalCount,
@@ -4039,6 +4042,32 @@ const getFranchiseeLeaderboard = catchAsync(async (req, res) => {
 	}
 });
 
+let createBulkLocalLeaderboard = catchAsync(async (req, res) => {
+    let localLeaderboard = await LocalLeaderboard.insertMany(req.body);
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Bulk local leaderboard created successfully',
+        data: localLeaderboard
+    });
+});
+
+let createBulkNationalLeaderboard = catchAsync(async (req, res) => {
+    let nationalLeaderboard = await NationalLeaderboard.insertMany(req.body);
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Bulk national leaderboard created successfully',
+        data: nationalLeaderboard
+    });
+});
+
+let createBulkFranchiseeLeaderboard = catchAsync(async (req, res) => {
+    let franchiseeLeaderboard = await FranchiseeLeaderboard.insertMany(req.body);
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Bulk franchisee leaderboard created successfully',
+        data: franchiseeLeaderboard
+    });
+});
 
 module.exports = {
         createMultipleCategories,
@@ -4066,5 +4095,8 @@ module.exports = {
         getPlayerGameSessionHistory,
         getLocalLeaderboard,
         getNationalLeaderboard,
-        getFranchiseeLeaderboard
+        getFranchiseeLeaderboard,
+        createBulkLocalLeaderboard,
+        createBulkNationalLeaderboard,
+        createBulkFranchiseeLeaderboard
     }

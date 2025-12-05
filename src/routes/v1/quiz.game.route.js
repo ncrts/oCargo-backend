@@ -84,4 +84,8 @@ router.get('/quiz/leaderboard/national', languageDetectionMiddleware, authToken.
 
 router.get('/quiz/leaderboard/franchisee/:franchiseeInfoId', languageDetectionMiddleware, authToken.commonProtect, quizGameController.getFranchiseeLeaderboard);
 
+router.post('/quiz/leaderboard/local/bulk-insert', languageDetectionMiddleware, authToken.commonProtect, quizGameController.createBulkLocalLeaderboard);
+router.post('/quiz/leaderboard/national/bulk-insert', languageDetectionMiddleware, authToken.commonProtect, quizGameController.createBulkNationalLeaderboard);
+router.post('/quiz/leaderboard/franchisee/bulk-insert', languageDetectionMiddleware, authToken.commonProtect, quizGameController.createBulkFranchiseeLeaderboard);
+
 module.exports = router;
