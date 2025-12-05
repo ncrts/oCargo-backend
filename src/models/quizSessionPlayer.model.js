@@ -126,15 +126,22 @@ const quizSessionPlayerSchema = new mongoose.Schema({
                 description: 'Reference to the question answered by the player.'
             },
 
+            questionType: {
+                type: String,
+                enum: ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide', 'imagePin'],
+                required: true,
+                description: 'Type of the question answered.'
+            },
+
             /**
              * ✏️ Answer
              * The player’s submitted answer.
              * Supports multiple types — text, multiple choice, boolean, slider, etc.
              */
-            answer: {
-                type: mongoose.Schema.Types.Mixed,
-                default: null,
-                description: 'Player’s submitted answer (text, boolean, option ID, etc.).'
+            answerObj: {
+               type: Object,
+               default: {},
+               description: 'The player’s submitted answer object.'
             },
 
             /**

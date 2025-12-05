@@ -3523,11 +3523,100 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
 })
 
 const playerResponseAnswer = catchAsync(async (req, res) => {
-    res.status(httpStatus.OK).json({
-        success: true,
-        message: 'Player response answer - To be implemented',
-        data: req.body
-    });
+
+    try {
+        const {
+            gameSessionId,
+            playerId,
+            answer,
+            score,
+            totalScore
+        } = req.body;
+
+        if (!gameSessionId || !playerId || !answer || !answer.questionId) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("CLIENTID_REQUIRED", res.locals.language),
+                data: null
+            });
+        }
+
+        // Fetch game session and quiz info
+        const gameSession = await QuizGameSession.findById(gameSessionId)
+            .populate({ path: 'quizId', select: 'quizType' })
+            .populate({ path: 'franchiseId', select: 'name location' });
+        if (!gameSession) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: getMessage("QUIZ_GAME_SESSION_NOT_FOUND", res.locals.language),
+                data: null
+            });
+        }
+
+        // Find player session
+        let playerSession = await QuizSessionPlayer.findOne({
+            quizGameSessionId: gameSessionId,
+            clientId: playerId,
+            isDeleted: false
+        });
+
+        if (!playerSession) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: getMessage("PLAYER_NOT_FOUND_SIGNUP_FIRST", res.locals.language),
+                data: null
+            });
+        }
+
+        // Check if answer for this question already exists
+        const answerIndex = playerSession.answers.findIndex(
+            a => a.questionId.toString() === answer.questionId
+        );
+
+        const answerObj = {
+            questionId: answer.questionId,
+            questionType: answer.questionType,
+            answerObj: answer.answerObj,
+            timeTaken: answer.responseTime,
+            isCorrect: answer.isAnsweredCorrect,
+            scoreAwarded: score
+        };
+
+        if (answerIndex === -1) {
+            // Add new answer
+            playerSession.answers.push(answerObj);
+        } else {
+            // Update existing answer
+            playerSession.answers[answerIndex] = answerObj;
+        }
+
+        // Update totalScore
+        playerSession.totalScore = totalScore;
+
+        await playerSession.save();
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("QUIZ_QUESTION_UPDATED_SUCCESS", res.locals.language),
+            data: {
+                quizGameSessionId: gameSessionId,
+                clientId: playerId,
+                quizId: gameSession.quizId?._id,
+                franchiseId: gameSession.franchiseId?._id,
+                quizType: gameSession.quizId?.quizType || null,
+                answer: answerObj,
+                score,
+                totalScore
+            }
+        });
+    } catch (err) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage("QUIZ_QUESTION_UPDATE_ERROR", res.locals.language),
+            error: err.message,
+            data: null
+        });
+    }
 })
 
 
