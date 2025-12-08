@@ -152,7 +152,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: franchiseeInfoId or franchisorInfoId =====
     if (!franchiseeInfoId && !franchisorInfoId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("FRANCHISEE_OR_FRANCHISOR_INFO_ID_REQUIRED", res.locals.language),
             data: null
@@ -163,7 +163,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
     if (franchiseeInfoId) {
         franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
         if (!franchiseeExists) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
                 data: null
@@ -173,7 +173,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
     if (franchisorInfoId) {
         franchisorExists = await FranchisorInfo.findById(franchisorInfoId);
         if (!franchisorExists) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("FRANCHISOR_INFO_NOT_FOUND_IN_DB", res.locals.language),
                 data: null
@@ -183,7 +183,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: title =====
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
             data: null
@@ -192,7 +192,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: description =====
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_DESCRIPTION_REQUIRED", res.locals.language),
             data: null
@@ -201,7 +201,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: author object =====
     if (!author || typeof author !== 'object') {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_AUTHOR_REQUIRED", res.locals.language),
             data: null
@@ -210,7 +210,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: author.id =====
     if (!author.id) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_AUTHOR_ID_REQUIRED", res.locals.language),
             data: null
@@ -219,7 +219,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: author.authorRole =====
     if (!author.authorRole) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_AUTHOR_ROLE_REQUIRED", res.locals.language),
             data: null
@@ -228,7 +228,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     const validRoles = ['FranchisorUser', 'FranchiseeUser'];
     if (!validRoles.includes(author.authorRole)) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_AUTHOR_ROLE_INVALID", res.locals.language),
             data: null
@@ -237,7 +237,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: category =====
     if (!category) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_CATEGORY_REQUIRED", res.locals.language),
             data: null
@@ -247,7 +247,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
     // Check if category exists in database
     const categoryExists = await QuizCategory.findById(category);
     if (!categoryExists) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_CATEGORY_NOT_FOUND", res.locals.language),
             data: null
@@ -256,7 +256,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: visibility =====
     if (!visibility) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_VISIBILITY_REQUIRED", res.locals.language),
             data: null
@@ -265,7 +265,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
 
     const validVisibility = ['Local', 'National'];
     if (!validVisibility.includes(visibility)) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_VISIBILITY_INVALID", res.locals.language),
             data: null
@@ -276,7 +276,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
     if (language) {
         const validLanguages = ['en_us', 'fr_fr'];
         if (!validLanguages.includes(language)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_LANGUAGE_INVALID", res.locals.language),
                 data: null
@@ -359,7 +359,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: Quiz ID =====
     if (!id) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_ID_REQUIRED", res.locals.language),
             data: null
@@ -378,7 +378,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
 
     // ===== VALIDATION: At least one field provided =====
     if (!title && !description && !author && !category && !visibility && !language && !status) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: getMessage("QUIZ_NO_FIELDS_PROVIDED", res.locals.language),
             data: null
@@ -390,7 +390,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     if (franchiseeInfoId) {
         const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
         if (!franchiseeExists) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("FRANCHISEE_INFO_NOT_FOUND_IN_DB", res.locals.language),
                 data: null
@@ -400,7 +400,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     if (franchisorInfoId) {
         const franchisorExists = await FranchisorInfo.findById(franchisorInfoId);
         if (!franchisorExists) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("FRANCHISOR_INFO_NOT_FOUND_IN_DB", res.locals.language),
                 data: null
@@ -414,7 +414,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     // ===== VALIDATION: title =====
     if (title !== undefined) {
         if (typeof title !== 'string' || title.trim().length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
                 data: null
@@ -430,7 +430,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     // ===== VALIDATION: description =====
     if (description !== undefined) {
         if (typeof description !== 'string' || description.trim().length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_DESCRIPTION_REQUIRED", res.locals.language),
                 data: null
@@ -442,7 +442,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     // ===== VALIDATION: author =====
     if (author !== undefined) {
         if (!author || typeof author !== 'object') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_AUTHOR_REQUIRED", res.locals.language),
                 data: null
@@ -451,7 +451,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
 
         // Validate author.id and author.authorRole
         if (!author.id || !author.authorRole) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_AUTHOR_NOT_VALID", res.locals.language),
                 data: null
@@ -460,7 +460,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
 
         const validRoles = ['FranchisorUser', 'FranchiseeUser'];
         if (!validRoles.includes(author.authorRole)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_AUTHOR_ROLE_INVALID", res.locals.language),
                 data: null
@@ -476,7 +476,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     // ===== VALIDATION: category =====
     if (category !== undefined) {
         if (!category) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_CATEGORY_REQUIRED", res.locals.language),
                 data: null
@@ -486,7 +486,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
         // Check if category exists in database
         const categoryExists = await QuizCategory.findById(category);
         if (!categoryExists) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_CATEGORY_ID_INVALID", res.locals.language),
                 data: null
@@ -499,7 +499,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     if (visibility !== undefined) {
         const validVisibility = ['Local', 'National'];
         if (!validVisibility.includes(visibility)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_VISIBILITY_INVALID", res.locals.language),
                 data: null
@@ -512,7 +512,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     if (language !== undefined) {
         const validLanguages = ['en_us', 'fr_fr'];
         if (!validLanguages.includes(language)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_LANGUAGE_INVALID", res.locals.language),
                 data: null
@@ -525,7 +525,7 @@ const updateQuizInstant = catchAsync(async (req, res) => {
     if (status !== undefined) {
         const validStatus = ['DraftLocal', 'ActiveLocal', 'DraftNational', 'ActiveNational', 'InModeration', 'ModeratedAccepted', 'ModeratedRejected', 'HiddenLocal', 'HiddenNational'];
         if (!validStatus.includes(status)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_STATUS_INVALID", res.locals.language),
                 data: null
@@ -590,7 +590,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
     if (franchiseeInfoId) filter.franchiseeInfoId = franchiseeInfoId;
     if (searchKey) {
         if (typeof searchKey !== 'string' || searchKey.trim().length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
                 data: null
@@ -599,7 +599,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         filter.title = { $regex: searchKey.trim(), $options: 'i' };
     } else if (title) {
         if (typeof title !== 'string' || title.trim().length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("QUIZ_TITLE_REQUIRED", res.locals.language),
                 data: null
@@ -618,7 +618,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         if (categoryArray.length > 0) {
             const validCategories = await QuizCategory.find({ _id: { $in: categoryArray } }).select('_id');
             if (validCategories.length !== categoryArray.length) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: getMessage("QUIZ_LIST_CATEGORY_INVALID", res.locals.language),
                     data: null
@@ -642,7 +642,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
             const validVisibilities = ['Local', 'National'];
             const allValid = visibilityArray.every(v => validVisibilities.includes(v));
             if (!allValid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: getMessage("QUIZ_LIST_VISIBILITY_INVALID", res.locals.language),
                     data: null
@@ -666,7 +666,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
             const validStatus = ['DraftLocal', 'ActiveLocal', 'DraftNational', 'ActiveNational', 'InModeration', 'ModeratedAccepted', 'ModeratedRejected', 'HiddenLocal', 'HiddenNational'];
             const allValid = statusArray.every(s => validStatus.includes(s));
             if (!allValid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: getMessage("QUIZ_LIST_STATUS_INVALID", res.locals.language),
                     data: null
@@ -765,7 +765,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
 
     // ===== BASIC VALIDATION =====
     if (!quizId || !categoryId || !type) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'quizId, categoryId, and type are required',
             data: null
@@ -775,7 +775,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     // Validate type is one of allowed types
     const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide', 'imagePin'];
     if (!validTypes.includes(type)) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: `Invalid question type. Allowed types: ${validTypes.join(', ')}`,
             data: null
@@ -785,7 +785,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     // Validate difficaltyLavel by type
     const validDifficultyLevels = ['Easy', 'Medium', 'Hard', 'VeryHard'];
     if (difficaltyLavel && !validDifficultyLevels.includes(difficaltyLavel)) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: `Invalid difficaltyLavel. Allowed values: ${validDifficultyLevels.join(', ')}`,
             data: null
@@ -960,14 +960,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     if (type === 'Quiz') {
         // Required: questionText, options
         if (!questionText) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Quiz type: questionText is required',
                 data: null
             });
         }
         if (!Array.isArray(options) || options.length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Quiz type: options array is required and must contain at least one option',
                 data: null
@@ -986,7 +986,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
             return true;
         });
         if (!validOptions) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Quiz type: each option must have "text" (string, required), "isCorrect" (boolean, required), and optionally "image" (string)',
                 data: null
@@ -995,7 +995,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         // Validate at least one option is marked as correct
         const hasCorrectOption = options.some(opt => opt.isCorrect === true);
         if (!hasCorrectOption) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Quiz type: at least one option must be marked as correct (isCorrect: true)',
                 data: null
@@ -1005,7 +1005,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1016,7 +1016,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1026,14 +1026,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     } else if (type === 'TrueFalse') {
         // Required: questionText, trueAnswer
         if (!questionText) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For TrueFalse type: questionText is required',
                 data: null
             });
         }
         if (trueAnswer === undefined || trueAnswer === null || typeof trueAnswer !== 'boolean') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For TrueFalse type: trueAnswer is required and must be a boolean',
                 data: null
@@ -1043,7 +1043,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1054,7 +1054,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1064,14 +1064,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     } else if (type === 'TypeAnswer') {
         // Required: questionText, acceptedAnswers
         if (!questionText) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For TypeAnswer type: questionText is required',
                 data: null
             });
         }
         if (!Array.isArray(acceptedAnswers) || acceptedAnswers.length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For TypeAnswer type: acceptedAnswers array is required and must contain at least one answer',
                 data: null
@@ -1081,7 +1081,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1092,7 +1092,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1102,14 +1102,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     } else if (type === 'Puzzle') {
         // Required: questionText, puzzleOrder
         if (!questionText) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Puzzle type: questionText is required',
                 data: null
             });
         }
         if (!Array.isArray(puzzleOrder) || puzzleOrder.length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Puzzle type: puzzleOrder array is required and must contain at least one element',
                 data: null
@@ -1119,7 +1119,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1130,7 +1130,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1140,7 +1140,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     } else if (type === 'Slider') {
         // Required: questionText, slider
         if (!questionText) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For Slider type: questionText is required',
                 data: null
@@ -1149,7 +1149,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         // Validate slider object
         const sliderValidation = validateSlider(slider);
         if (!sliderValidation.valid) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `For Slider type: ${sliderValidation.error}`,
                 data: null
@@ -1159,7 +1159,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1170,7 +1170,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1181,7 +1181,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         // Validate slideContent object
         const slideContentValidation = validateSlideContent(slideContent);
         if (!slideContentValidation.valid) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `For Slide type: ${slideContentValidation.error}`,
                 data: null
@@ -1191,7 +1191,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1200,14 +1200,14 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         }
     } else if (type === 'imagePin') {
         if (!imagePinFile || typeof imagePinFile !== 'string') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For imagePin type: imagePinFile is required and must be a string',
                 data: null
             });
         }
         if (!Array.isArray(imagePinArrObj) || imagePinArrObj.length === 0) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For imagePin type: imagePinArrObj must be a non-empty array',
                 data: null
@@ -1231,7 +1231,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         });
 
         if (!polygonsValid) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'For imagePin type: polygonCoordinates must contain numeric xAxis and yAxis values',
                 data: null
@@ -1248,7 +1248,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (media) {
             const mediaValidation = validateMedia(media);
             if (!mediaValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: mediaValidation.error,
                     data: null
@@ -1259,7 +1259,7 @@ const createQuizQuestion = catchAsync(async (req, res) => {
         if (explanation) {
             const explanationValidation = validateExplanation(explanation);
             if (!explanationValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: explanationValidation.error,
                     data: null
@@ -1559,7 +1559,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     if (type !== undefined) {
         const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide'];
         if (!validTypes.includes(type)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `Invalid question type. Allowed types: ${validTypes.join(', ')}`,
                 data: null
@@ -1572,7 +1572,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     if (difficaltyLavel !== undefined) {
         const validDifficultyLevels = ['Easy', 'Medium', 'Hard', 'VeryHard'];
         if (!validDifficultyLevels.includes(difficaltyLavel)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `Invalid difficaltyLavel. Allowed values: ${validDifficultyLevels.join(', ')}`,
                 data: null
@@ -1591,7 +1591,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     if (media !== undefined) {
         const mediaValidation = validateMedia(media);
         if (!mediaValidation.valid) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: mediaValidation.error,
                 data: null
@@ -1604,7 +1604,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
     if (explanation !== undefined) {
         const explanationValidation = validateExplanation(explanation);
         if (!explanationValidation.valid) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: explanationValidation.error,
                 data: null
@@ -1645,14 +1645,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO QUIZ - All required fields must be provided
             if (!questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: questionText is required when changing to this type',
                     data: null
                 });
             }
             if (!Array.isArray(options) || options.length === 0) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: options array is required and must contain at least one option when changing to this type',
                     data: null
@@ -1661,14 +1661,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         } else {
             // NO TYPE CHANGE - Validate only if provided
             if (questionText !== undefined && !questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: questionText cannot be empty',
                     data: null
                 });
             }
             if (options !== undefined && (!Array.isArray(options) || options.length === 0)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: options array must contain at least one option',
                     data: null
@@ -1689,7 +1689,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             });
 
             if (!validOptions) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: each option must have "text" (string, required), "isCorrect" (boolean, required), and optionally "image" (string)',
                     data: null
@@ -1699,7 +1699,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             // Validate at least one correct option
             const hasCorrectOption = options.some(opt => opt.isCorrect === true);
             if (!hasCorrectOption) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Quiz type: at least one option must be marked as correct (isCorrect: true)',
                     data: null
@@ -1718,14 +1718,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO TRUEFALSE - All required fields must be provided
             if (!questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TrueFalse type: questionText is required when changing to this type',
                     data: null
                 });
             }
             if (trueAnswer === undefined || trueAnswer === null || typeof trueAnswer !== 'boolean') {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TrueFalse type: trueAnswer is required and must be a boolean when changing to this type',
                     data: null
@@ -1734,14 +1734,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         } else {
             // NO TYPE CHANGE - Validate only if provided
             if (questionText !== undefined && !questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TrueFalse type: questionText cannot be empty',
                     data: null
                 });
             }
             if (trueAnswer !== undefined && typeof trueAnswer !== 'boolean') {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TrueFalse type: trueAnswer must be a boolean',
                     data: null
@@ -1758,14 +1758,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO TYPEANSWER - All required fields must be provided
             if (!questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TypeAnswer type: questionText is required when changing to this type',
                     data: null
                 });
             }
             if (!Array.isArray(acceptedAnswers) || acceptedAnswers.length === 0) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TypeAnswer type: acceptedAnswers array is required and must contain at least one answer when changing to this type',
                     data: null
@@ -1774,14 +1774,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         } else {
             // NO TYPE CHANGE - Validate only if provided
             if (questionText !== undefined && !questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TypeAnswer type: questionText cannot be empty',
                     data: null
                 });
             }
             if (acceptedAnswers !== undefined && (!Array.isArray(acceptedAnswers) || acceptedAnswers.length === 0)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For TypeAnswer type: acceptedAnswers array must contain at least one answer',
                     data: null
@@ -1798,14 +1798,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO PUZZLE - All required fields must be provided
             if (!questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Puzzle type: questionText is required when changing to this type',
                     data: null
                 });
             }
             if (!Array.isArray(puzzleOrder) || puzzleOrder.length === 0) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Puzzle type: puzzleOrder array is required and must contain at least one element when changing to this type',
                     data: null
@@ -1814,14 +1814,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         } else {
             // NO TYPE CHANGE - Validate only if provided
             if (questionText !== undefined && !questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Puzzle type: questionText cannot be empty',
                     data: null
                 });
             }
             if (puzzleOrder !== undefined && (!Array.isArray(puzzleOrder) || puzzleOrder.length === 0)) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Puzzle type: puzzleOrder array must contain at least one element',
                     data: null
@@ -1838,14 +1838,14 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO SLIDER - All required fields must be provided
             if (!questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Slider type: questionText is required when changing to this type',
                     data: null
                 });
             }
             if (!slider) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Slider type: slider object is required when changing to this type',
                     data: null
@@ -1855,7 +1855,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             // Validate slider object
             const sliderValidation = validateSlider(slider);
             if (!sliderValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: `For Slider type: ${sliderValidation.error}`,
                     data: null
@@ -1865,7 +1865,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         } else {
             // NO TYPE CHANGE - Validate only if provided
             if (questionText !== undefined && !questionText) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Slider type: questionText cannot be empty',
                     data: null
@@ -1874,7 +1874,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             if (slider !== undefined) {
                 const sliderValidation = validateSlider(slider);
                 if (!sliderValidation.valid) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         success: false,
                         message: `For Slider type: ${sliderValidation.error}`,
                         data: null
@@ -1892,7 +1892,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         if (isTypeChange) {
             // TYPE CHANGE TO SLIDE - slideContent is required
             if (!slideContent) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: 'For Slide type: slideContent object is required when changing to this type',
                     data: null
@@ -1902,7 +1902,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             // Validate slideContent
             const slideContentValidation = validateSlideContent(slideContent);
             if (!slideContentValidation.valid) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: `For Slide type: ${slideContentValidation.error}`,
                     data: null
@@ -1914,7 +1914,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             if (slideContent !== undefined) {
                 const slideContentValidation = validateSlideContent(slideContent);
                 if (!slideContentValidation.valid) {
-                    return res.status(httpStatus.BAD_REQUEST).json({
+                    return res.status(httpStatus.OK).json({
                         success: false,
                         message: `For Slide type: ${slideContentValidation.error}`,
                         data: null
@@ -1949,7 +1949,7 @@ const getQuizQuestionsByQuizId = catchAsync(async (req, res) => {
     const { quizId, type, difficaltyLavel, categoryId } = req.query;
 
     if (!quizId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'quizId is required',
             data: null
@@ -2093,7 +2093,7 @@ const createQuizGameSession = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!quizId || !hostId || !franchiseId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'quizId, hostId, franchiseId are required',
             data: null
@@ -2454,14 +2454,14 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
     if (hostId !== undefined) {
         const host = await Franchisee.findById(hostId);
         if (!host || host.role !== 'staff' || !host.franchiseeInfoId || host.franchiseeInfoId.toString() !== session.franchiseId.toString()) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'hostId must be a valid franchisee staff user for this franchise',
                 data: null
             });
         }
         if (session.status !== 'Lobby' && session.status !== 'InProgress') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'Cannot change host after session has started',
                 data: null
@@ -2477,7 +2477,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
     if (status !== undefined) {
         const validStatuses = ['Lobby', 'InProgress', 'Completed', 'Scheduled'];
         if (!validStatuses.includes(status)) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `Invalid status. Allowed values: ${validStatuses.join(', ')}`,
                 data: null
@@ -2486,7 +2486,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
 
         // Status transitions validation
         if (session.status === 'Completed') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'Cannot change status of a completed session',
                 data: null
@@ -2501,7 +2501,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
 
             // Check if startTime is within 15 minutes from now
             if (sessionStartTime > currentTime + fifteenMinutesInSeconds) {
-                return res.status(httpStatus.BAD_REQUEST).json({
+                return res.status(httpStatus.OK).json({
                     success: false,
                     message: `Cannot update status yet. Session is scheduled for ${new Date(session.startTime).toISOString()}. Status can only be updated when within 15 minutes of start time.`,
                     data: null
@@ -2515,7 +2515,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
     // Validate and update startTime/endTime (only before session starts)
     if (startTime !== undefined || endTime !== undefined) {
         if (session.status !== 'Lobby' && session.status !== 'Scheduled') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'Cannot change timing after session has started',
                 data: null
@@ -2525,7 +2525,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
         const newStartTime = startTime !== undefined ? startTime : session.startTime;
 
         if (typeof newStartTime !== 'number') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'startTime must be a valid timestamp (number in milliseconds)',
                 data: null
@@ -2544,7 +2544,7 @@ const updateQuizGameSession = catchAsync(async (req, res) => {
         const newEndTime = newStartTime + (totalDurationSeconds * 1000);
 
         if (newEndTime <= newStartTime) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'endTime must be greater than startTime (calculated from quiz duration)',
                 data: null
@@ -2709,7 +2709,7 @@ const deleteQuizGameSession = catchAsync(async (req, res) => {
 
     // Only allow deletion in Lobby status
     if (session.status !== 'Lobby') {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Cannot delete a session that is in progress or completed',
             data: null
@@ -2753,7 +2753,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
 
         // ===== VALIDATION =====
         if (!clientId || !gamePin) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'clientId and gamePin are required',
                 data: null
@@ -2782,7 +2782,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
 
         // Check if session is in Lobby status (accepting players)
         if (session.status !== 'Lobby') {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: `Cannot join session with status: ${session.status}. Session must be in Lobby status`,
                 data: null
@@ -2797,7 +2797,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
         // });
 
         // if (existingPlayer && existingPlayer.isActive) {
-        //     return res.status(httpStatus.BAD_REQUEST).json({
+        //     return res.status(httpStatus.OK).json({
         //         success: false,
         //         message: 'Player already joined this session',
         //         data: null
@@ -2945,7 +2945,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!playerSessionId || !questionId || answer === undefined || timeTaken === undefined || isCorrect === undefined || scoreAwarded === undefined) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'playerSessionId, questionId, answer, timeTaken, isCorrect, and scoreAwarded are required',
             data: null
@@ -2954,7 +2954,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
 
     // Validate timeTaken is a positive number
     if (typeof timeTaken !== 'number' || timeTaken < 0) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'timeTaken must be a positive number (in seconds)',
             data: null
@@ -2963,7 +2963,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
 
     // Validate isCorrect is boolean
     if (typeof isCorrect !== 'boolean') {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'isCorrect must be a boolean value',
             data: null
@@ -2972,7 +2972,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
 
     // Validate scoreAwarded is a non-negative number
     if (typeof scoreAwarded !== 'number' || scoreAwarded < 0) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'scoreAwarded must be a non-negative number',
             data: null
@@ -2991,7 +2991,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
 
     // Check if player is still active in session
     if (!playerSession.isActive) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Player has left this session',
             data: null
@@ -3011,7 +3011,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
     // Verify question exists and belongs to session's quiz
     const question = await QuizQuestion.findById(questionId);
     if (!question || question.quizId.toString() !== gameSession.quizId.toString()) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Question does not belong to this quiz session',
             data: null
@@ -3024,7 +3024,7 @@ const submitQuizAnswer = catchAsync(async (req, res) => {
     );
 
     if (existingAnswer) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Answer already submitted for this question',
             data: null
@@ -3091,7 +3091,7 @@ const leaveQuizGameSession = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!playerSessionId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'playerSessionId is required',
             data: null
@@ -3110,7 +3110,7 @@ const leaveQuizGameSession = catchAsync(async (req, res) => {
 
     // Check if already left
     if (!playerSession.isActive) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Player has already left this session',
             data: null
@@ -3151,7 +3151,7 @@ const getPlayerSessionData = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!sessionId || !clientId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'sessionId and clientId are required',
             data: null
@@ -3224,7 +3224,7 @@ const getSessionLeaderboard = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!sessionId) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'sessionId is required',
             data: null
@@ -3396,7 +3396,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
     // ===== VALIDATION =====
     if (!sessionId || !quizId || !questionId || !playerId || answer === undefined || responseTime === undefined || isCorrect === undefined) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'Missing required fields: sessionId, quizId, questionId, playerId, answer, responseTime, isCorrect',
             data: null
@@ -3405,7 +3405,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
     // Validate responseTime is a non-negative number
     if (typeof responseTime !== 'number' || responseTime < 0) {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'responseTime must be a non-negative number (in seconds)',
             data: null
@@ -3414,7 +3414,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
     // Validate isCorrect is boolean
     if (typeof isCorrect !== 'boolean') {
-        return res.status(httpStatus.BAD_REQUEST).json({
+        return res.status(httpStatus.OK).json({
             success: false,
             message: 'isCorrect must be a boolean',
             data: null
@@ -3435,7 +3435,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
         // Verify quizId matches session
         if (session.quizId.toString() !== quizId) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'quizId does not match the session quiz',
                 data: null
@@ -3454,7 +3454,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
         // Verify question belongs to quiz
         if (question.quizId.toString() !== quizId) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: 'questionId does not belong to the specified quiz',
                 data: null
@@ -3548,14 +3548,87 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 });
 
 const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
+        // Extract data from req.body
+        const { gameSessionId, leaderBoardData } = req.body;
+        if (!gameSessionId || !leaderBoardData) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'Missing gameSessionId or leaderBoardData',
+                data: null
+            });
+        }
 
-    
-    res.status(httpStatus.OK).json({
-        success: true,
-        message: 'Complete quiz game session questions data - To be implemented',
-        data: req.body
-    });
-})
+        // Fetch the game session
+        const gameSession = await QuizGameSession.findById(gameSessionId);
+        if (!gameSession) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: 'Game session not found',
+                data: null
+            });
+        }
+
+        // Map gameData
+        if (leaderBoardData.gameData) {
+            gameSession.totalNumberOfQuestions = leaderBoardData.gameData.totalNoOfQuestions;
+            gameSession.totalPlayerCount = leaderBoardData.gameData.totalPlayers;
+        }
+
+        // Map specialAwards
+        if (leaderBoardData.specialAwards) {
+            // Flatten specialAwards to array of objects for model
+            const awardsArr = [];
+            Object.keys(leaderBoardData.specialAwards).forEach(awardType => {
+                leaderBoardData.specialAwards[awardType].forEach(player => {
+                    awardsArr.push({
+                        awards: awardType,
+                        ...player
+                    });
+                });
+            });
+            gameSession.specialAwards = awardsArr;
+        }
+
+        // Map leaderBoard to podium
+        if (Array.isArray(leaderBoardData.leaderBoard)) {
+            gameSession.podium = leaderBoardData.leaderBoard.map(player => ({
+                joinedAt: player.joinedAt,
+                playerId: player.playerId,
+                profileAvatar: player.profileAvatar,
+                pseudoName: player.pseudoName,
+                totalPlayedGamesCount: player.totalPlayedGamesCount,
+                avgResponseTime: player.avgResponseTime,
+                badAnswerCount: player.badAnswerCount,
+                currentStreakCount: player.currentStreakCount,
+                goodAnswerCount: player.goodAnswerCount,
+                highestStreakCount: player.highestStreakCount,
+                missedAnswerCount: player.missedAnswerCount,
+                score: player.score,
+                totalResponseTime: player.totalResponseTime,
+                totalScore: player.totalScore,
+                position: player.position || null,
+                badges: Array.isArray(player.badges) ? player.badges.map(badge => ({
+                    id: badge.id,
+                    name: badge.name,
+                    iconUrl: badge.iconUrl
+                })) : []
+            }));
+        }
+
+        await gameSession.save();
+
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Quiz game session questions data completed and saved',
+            data: {
+                gameSessionId,
+                totalNumberOfQuestions: gameSession.totalNumberOfQuestions,
+                totalPlayerCount: gameSession.totalPlayerCount,
+                podium: gameSession.podium,
+                specialAwards: gameSession.specialAwards
+            }
+        });
+    })
 
 const playerResponseAnswer = catchAsync(async (req, res) => {
 
@@ -3569,7 +3642,7 @@ const playerResponseAnswer = catchAsync(async (req, res) => {
         } = req.body;
 
         if (!gameSessionId || !playerId || !answer || !answer.questionId) {
-            return res.status(httpStatus.BAD_REQUEST).json({
+            return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("CLIENTID_REQUIRED", res.locals.language),
                 data: null
@@ -3672,7 +3745,7 @@ const getPlayerGameSessionHistory = catchAsync(async (req, res) => {
 
 		// ===== VALIDATION =====
 		if (!clientId || typeof clientId !== 'string' || !clientId.trim()) {
-			return res.status(httpStatus.BAD_REQUEST).json({
+			return res.status(httpStatus.OK).json({
 				success: false,
 				message: 'clientId is required',
 				data: null
@@ -4029,7 +4102,7 @@ const getFranchiseeLeaderboard = catchAsync(async (req, res) => {
 
 		// ===== VALIDATION =====
 		if (!franchiseeInfoId || typeof franchiseeInfoId !== 'string' || !franchiseeInfoId.trim()) {
-			return res.status(httpStatus.BAD_REQUEST).json({
+			return res.status(httpStatus.OK).json({
 				success: false,
 				message: getMessage ? getMessage("FRANCHISEE_ID_REQUIRED", res.locals.language) : "Franchisee ID is required",
 				data: null

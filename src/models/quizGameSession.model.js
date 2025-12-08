@@ -24,9 +24,9 @@ const quizGameSessionSchema = new mongoose.Schema({
    * The quiz being played in this live session.
    * Used to load questions, structure, and metadata.
    */
-  quizId: { 
-    type: mongoose.SchemaTypes.ObjectId, 
-    ref: 'Quiz', 
+  quizId: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: 'Quiz',
     default: null,
     description: 'Reference to the quiz being played in this session.'
   },
@@ -35,8 +35,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 👨‍💼 Host (Franchisee User)
    * The staff member managing or launching the live quiz session.
    */
-  hostId: { 
-    type: mongoose.SchemaTypes.ObjectId, 
+  hostId: {
+    type: mongoose.SchemaTypes.ObjectId,
     ref: 'FranchiseeUser',
     description: 'Reference to the franchisee user who is hosting the game.'
   },
@@ -45,8 +45,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🏢 Franchise Reference
    * Identifies the franchise (ÔCargo branch) where this game is being conducted.
    */
-  franchiseId: { 
-    type: mongoose.SchemaTypes.ObjectId, 
+  franchiseId: {
+    type: mongoose.SchemaTypes.ObjectId,
     ref: 'FranchiseeInfo',
     description: 'Reference to the franchise location hosting the session.'
   },
@@ -60,8 +60,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * Unique alphanumeric code used by players to join the session.
    * Required for joining via app or on-site kiosk.
    */
-  gamePin: { 
-    type: String, 
+  gamePin: {
+    type: String,
     default: null,
     description: 'Unique join code (PIN) for accessing this quiz session.'
   },
@@ -70,8 +70,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🧾 QR Code
    * Optional URL or image link to a QR code for quick access to the session.
    */
-  qrCode: { 
-    type: String, 
+  qrCode: {
+    type: String,
     default: null,
     description: 'QR code image or link for quick player access.'
   },
@@ -88,9 +88,9 @@ const quizGameSessionSchema = new mongoose.Schema({
    * - InProgress: Game is live
    * - Completed: Game has ended and results are available
    */
-  status: { 
-    type: String, 
-    enum: ['Scheduled','Lobby', 'InProgress', 'Completed', 'Cancelled'], 
+  status: {
+    type: String,
+    enum: ['Scheduled', 'Lobby', 'InProgress', 'Completed', 'Cancelled'],
     default: 'Lobby',
     description: 'Defines the current lifecycle state of the game session.'
   },
@@ -99,8 +99,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🕒 Start Time
    * Unix timestamp (in milliseconds) marking when the quiz session officially begins.
    */
-  startTime: { 
-    type: Number, 
+  startTime: {
+    type: Number,
     default: null,
     description: 'Unix timestamp (ms) when the quiz session officially started.'
   },
@@ -109,8 +109,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🕔 End Time
    * Unix timestamp (in milliseconds) marking when the quiz session officially ends.
    */
-  endTime: { 
-    type: Number, 
+  endTime: {
+    type: Number,
     default: null,
     description: 'Unix timestamp (ms) when the quiz session officially ended.'
   },
@@ -119,8 +119,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * ⏱️ Duration
    * Total length of the game session in seconds (computed at end).
    */
-  duration: { 
-    type: Number, 
+  duration: {
+    type: Number,
     default: null,
     description: 'Total duration of the session in seconds (calculated when completed).'
   },
@@ -131,37 +131,134 @@ const quizGameSessionSchema = new mongoose.Schema({
 
   /**
    * 🏆 Podium
-   * Stores the top performers of the session with their ranking positions.
-   * Typically used for post-game display and XP updates.
+   * Stores the top performers of the session with their ranking positions and detailed stats.
+   * Each object includes player details and an array of earned badges.
+   * - playerId: ref to Client
+   * - badges: array of badge objects (ref to BadgeMaster)
    */
-  podium: [{
-    clientId: { 
-      type: mongoose.SchemaTypes.ObjectId, 
-      ref: 'Client',
-      description: 'Reference to the player who achieved a podium position.'
-    },
-    position: { 
-      type: Number,
-      description: 'Numeric position on the podium (1 = 1st, 2 = 2nd, etc.).'
+  podium: [
+    {
+      joinedAt: { type: Number },
+      playerId: { type: mongoose.SchemaTypes.ObjectId, ref: 'Client' },
+      profileAvatar: { type: String },
+      pseudoName: { type: String },
+      totalPlayedGamesCount: { type: Number },
+      avgResponseTime: { type: Number },
+      badAnswerCount: { type: Number },
+      currentStreakCount: { type: Number },
+      goodAnswerCount: { type: Number },
+      highestStreakCount: { type: Number },
+      missedAnswerCount: { type: Number },
+      score: { type: Number },
+      totalResponseTime: { type: Number },
+      totalScore: { type: Number },
+      position: { type: Number },
+      badges: [
+        {
+          id: { type: mongoose.SchemaTypes.ObjectId, ref: 'BadgeMaster' },
+          name: {
+            en_us: { type: String },
+            fr_fr: { type: String }
+          },
+          iconUrl: { type: String }
+        }
+      ]
     }
-  }],
+  ],
+
 
   /**
-   * 🎖️ Awards
-   * Special recognitions or titles granted during or after the session.
-   * Examples: “Fastest Answer”, “Highest Streak”, “Participation Award”
+   * 🏅 Special Awards (Dynamic)
+   * Stores detailed award information for each award type as dynamic keys.
+   * Each key is an award type (e.g., fastestPlayer, highestStreak, etc.),
+   * and the value is an array of player objects with all relevant stats.
+   * Each player object includes:
+   *   - joinedAt: Number (timestamp)
+   *   - playerId: ObjectId (ref: 'Client')
+   *   - profileAvatar: String
+   *   - pseudoName: String
+   *   - totalPlayedGamesCount: Number
+   *   - avgResponseTime: Number
+   *   - badAnswerCount: Number
+   *   - currentStreakCount: Number
+   *   - goodAnswerCount: Number
+   *   - highestStreakCount: Number
+   *   - missedAnswerCount: Number
+   *   - score: Number
+   *   - totalResponseTime: Number
+   *   - totalScore: Number
+   * Example:
+   * {
+   *   fastestPlayer: [ {...player details...} ],
+   *   highestStreak: [ {...player details...} ],
+   *   ...
+   * }
    */
-  awards: [{
-    type: { 
-      type: String,
-      description: 'Type of award (e.g., Fastest, HighestStreak, Accuracy, Participation).'
-    },
-    clientId: { 
-      type: mongoose.SchemaTypes.ObjectId, 
-      ref: 'Client',
-      description: 'Reference to the player who received this award.'
+  /**
+   * 🏅 Special Awards (Map of Arrays)
+   * Stores detailed award information for each award type as a Map.
+   * Each key is an award type (e.g., fastestPlayer, highestStreak, etc.),
+   * and the value is an array of player objects with all relevant stats.
+   * Each player object includes:
+   *   - joinedAt: Number (timestamp)
+   *   - playerId: ObjectId (ref: 'Client')
+   *   - profileAvatar: String
+   *   - pseudoName: String
+   *   - totalPlayedGamesCount: Number
+   *   - avgResponseTime: Number
+   *   - badAnswerCount: Number
+   *   - currentStreakCount: Number
+   *   - goodAnswerCount: Number
+   *   - highestStreakCount: Number
+   *   - missedAnswerCount: Number
+   *   - score: Number
+   *   - totalResponseTime: Number
+   *   - totalScore: Number
+   */
+  /**
+   * 🏅 Special Awards (Array of Objects)
+   * Each object has an 'awards' key (award type name), and other keys for player details.
+   * Example:
+   * [
+   *   {
+   *     awards: 'fastestPlayer',
+   *     joinedAt: Number,
+   *     playerId: ObjectId (ref: 'Client'),
+   *     profileAvatar: String,
+   *     pseudoName: String,
+   *     totalPlayedGamesCount: Number,
+   *     avgResponseTime: Number,
+   *     badAnswerCount: Number,
+   *     currentStreakCount: Number,
+   *     goodAnswerCount: Number,
+   *     highestStreakCount: Number,
+   *     missedAnswerCount: Number,
+   *     score: Number,
+   *     totalResponseTime: Number,
+   *     totalScore: Number
+   *   },
+   *   ...
+   * ]
+   */
+  specialAwards: [
+    {
+      awards: { type: String, default: null },
+      joinedAt: { type: Number },
+      playerId: { type: mongoose.SchemaTypes.ObjectId, ref: 'Client' },
+      profileAvatar: { type: String },
+      pseudoName: { type: String },
+      totalPlayedGamesCount: { type: Number },
+      avgResponseTime: { type: Number },
+      badAnswerCount: { type: Number },
+      currentStreakCount: { type: Number },
+      goodAnswerCount: { type: Number },
+      highestStreakCount: { type: Number },
+      missedAnswerCount: { type: Number },
+      score: { type: Number },
+      totalResponseTime: { type: Number },
+      totalScore: { type: Number }
     }
-  }],
+  ],
 
   // ------------------------------------------------
   // 🔹 Feedback Collection
@@ -176,8 +273,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🕒 Created Timestamp
    * Automatically records when the session was created (lobby opened).
    */
-  createdAt: { 
-    type: Date, 
+  createdAt: {
+    type: Date,
     default: Date.now,
     description: 'Timestamp when this game session was created.'
   },
@@ -186,8 +283,8 @@ const quizGameSessionSchema = new mongoose.Schema({
    * 🕒 Updated Timestamp
    * Automatically refreshed on every game state or score update.
    */
-  updatedAt: { 
-    type: Date, 
+  updatedAt: {
+    type: Date,
     default: Date.now,
     description: 'Timestamp when the game session was last modified.'
   },
@@ -196,38 +293,60 @@ const quizGameSessionSchema = new mongoose.Schema({
    * Session Settings and Host Controls
    */
   settings: {
-    showQuestionsOnClient: { 
-        type: Boolean, 
-        default: true 
+    showQuestionsOnClient: {
+      type: Boolean,
+      default: true
     },
-    showLeaderboardPerQuestion: { 
-        type: Boolean, 
-        default: true 
+    showLeaderboardPerQuestion: {
+      type: Boolean,
+      default: true
     },
-    allowRejoin: { 
-        type: Boolean, 
-        default: true 
+    allowRejoin: {
+      type: Boolean,
+      default: true
     },
-    isPaused: { 
-        type: Boolean, 
-        default: false 
+    isPaused: {
+      type: Boolean,
+      default: false
     },
     hostControls: {
-      canReplayMedia: { 
-        type: Boolean, 
-        default: true 
+      canReplayMedia: {
+        type: Boolean,
+        default: true
+      },
+      canRestartQuestion: {
+        type: Boolean,
+        default: true
+      }
     },
-      canRestartQuestion: { 
-        type: Boolean, 
-        default: true 
-    }
-    },
-    clientIds: [{ 
-        type: mongoose.SchemaTypes.ObjectId, 
-        ref: 'Client', 
-        default: [] 
+    clientIds: [{
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: 'Client',
+      default: []
     }]
   }
+  ,
+  /**
+   * Total Player Count
+   * Number of players who have joined this quiz session.
+   */
+  totalPlayerCount: {
+    type: Number,
+    default: 0,
+    description: 'Total number of players who have joined this quiz session.'
+  },
+
+  /**
+   * Total Number of Questions
+   * Number of questions to play in this quiz session.
+   */
+  totalNumberOfQuestions: {
+    type: Number,
+    default: 0,
+    description: 'Total number of questions to play in this quiz session.'
+  }
+
+
 });
 
 module.exports = mongoose.model('QuizGameSession', quizGameSessionSchema);
