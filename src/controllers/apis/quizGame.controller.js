@@ -2780,8 +2780,9 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
             });
         }
 
+        let statusToJoin = ['Lobby', 'InProgress'];
         // Check if session is in Lobby status (accepting players)
-        if (session.status !== 'Lobby') {
+        if (!statusToJoin.includes(session.status)) {
             return res.status(httpStatus.OK).json({
                 success: false,
                 message: `Cannot join session with status: ${session.status}. Session must be in Lobby status`,
