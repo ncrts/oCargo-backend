@@ -149,10 +149,8 @@ const quizGameSessionSchema = new mongoose.Schema({
       goodAnswerCount: { type: Number },
       highestStreakCount: { type: Number },
       missedAnswerCount: { type: Number },
-      score: { type: Number },
       totalResponseTime: { type: Number },
       totalScore: { type: Number },
-      position: { type: Number },
       badges: [
         {
           id: { type: mongoose.SchemaTypes.ObjectId, ref: 'BadgeMaster' },

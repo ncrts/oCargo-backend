@@ -3548,6 +3548,7 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 });
 
 const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
+
         // Extract data from req.body
         const { gameSessionId, leaderBoardData } = req.body;
         if (!gameSessionId || !leaderBoardData) {
@@ -3558,8 +3559,8 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
             });
         }
 
-        // Fetch the game session
-        const gameSession = await QuizGameSession.findById(gameSessionId);
+        // Fetch the game session and quiz type
+        const gameSession = await QuizGameSession.findById(gameSessionId).populate({ path: 'quizId', select: 'visibility' });
         if (!gameSession) {
             return res.status(httpStatus.NOT_FOUND).json({
                 success: false,
@@ -3576,7 +3577,6 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
 
         // Map specialAwards
         if (leaderBoardData.specialAwards) {
-            // Flatten specialAwards to array of objects for model
             const awardsArr = [];
             Object.keys(leaderBoardData.specialAwards).forEach(awardType => {
                 leaderBoardData.specialAwards[awardType].forEach(player => {
@@ -3603,7 +3603,6 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
                 goodAnswerCount: player.goodAnswerCount,
                 highestStreakCount: player.highestStreakCount,
                 missedAnswerCount: player.missedAnswerCount,
-                score: player.score,
                 totalResponseTime: player.totalResponseTime,
                 totalScore: player.totalScore,
                 position: player.position || null,
@@ -3613,6 +3612,58 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
                     iconUrl: badge.iconUrl
                 })) : []
             }));
+        }
+
+        // Bulk update player stats
+        const quizType = gameSession.quizId?.visibility || 'Local';
+        const leaderboard = leaderBoardData.leaderBoard || [];
+        for (let i = 0; i < leaderboard.length; i++) {
+            const player = leaderboard[i];
+            const clientStat = await PlayerStat.findOne({ clientId: player.playerId });
+            if (!clientStat) continue;
+
+            // Determine stat object
+            const statObj = quizType === 'National' ? clientStat.national : clientStat.local;
+
+            // Update XP (example: use totalScore as XP, adjust as needed)
+            statObj.totalXP += player.totalScore || 0;
+
+            // Update games played
+            statObj.totalGamesPlayed += 1;
+
+            // Update first/second/third place wins
+            if (i === 0) statObj.totalFirstPlaceWins += 1;
+            if (i === 1) statObj.totalSecondPlaceWins += 1;
+            if (i === 2) statObj.totalThirdPlaceWins += 1;
+
+            // Update worst position
+            if (i === leaderboard.length - 1) statObj.worstPosition = (leaderboard.length);
+
+            // Update max streak
+            if (!statObj.maxStreak || player.highestStreakCount > statObj.maxStreak) {
+                statObj.maxStreak = player.highestStreakCount;
+            }
+
+            // Update badges
+            if (Array.isArray(player.badges)) {
+                player.badges.forEach(badge => {
+                    // Avoid duplicate badgeId
+                    if (!statObj.badges.some(b => b.badgeId?.toString() === badge.id)) {
+                        statObj.badges.push({
+                            badgeId: badge.id,
+                            badgeIcon: badge.iconUrl,
+                            badgeName: badge.name?.en_us || '',
+                            description: '',
+                            earnedAt: new Date()
+                        });
+                    }
+                });
+            }
+
+            // Update totalGamesPlayedAllTypes
+            clientStat.totalGamesPlayedAllTypes = (clientStat.local.totalGamesPlayed || 0) + (clientStat.national.totalGamesPlayed || 0);
+
+            await clientStat.save();
         }
 
         await gameSession.save();
