@@ -58,39 +58,6 @@ const nationalLeaderboardSchema = new mongoose.Schema({
         description: 'Total number of games played at national level.'
     },
 
-    /**
-     * 🥇 First Place Wins
-     * Total number of 1st place finishes in all national games.
-     */
-    totalFirstPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 1st place finishes in all national games.'
-    },
-
-    /**
-     * 🥈 Second Place Wins
-     * Total number of 2nd place finishes in all national games.
-     */
-    totalSecondPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 2nd place finishes in all national games.'
-    },
-
-    /**
-     * 🥉 Third Place Wins
-     * Total number of 3rd place finishes in all national games.
-     */
-    totalThirdPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 3rd place finishes in all national games.'
-    },
-
     // ------------------------------------------------
     // 🔹 Timestamps
     // ------------------------------------------------

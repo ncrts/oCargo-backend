@@ -164,13 +164,14 @@ const clientStatSchema = new mongoose.Schema({
                     type: String,
                     description: 'Display name of the badge earned.'
                 },
-                description: {
-                    type: String,
-                    description: 'Short explanation or achievement condition for the badge.'
-                },
                 earnedAt: {
                     type: Date,
                     description: 'Timestamp when the badge was earned.'
+                },
+                earnedCount: {
+                    type: Number,
+                    default: 1,
+                    description: 'Number of times this badge has been earned.'
                 }
             }
         ]
@@ -296,13 +297,14 @@ const clientStatSchema = new mongoose.Schema({
                     type: String,
                     description: 'Display name of the badge earned.'
                 },
-                description: {
-                    type: String,
-                    description: 'Short explanation or achievement condition for the badge.'
-                },
                 earnedAt: {
                     type: Date,
                     description: 'Timestamp when the badge was earned.'
+                },
+                earnedCount: {
+                    type: Number,
+                    default: 1,
+                    description: 'Number of times this badge has been earned.'
                 }
             }
         ]

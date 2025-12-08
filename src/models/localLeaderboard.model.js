@@ -57,39 +57,6 @@ const localLeaderboardSchema = new mongoose.Schema({
         description: 'Total number of games played at all local franchise locations.'
     },
 
-    /**
-     * 🥇 First Place Wins
-     * Total number of 1st place finishes in all local games.
-     */
-    totalFirstPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 1st place finishes in all local games.'
-    },
-
-    /**
-     * 🥈 Second Place Wins
-     * Total number of 2nd place finishes in all local games.
-     */
-    totalSecondPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 2nd place finishes in all local games.'
-    },
-
-    /**
-     * 🥉 Third Place Wins
-     * Total number of 3rd place finishes in all local games.
-     */
-    totalThirdPlaceWins: {
-        type: Number,
-        default: 0,
-        min: 0,
-        description: 'Number of 3rd place finishes in all local games.'
-    },
-
     // ------------------------------------------------
     // 🔹 Timestamps
     // ------------------------------------------------

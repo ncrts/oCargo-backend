@@ -3644,19 +3644,85 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
             }
             if (Array.isArray(player.badges)) {
                 player.badges.forEach(badge => {
-                    if (!statObj.badges.some(b => b.badgeId?.toString() === badge.id)) {
+                    const existingBadge = statObj.badges.find(b => b.badgeId?.toString() === badge.id);
+                    if (existingBadge) {
+                        existingBadge.earnedCount = (existingBadge.earnedCount || 1) + 1;
+                        existingBadge.earnedAt = new Date();
+                    } else {
                         statObj.badges.push({
                             badgeId: badge.id,
                             badgeIcon: badge.iconUrl,
                             badgeName: badge.name?.en_us || '',
                             description: '',
-                            earnedAt: new Date()
+                            earnedAt: new Date(),
+                            earnedCount: 1
                         });
                     }
                 });
             }
             clientStat.totalGamesPlayedAllTypes = (clientStat.local.totalGamesPlayed || 0) + (clientStat.national.totalGamesPlayed || 0);
             await clientStat.save();
+        }
+
+        // Update or create FranchiseeLeaderboard
+        if (gameSession.franchiseId) {
+            let franchiseeEntry = await FranchiseeLeaderboard.findOne({ clientId: player.playerId, franchiseeInfoId: gameSession.franchiseId });
+            if (franchiseeEntry) {
+                franchiseeEntry.totalXp += player.totalScore || 0;
+                franchiseeEntry.totalGamesPlayed += 1;
+                franchiseeEntry.updatedAt = new Date();
+                await franchiseeEntry.save();
+            } else {
+                await FranchiseeLeaderboard.create({
+                    clientId: player.playerId,
+                    franchiseeInfoId: gameSession.franchiseId,
+                    totalXp: player.totalScore || 0,
+                    totalGamesPlayed: 1,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isActive: true,
+                    isDeleted: false
+                });
+            }
+        }
+
+        // Update or create Local/National Leaderboard
+        if (quizType === 'Local') {
+            let localEntry = await LocalLeaderboard.findOne({ clientId: player.playerId });
+            if (localEntry) {
+                localEntry.totalXp += player.totalScore || 0;
+                localEntry.totalGamesPlayed += 1;
+                localEntry.updatedAt = new Date();
+                await localEntry.save();
+            } else {
+                await LocalLeaderboard.create({
+                    clientId: player.playerId,
+                    totalXp: player.totalScore || 0,
+                    totalGamesPlayed: 1,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isActive: true,
+                    isDeleted: false
+                });
+            }
+        } else if (quizType === 'National') {
+            let nationalEntry = await NationalLeaderboard.findOne({ clientId: player.playerId });
+            if (nationalEntry) {
+                nationalEntry.totalXp += player.totalScore || 0;
+                nationalEntry.totalGamesPlayed += 1;
+                nationalEntry.updatedAt = new Date();
+                await nationalEntry.save();
+            } else {
+                await NationalLeaderboard.create({
+                    clientId: player.playerId,
+                    totalXp: player.totalScore || 0,
+                    totalGamesPlayed: 1,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isActive: true,
+                    isDeleted: false
+                });
+            }
         }
 
         // Update QuizSessionPlayer
