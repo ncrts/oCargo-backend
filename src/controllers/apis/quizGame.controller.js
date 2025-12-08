@@ -3550,105 +3550,100 @@ const calculateQuestionPoints = catchAsync(async (req, res) => {
 
 const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
 
-        // Extract data from req.body
-        const { gameSessionId, leaderBoardData } = req.body;
-        if (!gameSessionId || !leaderBoardData) {
-            return res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: 'Missing gameSessionId or leaderBoardData',
-                data: null
-            });
-        }
+    // Extract data from req.body
+    const { gameSessionId, leaderBoardData } = req.body;
+    if (!gameSessionId || !leaderBoardData) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: 'Missing gameSessionId or leaderBoardData',
+            data: null
+        });
+    }
 
-        // Fetch the game session and quiz type
-        const gameSession = await QuizGameSession.findById(gameSessionId).populate({ path: 'quizId', select: 'visibility' });
-        if (!gameSession) {
-            return res.status(httpStatus.NOT_FOUND).json({
-                success: false,
-                message: 'Game session not found',
-                data: null
-            });
-        }
+    // Fetch the game session and quiz type
+    const gameSession = await QuizGameSession.findById(gameSessionId).populate({ path: 'quizId', select: 'visibility' });
+    if (!gameSession) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: 'Game session not found',
+            data: null
+        });
+    }
+    // Check if session is already completed or cancelled
+    if (gameSession.status === 'Completed' || gameSession.status === 'Cancelled') {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: 'Game session already completed',
+            data: null
+        });
+    }
 
-        // Map gameData
-        if (leaderBoardData.gameData) {
-            gameSession.totalNumberOfQuestions = leaderBoardData.gameData.totalNoOfQuestions;
-            gameSession.totalPlayerCount = leaderBoardData.gameData.totalPlayers;
-        }
+    // Map gameData
+    if (leaderBoardData.gameData) {
+        gameSession.totalNumberOfQuestions = leaderBoardData.gameData.totalNoOfQuestions;
+        gameSession.totalPlayerCount = leaderBoardData.gameData.totalPlayers;
+    }
 
-        // Map specialAwards
-        if (leaderBoardData.specialAwards) {
-            const awardsArr = [];
-            Object.keys(leaderBoardData.specialAwards).forEach(awardType => {
-                leaderBoardData.specialAwards[awardType].forEach(player => {
-                    awardsArr.push({
-                        awards: awardType,
-                        ...player
-                    });
+    // Map specialAwards
+    if (leaderBoardData.specialAwards) {
+        const awardsArr = [];
+        Object.keys(leaderBoardData.specialAwards).forEach(awardType => {
+            leaderBoardData.specialAwards[awardType].forEach(player => {
+                awardsArr.push({
+                    awards: awardType,
+                    ...player
                 });
             });
-            gameSession.specialAwards = awardsArr;
-        }
+        });
+        gameSession.specialAwards = awardsArr;
+    }
 
-        // Map leaderBoard to podium
-        if (Array.isArray(leaderBoardData.leaderBoard)) {
-            gameSession.podium = leaderBoardData.leaderBoard.map(player => ({
-                joinedAt: player.joinedAt,
-                playerId: player.playerId,
-                profileAvatar: player.profileAvatar,
-                pseudoName: player.pseudoName,
-                totalPlayedGamesCount: player.totalPlayedGamesCount,
-                avgResponseTime: player.avgResponseTime,
-                badAnswerCount: player.badAnswerCount,
-                currentStreakCount: player.currentStreakCount,
-                goodAnswerCount: player.goodAnswerCount,
-                highestStreakCount: player.highestStreakCount,
-                missedAnswerCount: player.missedAnswerCount,
-                totalResponseTime: player.totalResponseTime,
-                totalScore: player.totalScore,
-                position: player.position || null,
-                badges: Array.isArray(player.badges) ? player.badges.map(badge => ({
-                    id: badge.id,
-                    name: badge.name,
-                    iconUrl: badge.iconUrl
-                })) : []
-            }));
-        }
+    // Map leaderBoard to podium
+    if (Array.isArray(leaderBoardData.leaderBoard)) {
+        gameSession.podium = leaderBoardData.leaderBoard.map(player => ({
+            joinedAt: player.joinedAt,
+            playerId: player.playerId,
+            profileAvatar: player.profileAvatar,
+            pseudoName: player.pseudoName,
+            totalPlayedGamesCount: player.totalPlayedGamesCount,
+            avgResponseTime: player.avgResponseTime,
+            badAnswerCount: player.badAnswerCount,
+            currentStreakCount: player.currentStreakCount,
+            goodAnswerCount: player.goodAnswerCount,
+            highestStreakCount: player.highestStreakCount,
+            missedAnswerCount: player.missedAnswerCount,
+            totalResponseTime: player.totalResponseTime,
+            totalScore: player.totalScore,
+            position: player.position || null,
+            badges: Array.isArray(player.badges) ? player.badges.map(badge => ({
+                id: badge.id,
+                name: badge.name,
+                iconUrl: badge.iconUrl
+            })) : []
+        }));
+    }
 
-        // Bulk update player stats
-        const quizType = gameSession.quizId?.visibility || 'Local';
-        const leaderboard = leaderBoardData.leaderBoard || [];
-        for (let i = 0; i < leaderboard.length; i++) {
-            const player = leaderboard[i];
-            const clientStat = await PlayerStat.findOne({ clientId: player.playerId });
-            if (!clientStat) continue;
 
-            // Determine stat object
+    // Bulk update player stats and session records
+    const quizType = gameSession.quizId?.visibility || 'Local';
+    const leaderboard = leaderBoardData.leaderBoard || [];
+    for (let i = 0; i < leaderboard.length; i++) {
+        const player = leaderboard[i];
+        // Update ClientStat
+        const clientStat = await PlayerStat.findOne({ clientId: player.playerId });
+        if (clientStat) {
             const statObj = quizType === 'National' ? clientStat.national : clientStat.local;
-
-            // Update XP (example: use totalScore as XP, adjust as needed)
             statObj.totalXP += player.totalScore || 0;
-
-            // Update games played
             statObj.totalGamesPlayed += 1;
-
-            // Update first/second/third place wins
             if (i === 0) statObj.totalFirstPlaceWins += 1;
             if (i === 1) statObj.totalSecondPlaceWins += 1;
             if (i === 2) statObj.totalThirdPlaceWins += 1;
-
-            // Update worst position
             if (i === leaderboard.length - 1) statObj.worstPosition = (leaderboard.length);
-
-            // Update max streak
             if (!statObj.maxStreak || player.highestStreakCount > statObj.maxStreak) {
                 statObj.maxStreak = player.highestStreakCount;
             }
-
-            // Update badges
             if (Array.isArray(player.badges)) {
                 player.badges.forEach(badge => {
-                    // Avoid duplicate badgeId
                     if (!statObj.badges.some(b => b.badgeId?.toString() === badge.id)) {
                         statObj.badges.push({
                             badgeId: badge.id,
@@ -3660,27 +3655,34 @@ const completeQuizGameSessionQuestionsData = catchAsync(async (req, res) => {
                     }
                 });
             }
-
-            // Update totalGamesPlayedAllTypes
             clientStat.totalGamesPlayedAllTypes = (clientStat.local.totalGamesPlayed || 0) + (clientStat.national.totalGamesPlayed || 0);
-
             await clientStat.save();
         }
 
-        await gameSession.save();
+        // Update QuizSessionPlayer
+        const sessionPlayer = await QuizSessionPlayer.findOne({ quizGameSessionId: gameSessionId, clientId: player.playerId });
+        if (sessionPlayer) {
+            sessionPlayer.finalRank = i + 1;
+            sessionPlayer.streak = player.currentStreakCount || 0;
+            sessionPlayer.totalScore = player.totalScore || 0;
+            await sessionPlayer.save();
+        }
+    }
+    gameSession.status = 'Completed';
+    await gameSession.save();
 
-        res.status(httpStatus.OK).json({
-            success: true,
-            message: 'Quiz game session questions data completed and saved',
-            data: {
-                gameSessionId,
-                totalNumberOfQuestions: gameSession.totalNumberOfQuestions,
-                totalPlayerCount: gameSession.totalPlayerCount,
-                podium: gameSession.podium,
-                specialAwards: gameSession.specialAwards
-            }
-        });
-    })
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Quiz game session questions data completed and saved',
+        data: {
+            gameSessionId,
+            totalNumberOfQuestions: gameSession.totalNumberOfQuestions,
+            totalPlayerCount: gameSession.totalPlayerCount,
+            podium: gameSession.podium,
+            specialAwards: gameSession.specialAwards
+        }
+    });
+})
 
 const playerResponseAnswer = catchAsync(async (req, res) => {
 
@@ -3791,102 +3793,102 @@ const playerResponseAnswer = catchAsync(async (req, res) => {
  * Returns: array of player's previous game sessions with pagination info
  */
 const getPlayerGameSessionHistory = catchAsync(async (req, res) => {
-	try {
-		const { clientId } = req.params;
-		const { limit = 20, skip = 0 } = req.query;
+    try {
+        const { clientId } = req.params;
+        const { limit = 20, skip = 0 } = req.query;
 
-		// ===== VALIDATION =====
-		if (!clientId || typeof clientId !== 'string' || !clientId.trim()) {
-			return res.status(httpStatus.OK).json({
-				success: false,
-				message: 'clientId is required',
-				data: null
-			});
-		}
+        // ===== VALIDATION =====
+        if (!clientId || typeof clientId !== 'string' || !clientId.trim()) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: 'clientId is required',
+                data: null
+            });
+        }
 
-		// Parse limit and skip as integers
-		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
-		const pageSkip = Math.max(0, parseInt(skip) || 0);
+        // Parse limit and skip as integers
+        const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
+        const pageSkip = Math.max(0, parseInt(skip) || 0);
 
-		// ===== FETCH DATA =====
-		const filter = {
-			clientId: clientId,
-			isDeleted: false
-		};
+        // ===== FETCH DATA =====
+        const filter = {
+            clientId: clientId,
+            isDeleted: false
+        };
 
-		// Get total count for pagination info
-		const totalCount = await QuizSessionPlayer.countDocuments(filter);
+        // Get total count for pagination info
+        const totalCount = await QuizSessionPlayer.countDocuments(filter);
 
-		const playerSessions = await QuizSessionPlayer.find(filter)
-			.populate({
-				path: 'quizId',
-				select: 'title description category visibility'
-			})
-			.populate({ path: 'clientId', select: 'firstName lastName email profilePicture' })
-			.populate({ path: 'franchiseId', select: 'name location' })
-			.sort({ joinedAt: -1 })
-			.limit(pageLimit)
-			.skip(pageSkip);
+        const playerSessions = await QuizSessionPlayer.find(filter)
+            .populate({
+                path: 'quizId',
+                select: 'title description category visibility'
+            })
+            .populate({ path: 'clientId', select: 'firstName lastName email profilePicture' })
+            .populate({ path: 'franchiseId', select: 'name location' })
+            .sort({ joinedAt: -1 })
+            .limit(pageLimit)
+            .skip(pageSkip);
 
-		// ===== FORMAT RESPONSE =====
-		const formattedHistory = playerSessions.map(session => {
-			return {
-				sessionId: session._id,
-				quizGameSessionId: session.quizGameSessionId,
-				quizInfo: {
-					quizId: session.quizId._id,
-					title: session.quizId.title,
-					description: session.quizId.description,
-					category: session.quizId.category,
-					quizType: session.quizType,
-					visibility: session.quizId.visibility
-				},
-				playerInfo: {
-					clientId: session.clientId._id,
-					firstName: session.clientId.firstName,
-					lastName: session.clientId.lastName,
-					email: session.clientId.email
-				},
-				franchiseInfo: {
-					franchiseId: session.franchiseId._id,
-					name: session.franchiseId.name,
-				},
-				performance: {
-					totalScore: session.totalScore,
-					finalRank: session.finalRank,
-					streak: session.streak
-				},
-				sessionDates: {
-					joinedAt: session.joinedAt,
-					leftAt: session.leftAt,
-					dateEarned: session.dateEarned
-				},
-				isActive: session.isActive,
-				quizType: session.quizType
-			};
-		});
+        // ===== FORMAT RESPONSE =====
+        const formattedHistory = playerSessions.map(session => {
+            return {
+                sessionId: session._id,
+                quizGameSessionId: session.quizGameSessionId,
+                quizInfo: {
+                    quizId: session.quizId._id,
+                    title: session.quizId.title,
+                    description: session.quizId.description,
+                    category: session.quizId.category,
+                    quizType: session.quizType,
+                    visibility: session.quizId.visibility
+                },
+                playerInfo: {
+                    clientId: session.clientId._id,
+                    firstName: session.clientId.firstName,
+                    lastName: session.clientId.lastName,
+                    email: session.clientId.email
+                },
+                franchiseInfo: {
+                    franchiseId: session.franchiseId._id,
+                    name: session.franchiseId.name,
+                },
+                performance: {
+                    totalScore: session.totalScore,
+                    finalRank: session.finalRank,
+                    streak: session.streak
+                },
+                sessionDates: {
+                    joinedAt: session.joinedAt,
+                    leftAt: session.leftAt,
+                    dateEarned: session.dateEarned
+                },
+                isActive: session.isActive,
+                quizType: session.quizType
+            };
+        });
 
-		return res.status(httpStatus.OK).json({
-			success: true,
-			message: 'Player game session history fetched successfully',
-			data: formattedHistory,
-			count: formattedHistory.length,
-			totalCount: totalCount,
-			pagination: {
-				limit: pageLimit,
-				skip: pageSkip,
-				page: Math.floor(pageSkip / pageLimit) + 1,
-				totalPages: Math.ceil(totalCount / pageLimit)
-			}
-		});
-	} catch (err) {
-		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: 'Error fetching player game session history',
-			error: err.message,
-			data: null
-		});
-	}
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: 'Player game session history fetched successfully',
+            data: formattedHistory,
+            count: formattedHistory.length,
+            totalCount: totalCount,
+            pagination: {
+                limit: pageLimit,
+                skip: pageSkip,
+                page: Math.floor(pageSkip / pageLimit) + 1,
+                totalPages: Math.ceil(totalCount / pageLimit)
+            }
+        });
+    } catch (err) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: 'Error fetching player game session history',
+            error: err.message,
+            data: null
+        });
+    }
 });
 
 // ================================
@@ -3905,112 +3907,112 @@ const getPlayerGameSessionHistory = catchAsync(async (req, res) => {
  * Returns: leaderboard sorted by totalXp (descending)
  */
 const getLocalLeaderboard = catchAsync(async (req, res) => {
-	try {
-		const { clientId, limit = 20, skip = 0 } = req.query;
+    try {
+        const { clientId, limit = 20, skip = 0 } = req.query;
 
-		// ===== VALIDATION =====
-		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
-		const pageSkip = Math.max(0, parseInt(skip) || 0);
+        // ===== VALIDATION =====
+        const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+        const pageSkip = Math.max(0, parseInt(skip) || 0);
 
-		// ===== BUILD FILTER =====
-		const filter = {
-			isDeleted: false,
-			isActive: true
-		};
+        // ===== BUILD FILTER =====
+        const filter = {
+            isDeleted: false,
+            isActive: true
+        };
 
-		// ===== FETCH LEADERBOARD DATA =====
-		const totalCount = await LocalLeaderboard.countDocuments(filter);
+        // ===== FETCH LEADERBOARD DATA =====
+        const totalCount = await LocalLeaderboard.countDocuments(filter);
 
-		const leaderboardData = await LocalLeaderboard.find(filter)
-			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
-			.sort({ totalXp: -1 })
-			.limit(pageLimit)
-			.skip(pageSkip);
+        const leaderboardData = await LocalLeaderboard.find(filter)
+            .populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+            .sort({ totalXp: -1 })
+            .limit(pageLimit)
+            .skip(pageSkip);
 
-		// ===== FORMAT LEADERBOARD RESPONSE =====
-		const formattedLeaderboard = leaderboardData.map((entry, index) => {
-			const rank = pageSkip + index + 1;
+        // ===== FORMAT LEADERBOARD RESPONSE =====
+        const formattedLeaderboard = leaderboardData.map((entry, index) => {
+            const rank = pageSkip + index + 1;
 
-			return {
-				rank: rank,
-				clientId: entry.clientId._id,
-				firstName: entry.clientId.firstName,
-				lastName: entry.clientId.lastName,
-				pseudoName: entry.clientId.pseudoName,
-				profileAvatar: entry.clientId.profileAvatar,
-				xp: entry.totalXp,
-				totalGamesPlayed: entry.totalGamesPlayed,
-				totalFirstPlaceWins: entry.totalFirstPlaceWins,
-				totalSecondPlaceWins: entry.totalSecondPlaceWins,
-				totalThirdPlaceWins: entry.totalThirdPlaceWins,
-				createdAt: entry.createdAt,
-				updatedAt: entry.updatedAt
-			};
-		});
+            return {
+                rank: rank,
+                clientId: entry.clientId._id,
+                firstName: entry.clientId.firstName,
+                lastName: entry.clientId.lastName,
+                pseudoName: entry.clientId.pseudoName,
+                profileAvatar: entry.clientId.profileAvatar,
+                xp: entry.totalXp,
+                totalGamesPlayed: entry.totalGamesPlayed,
+                totalFirstPlaceWins: entry.totalFirstPlaceWins,
+                totalSecondPlaceWins: entry.totalSecondPlaceWins,
+                totalThirdPlaceWins: entry.totalThirdPlaceWins,
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt
+            };
+        });
 
-		// ===== GET CLIENT'S POSITION (if clientId provided) =====
-		let clientPosition = null;
+        // ===== GET CLIENT'S POSITION (if clientId provided) =====
+        let clientPosition = null;
 
-		if (clientId && typeof clientId === 'string' && clientId.trim()) {
-			const clientLeaderboardEntry = await LocalLeaderboard.findOne({
-				clientId: clientId,
-				isDeleted: false,
-				isActive: true
-			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
+        if (clientId && typeof clientId === 'string' && clientId.trim()) {
+            const clientLeaderboardEntry = await LocalLeaderboard.findOne({
+                clientId: clientId,
+                isDeleted: false,
+                isActive: true
+            }).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
 
-			if (clientLeaderboardEntry) {
-				const higherXpCount = await LocalLeaderboard.countDocuments({
-					isDeleted: false,
-					isActive: true,
-					totalXp: { $gt: clientLeaderboardEntry.totalXp }
-				});
+            if (clientLeaderboardEntry) {
+                const higherXpCount = await LocalLeaderboard.countDocuments({
+                    isDeleted: false,
+                    isActive: true,
+                    totalXp: { $gt: clientLeaderboardEntry.totalXp }
+                });
 
-				const clientRank = higherXpCount + 1;
+                const clientRank = higherXpCount + 1;
 
-				clientPosition = {
-					rank: clientRank,
-					clientId: clientLeaderboardEntry.clientId._id,
-					firstName: clientLeaderboardEntry.clientId.firstName,
-					lastName: clientLeaderboardEntry.clientId.lastName,
-					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
-					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
-					xp: clientLeaderboardEntry.totalXp,
-					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
-					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
-					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
-					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
-					createdAt: clientLeaderboardEntry.createdAt,
-					updatedAt: clientLeaderboardEntry.updatedAt
-				};
-			}
-		}
+                clientPosition = {
+                    rank: clientRank,
+                    clientId: clientLeaderboardEntry.clientId._id,
+                    firstName: clientLeaderboardEntry.clientId.firstName,
+                    lastName: clientLeaderboardEntry.clientId.lastName,
+                    pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+                    profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+                    xp: clientLeaderboardEntry.totalXp,
+                    totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+                    totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+                    totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+                    totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+                    createdAt: clientLeaderboardEntry.createdAt,
+                    updatedAt: clientLeaderboardEntry.updatedAt
+                };
+            }
+        }
 
-		return res.status(httpStatus.OK).json({
-			success: true,
-			message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Local leaderboard fetched successfully",
-			data: {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Local leaderboard fetched successfully",
+            data: {
                 s3BaseUrl,
-				type: 'local',
-				totalPlayers: totalCount,
-				displayedPlayers: formattedLeaderboard.length,
-				leaderboard: formattedLeaderboard,
-				clientPosition: clientPosition,
-				pagination: {
-					limit: pageLimit,
-					skip: pageSkip,
-					page: Math.floor(pageSkip / pageLimit) + 1,
-					totalPages: Math.ceil(totalCount / pageLimit)
-				}
-			}
-		});
-	} catch (err) {
-		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching local leaderboard",
-			error: err.message,
-			data: null
-		});
-	}
+                type: 'local',
+                totalPlayers: totalCount,
+                displayedPlayers: formattedLeaderboard.length,
+                leaderboard: formattedLeaderboard,
+                clientPosition: clientPosition,
+                pagination: {
+                    limit: pageLimit,
+                    skip: pageSkip,
+                    page: Math.floor(pageSkip / pageLimit) + 1,
+                    totalPages: Math.ceil(totalCount / pageLimit)
+                }
+            }
+        });
+    } catch (err) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage ? getMessage("LOCAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching local leaderboard",
+            error: err.message,
+            data: null
+        });
+    }
 });
 
 /**
@@ -4025,112 +4027,112 @@ const getLocalLeaderboard = catchAsync(async (req, res) => {
  * Returns: leaderboard sorted by totalXp (descending)
  */
 const getNationalLeaderboard = catchAsync(async (req, res) => {
-	try {
-		const { clientId, limit = 20, skip = 0 } = req.query;
+    try {
+        const { clientId, limit = 20, skip = 0 } = req.query;
 
-		// ===== VALIDATION =====
-		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
-		const pageSkip = Math.max(0, parseInt(skip) || 0);
+        // ===== VALIDATION =====
+        const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+        const pageSkip = Math.max(0, parseInt(skip) || 0);
 
-		// ===== BUILD FILTER =====
-		const filter = {
-			isDeleted: false,
-			isActive: true
-		};
+        // ===== BUILD FILTER =====
+        const filter = {
+            isDeleted: false,
+            isActive: true
+        };
 
-		// ===== FETCH LEADERBOARD DATA =====
-		const totalCount = await NationalLeaderboard.countDocuments(filter);
+        // ===== FETCH LEADERBOARD DATA =====
+        const totalCount = await NationalLeaderboard.countDocuments(filter);
 
-		const leaderboardData = await NationalLeaderboard.find(filter)
-			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
-			.sort({ totalXp: -1 })
-			.limit(pageLimit)
-			.skip(pageSkip);
+        const leaderboardData = await NationalLeaderboard.find(filter)
+            .populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+            .sort({ totalXp: -1 })
+            .limit(pageLimit)
+            .skip(pageSkip);
 
-		// ===== FORMAT LEADERBOARD RESPONSE =====
-		const formattedLeaderboard = leaderboardData.map((entry, index) => {
-			const rank = pageSkip + index + 1;
+        // ===== FORMAT LEADERBOARD RESPONSE =====
+        const formattedLeaderboard = leaderboardData.map((entry, index) => {
+            const rank = pageSkip + index + 1;
 
-			return {
-				rank: rank,
-				clientId: entry.clientId._id,
-				firstName: entry.clientId.firstName,
-				lastName: entry.clientId.lastName,
-				pseudoName: entry.clientId.pseudoName,
-				profileAvatar: entry.clientId.profileAvatar,
-				xp: entry.totalXp,
-				totalGamesPlayed: entry.totalGamesPlayed,
-				totalFirstPlaceWins: entry.totalFirstPlaceWins,
-				totalSecondPlaceWins: entry.totalSecondPlaceWins,
-				totalThirdPlaceWins: entry.totalThirdPlaceWins,
-				createdAt: entry.createdAt,
-				updatedAt: entry.updatedAt
-			};
-		});
+            return {
+                rank: rank,
+                clientId: entry.clientId._id,
+                firstName: entry.clientId.firstName,
+                lastName: entry.clientId.lastName,
+                pseudoName: entry.clientId.pseudoName,
+                profileAvatar: entry.clientId.profileAvatar,
+                xp: entry.totalXp,
+                totalGamesPlayed: entry.totalGamesPlayed,
+                totalFirstPlaceWins: entry.totalFirstPlaceWins,
+                totalSecondPlaceWins: entry.totalSecondPlaceWins,
+                totalThirdPlaceWins: entry.totalThirdPlaceWins,
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt
+            };
+        });
 
-		// ===== GET CLIENT'S POSITION (if clientId provided) =====
-		let clientPosition = null;
+        // ===== GET CLIENT'S POSITION (if clientId provided) =====
+        let clientPosition = null;
 
-		if (clientId && typeof clientId === 'string' && clientId.trim()) {
-			const clientLeaderboardEntry = await NationalLeaderboard.findOne({
-				clientId: clientId,
-				isDeleted: false,
-				isActive: true
-			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
+        if (clientId && typeof clientId === 'string' && clientId.trim()) {
+            const clientLeaderboardEntry = await NationalLeaderboard.findOne({
+                clientId: clientId,
+                isDeleted: false,
+                isActive: true
+            }).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
 
-			if (clientLeaderboardEntry) {
-				const higherXpCount = await NationalLeaderboard.countDocuments({
-					isDeleted: false,
-					isActive: true,
-					totalXp: { $gt: clientLeaderboardEntry.totalXp }
-				});
+            if (clientLeaderboardEntry) {
+                const higherXpCount = await NationalLeaderboard.countDocuments({
+                    isDeleted: false,
+                    isActive: true,
+                    totalXp: { $gt: clientLeaderboardEntry.totalXp }
+                });
 
-				const clientRank = higherXpCount + 1;
+                const clientRank = higherXpCount + 1;
 
-				clientPosition = {
-					rank: clientRank,
-					clientId: clientLeaderboardEntry.clientId._id,
-					firstName: clientLeaderboardEntry.clientId.firstName,
-					lastName: clientLeaderboardEntry.clientId.lastName,
-					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
-					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
-					xp: clientLeaderboardEntry.totalXp,
-					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
-					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
-					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
-					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
-					createdAt: clientLeaderboardEntry.createdAt,
-					updatedAt: clientLeaderboardEntry.updatedAt
-				};
-			}
-		}
+                clientPosition = {
+                    rank: clientRank,
+                    clientId: clientLeaderboardEntry.clientId._id,
+                    firstName: clientLeaderboardEntry.clientId.firstName,
+                    lastName: clientLeaderboardEntry.clientId.lastName,
+                    pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+                    profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+                    xp: clientLeaderboardEntry.totalXp,
+                    totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+                    totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+                    totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+                    totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+                    createdAt: clientLeaderboardEntry.createdAt,
+                    updatedAt: clientLeaderboardEntry.updatedAt
+                };
+            }
+        }
 
-		return res.status(httpStatus.OK).json({
-			success: true,
-			message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "National leaderboard fetched successfully",
-			data: {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "National leaderboard fetched successfully",
+            data: {
                 s3BaseUrl,
-				type: 'national',
-				totalPlayers: totalCount,
-				displayedPlayers: formattedLeaderboard.length,
-				leaderboard: formattedLeaderboard,
-				clientPosition: clientPosition,
-				pagination: {
-					limit: pageLimit,
-					skip: pageSkip,
-					page: Math.floor(pageSkip / pageLimit) + 1,
-					totalPages: Math.ceil(totalCount / pageLimit)
-				}
-			}
-		});
-	} catch (err) {
-		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching national leaderboard",
-			error: err.message,
-			data: null
-		});
-	}
+                type: 'national',
+                totalPlayers: totalCount,
+                displayedPlayers: formattedLeaderboard.length,
+                leaderboard: formattedLeaderboard,
+                clientPosition: clientPosition,
+                pagination: {
+                    limit: pageLimit,
+                    skip: pageSkip,
+                    page: Math.floor(pageSkip / pageLimit) + 1,
+                    totalPages: Math.ceil(totalCount / pageLimit)
+                }
+            }
+        });
+    } catch (err) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage ? getMessage("NATIONAL_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching national leaderboard",
+            error: err.message,
+            data: null
+        });
+    }
 });
 
 /**
@@ -4148,147 +4150,147 @@ const getNationalLeaderboard = catchAsync(async (req, res) => {
  * Returns: leaderboard sorted by totalXp (descending) for specific franchise
  */
 const getFranchiseeLeaderboard = catchAsync(async (req, res) => {
-	try {
-		const { franchiseeInfoId } = req.params;
-		const { clientId, limit = 20, skip = 0 } = req.query;
+    try {
+        const { franchiseeInfoId } = req.params;
+        const { clientId, limit = 20, skip = 0 } = req.query;
 
-		// ===== VALIDATION =====
-		if (!franchiseeInfoId || typeof franchiseeInfoId !== 'string' || !franchiseeInfoId.trim()) {
-			return res.status(httpStatus.OK).json({
-				success: false,
-				message: getMessage ? getMessage("FRANCHISEE_ID_REQUIRED", res.locals.language) : "Franchisee ID is required",
-				data: null
-			});
-		}
+        // ===== VALIDATION =====
+        if (!franchiseeInfoId || typeof franchiseeInfoId !== 'string' || !franchiseeInfoId.trim()) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: getMessage ? getMessage("FRANCHISEE_ID_REQUIRED", res.locals.language) : "Franchisee ID is required",
+                data: null
+            });
+        }
 
-		// Verify franchisee exists
-		const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
-		if (!franchiseeExists) {
-			return res.status(httpStatus.NOT_FOUND).json({
-				success: false,
-				message: getMessage ? getMessage("FRANCHISEE_NOT_FOUND", res.locals.language) : "Franchisee not found",
-				data: null
-			});
-		}
+        // Verify franchisee exists
+        const franchiseeExists = await FranchiseeInfo.findById(franchiseeInfoId);
+        if (!franchiseeExists) {
+            return res.status(httpStatus.NOT_FOUND).json({
+                success: false,
+                message: getMessage ? getMessage("FRANCHISEE_NOT_FOUND", res.locals.language) : "Franchisee not found",
+                data: null
+            });
+        }
 
-		const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
-		const pageSkip = Math.max(0, parseInt(skip) || 0);
+        const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+        const pageSkip = Math.max(0, parseInt(skip) || 0);
 
-		// ===== BUILD FILTER =====
-		const filter = {
-			franchiseeInfoId: franchiseeInfoId,
-			isDeleted: false,
-			isActive: true
-		};
+        // ===== BUILD FILTER =====
+        const filter = {
+            franchiseeInfoId: franchiseeInfoId,
+            isDeleted: false,
+            isActive: true
+        };
 
-		// ===== FETCH LEADERBOARD DATA =====
-		const totalCount = await FranchiseeLeaderboard.countDocuments(filter);
+        // ===== FETCH LEADERBOARD DATA =====
+        const totalCount = await FranchiseeLeaderboard.countDocuments(filter);
 
-		const leaderboardData = await FranchiseeLeaderboard.find(filter)
-			.populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
-			.populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' })
-			.sort({ totalXp: -1 })
-			.limit(pageLimit)
-			.skip(pageSkip);
+        const leaderboardData = await FranchiseeLeaderboard.find(filter)
+            .populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+            .populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' })
+            .sort({ totalXp: -1 })
+            .limit(pageLimit)
+            .skip(pageSkip);
 
-		// ===== FORMAT LEADERBOARD RESPONSE =====
-		const formattedLeaderboard = leaderboardData.map((entry, index) => {
-			const rank = pageSkip + index + 1;
+        // ===== FORMAT LEADERBOARD RESPONSE =====
+        const formattedLeaderboard = leaderboardData.map((entry, index) => {
+            const rank = pageSkip + index + 1;
 
-			return {
-				rank: rank,
-				clientId: entry.clientId._id,
-				firstName: entry.clientId.firstName,
-				lastName: entry.clientId.lastName,
-				pseudoName: entry.clientId.pseudoName,
-				profileAvatar: entry.clientId.profileAvatar,
-				xp: entry.totalXp,
-				totalGamesPlayed: entry.totalGamesPlayed,
-				totalFirstPlaceWins: entry.totalFirstPlaceWins,
-				totalSecondPlaceWins: entry.totalSecondPlaceWins,
-				totalThirdPlaceWins: entry.totalThirdPlaceWins,
-				franchiseeInfo: {
-					franchiseeId: entry.franchiseeInfoId._id,
-					franchiseeName: entry.franchiseeInfoId.franchiseeName,
-					location: entry.franchiseeInfoId.location
-				},
-				createdAt: entry.createdAt,
-				updatedAt: entry.updatedAt
-			};
-		});
+            return {
+                rank: rank,
+                clientId: entry.clientId._id,
+                firstName: entry.clientId.firstName,
+                lastName: entry.clientId.lastName,
+                pseudoName: entry.clientId.pseudoName,
+                profileAvatar: entry.clientId.profileAvatar,
+                xp: entry.totalXp,
+                totalGamesPlayed: entry.totalGamesPlayed,
+                totalFirstPlaceWins: entry.totalFirstPlaceWins,
+                totalSecondPlaceWins: entry.totalSecondPlaceWins,
+                totalThirdPlaceWins: entry.totalThirdPlaceWins,
+                franchiseeInfo: {
+                    franchiseeId: entry.franchiseeInfoId._id,
+                    franchiseeName: entry.franchiseeInfoId.franchiseeName,
+                    location: entry.franchiseeInfoId.location
+                },
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt
+            };
+        });
 
-		// ===== GET CLIENT'S POSITION (if clientId provided) =====
-		let clientPosition = null;
+        // ===== GET CLIENT'S POSITION (if clientId provided) =====
+        let clientPosition = null;
 
-		if (clientId && typeof clientId === 'string' && clientId.trim()) {
-			const clientLeaderboardEntry = await FranchiseeLeaderboard.findOne({
-				clientId: clientId,
-				franchiseeInfoId: franchiseeInfoId,
-				isDeleted: false,
-				isActive: true
-			}).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
-			.populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' });
+        if (clientId && typeof clientId === 'string' && clientId.trim()) {
+            const clientLeaderboardEntry = await FranchiseeLeaderboard.findOne({
+                clientId: clientId,
+                franchiseeInfoId: franchiseeInfoId,
+                isDeleted: false,
+                isActive: true
+            }).populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' })
+                .populate({ path: 'franchiseeInfoId', select: 'franchiseeName location' });
 
-			if (clientLeaderboardEntry) {
-				const higherXpCount = await FranchiseeLeaderboard.countDocuments({
-					franchiseeInfoId: franchiseeInfoId,
-					isDeleted: false,
-					isActive: true,
-					totalXp: { $gt: clientLeaderboardEntry.totalXp }
-				});
+            if (clientLeaderboardEntry) {
+                const higherXpCount = await FranchiseeLeaderboard.countDocuments({
+                    franchiseeInfoId: franchiseeInfoId,
+                    isDeleted: false,
+                    isActive: true,
+                    totalXp: { $gt: clientLeaderboardEntry.totalXp }
+                });
 
-				const clientRank = higherXpCount + 1;
+                const clientRank = higherXpCount + 1;
 
-				clientPosition = {
-					rank: clientRank,
-					clientId: clientLeaderboardEntry.clientId._id,
-					firstName: clientLeaderboardEntry.clientId.firstName,
-					lastName: clientLeaderboardEntry.clientId.lastName,
-					pseudoName: clientLeaderboardEntry.clientId.pseudoName,
-					profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
-					xp: clientLeaderboardEntry.totalXp,
-					totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
-					totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
-					totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
-					totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
-					franchiseeInfo: {
-						franchiseeId: clientLeaderboardEntry.franchiseeInfoId._id,
-						franchiseeName: clientLeaderboardEntry.franchiseeInfoId.franchiseeName,
-						location: clientLeaderboardEntry.franchiseeInfoId.location
-					},
-					createdAt: clientLeaderboardEntry.createdAt,
-					updatedAt: clientLeaderboardEntry.updatedAt
-				};
-			}
-		}
+                clientPosition = {
+                    rank: clientRank,
+                    clientId: clientLeaderboardEntry.clientId._id,
+                    firstName: clientLeaderboardEntry.clientId.firstName,
+                    lastName: clientLeaderboardEntry.clientId.lastName,
+                    pseudoName: clientLeaderboardEntry.clientId.pseudoName,
+                    profileAvatar: clientLeaderboardEntry.clientId.profileAvatar,
+                    xp: clientLeaderboardEntry.totalXp,
+                    totalGamesPlayed: clientLeaderboardEntry.totalGamesPlayed,
+                    totalFirstPlaceWins: clientLeaderboardEntry.totalFirstPlaceWins,
+                    totalSecondPlaceWins: clientLeaderboardEntry.totalSecondPlaceWins,
+                    totalThirdPlaceWins: clientLeaderboardEntry.totalThirdPlaceWins,
+                    franchiseeInfo: {
+                        franchiseeId: clientLeaderboardEntry.franchiseeInfoId._id,
+                        franchiseeName: clientLeaderboardEntry.franchiseeInfoId.franchiseeName,
+                        location: clientLeaderboardEntry.franchiseeInfoId.location
+                    },
+                    createdAt: clientLeaderboardEntry.createdAt,
+                    updatedAt: clientLeaderboardEntry.updatedAt
+                };
+            }
+        }
 
-		return res.status(httpStatus.OK).json({
-			success: true,
-			message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Franchisee leaderboard fetched successfully",
-			data: {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCHED_SUCCESS", res.locals.language) : "Franchisee leaderboard fetched successfully",
+            data: {
                 s3BaseUrl,
-				type: 'franchisee',
-				franchiseeId: franchiseeInfoId,
-				totalPlayers: totalCount,
-				displayedPlayers: formattedLeaderboard.length,
-				leaderboard: formattedLeaderboard,
-				clientPosition: clientPosition,
-				pagination: {
-					limit: pageLimit,
-					skip: pageSkip,
-					page: Math.floor(pageSkip / pageLimit) + 1,
-					totalPages: Math.ceil(totalCount / pageLimit)
-				}
-			}
-		});
-	} catch (err) {
-		return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-			success: false,
-			message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching franchisee leaderboard",
-			error: err.message,
-			data: null
-		});
-	}
+                type: 'franchisee',
+                franchiseeId: franchiseeInfoId,
+                totalPlayers: totalCount,
+                displayedPlayers: formattedLeaderboard.length,
+                leaderboard: formattedLeaderboard,
+                clientPosition: clientPosition,
+                pagination: {
+                    limit: pageLimit,
+                    skip: pageSkip,
+                    page: Math.floor(pageSkip / pageLimit) + 1,
+                    totalPages: Math.ceil(totalCount / pageLimit)
+                }
+            }
+        });
+    } catch (err) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage ? getMessage("FRANCHISEE_LEADERBOARD_FETCH_ERROR", res.locals.language) : "Error fetching franchisee leaderboard",
+            error: err.message,
+            data: null
+        });
+    }
 });
 
 let createBulkLocalLeaderboard = catchAsync(async (req, res) => {
@@ -4319,33 +4321,33 @@ let createBulkFranchiseeLeaderboard = catchAsync(async (req, res) => {
 });
 
 module.exports = {
-        createMultipleCategories,
-        getCategory,
-        createQuizInstant,
-        updateQuizInstant,
-        getQuizInstantList,
-        getQuizQuestionsByQuizId,
-        createQuizQuestion,
-        updateQuizQuestion,
-        deleteQuizQuestion,
-        createQuizGameSession,
-        getQuizGameSessionById,
-        getQuizGameSessions,
-        updateQuizGameSession,
-        deleteQuizGameSession,
-        joinQuizGameSession,
-        submitQuizAnswer,
-        leaveQuizGameSession,
-        getPlayerSessionData,
-        getSessionLeaderboard,
-        calculateQuestionPoints,
-        completeQuizGameSessionQuestionsData,
-        playerResponseAnswer,
-        getPlayerGameSessionHistory,
-        getLocalLeaderboard,
-        getNationalLeaderboard,
-        getFranchiseeLeaderboard,
-        createBulkLocalLeaderboard,
-        createBulkNationalLeaderboard,
-        createBulkFranchiseeLeaderboard
-    }
+    createMultipleCategories,
+    getCategory,
+    createQuizInstant,
+    updateQuizInstant,
+    getQuizInstantList,
+    getQuizQuestionsByQuizId,
+    createQuizQuestion,
+    updateQuizQuestion,
+    deleteQuizQuestion,
+    createQuizGameSession,
+    getQuizGameSessionById,
+    getQuizGameSessions,
+    updateQuizGameSession,
+    deleteQuizGameSession,
+    joinQuizGameSession,
+    submitQuizAnswer,
+    leaveQuizGameSession,
+    getPlayerSessionData,
+    getSessionLeaderboard,
+    calculateQuestionPoints,
+    completeQuizGameSessionQuestionsData,
+    playerResponseAnswer,
+    getPlayerGameSessionHistory,
+    getLocalLeaderboard,
+    getNationalLeaderboard,
+    getFranchiseeLeaderboard,
+    createBulkLocalLeaderboard,
+    createBulkNationalLeaderboard,
+    createBulkFranchiseeLeaderboard
+}
