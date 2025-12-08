@@ -523,6 +523,8 @@ const signout = catchAsync(async (req, res) => {
 });
 
 
+
+
 /**
  * Fetches the player's profile by clientId (from query or authenticated user),
  * populates clientProfileId, clientStatId, and adds S3 bucket URL for profile picture.
@@ -619,6 +621,24 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             }
             if (playerProfile) {
                 playerProfile.lastName = req.body.lastName.trim();
+            }
+        }
+
+        // Update isDeleteRequested if provided
+        if (req.body.isDeleteRequested !== undefined && req.body.isDeleteRequested !== null) {
+            if (typeof req.body.isDeleteRequested !== 'boolean') {
+                return res.status(httpStatus.OK).json({
+                    status: false,
+                    message: 'isDeleteRequested must be a boolean value (true or false)',
+                    data: null
+                });
+            }
+            player.isDeleteRequested = req.body.isDeleteRequested;
+            // If isDeleteRequested is true, set deleteRequestedAt to current server time
+            if (req.body.isDeleteRequested === true) {
+                player.deleteRequestedAt = new Date();
+            } else {
+                player.deleteRequestedAt = null;
             }
         }
 

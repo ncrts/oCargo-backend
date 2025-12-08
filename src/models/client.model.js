@@ -308,6 +308,25 @@ const clientSchema = new mongoose.Schema({
     },
 
     /**
+     * 🗑️ Delete Request Flag
+     * True if the client has requested account deletion.
+     */
+    isDeleteRequested: {
+        type: Boolean,
+        default: false,
+        description: 'Flag indicating if the client has requested account deletion.'
+    },
+
+    /**
+     * 🗑️ Delete Request Timestamp
+     * Date and time when the client requested account deletion.
+     */
+    deleteRequestedAt: {
+        type: Date,
+        default: null,
+        description: 'Timestamp of when the account deletion was requested.'
+    },
+    /**
      * ❌ Account Deletion Flag
      * True when account is soft-deleted or disabled.
      */
