@@ -31,6 +31,16 @@ const quizQuestionSchema = new mongoose.Schema({
     description: 'Reference to the parent quiz containing this question.'
   },
 
+  /**
+   * 🔢 Question Sequence
+   * Defines the position/order of this question within its parent quiz.
+   * Questions are displayed in ascending sequence order (1, 2, 3, ...).
+   */
+  sequence: {
+    type: Number,
+    default: null,
+    description: 'Sequence/order number of this question within the quiz (1-based).'
+  },
 
   /**
    * 🏷️ Question Category

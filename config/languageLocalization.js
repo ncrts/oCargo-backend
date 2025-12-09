@@ -609,6 +609,46 @@ const languageLocalization = {
         'en_us': 'Franchisee or Franchisor info ID is required.',
         'es_co': 'Se requiere la ID de información del franquiciado o del franquiciador.',
         'fr_fr': 'L\'ID d\'information du franchisé ou du franchiseur est requis.'
+    },
+    "PHONE_NUMBER_AND_PREFIX_REQUIRED": {
+        'en_us': 'Phone number and prefix are required.',
+        'es_co': 'El número de teléfono y el prefijo son obligatorios.',
+        'fr_fr': 'Le numéro de téléphone et le préfixe sont requis.'
+    },
+    "PHONE_VERIFICATION_CODE_MESSAGE": {
+        'en_us': 'Your verification code is : ',
+        'es_co': 'Su código de verificación es : ',
+        'fr_fr': 'Votre code de vérification est : '
+    },
+    "PHONE_NUMBER_EXISTS_FOR_OTHER_PLAYER": {
+        'en_us': 'Phone number already exists for another player. Verification code sent.',
+        'es_co': 'El número de teléfono ya existe para otro jugador. Código de verificación enviado.',
+        'fr_fr': 'Le numéro de téléphone existe déjà pour un autre joueur. Code de vérification envoyé.'
+    },
+    "PHONE_NUMBER_SET_VERIFICATION_SMS_SENT": {
+        'en_us': 'Verification code has been successfully sent to your registered mobile number',
+        'es_co': 'El código de verificación se ha enviado con éxito a su número de móvil registrado',
+        'fr_fr': 'Le code de vérification a été envoyé avec succès à votre numéro de mobile enregistré'
+    },
+    "PHONE_OTP_PREFIX_REQUIRED": {
+        'en_us': 'Phone number, prefix, and OTP code are required.',
+        'es_co': 'El número de teléfono, el prefijo y el código OTP son obligatorios.',
+        'fr_fr': 'Le numéro de téléphone, le préfixe et le code OTP sont requis.'
+    },
+    "PHONE_VERIFICATION_INVALID_OTP": {
+        'en_us': 'Invalid OTP code or phone number. Please check and try again.',
+        'es_co': 'Código OTP o número de teléfono inválido. Por favor, verifique e intente de nuevo.',
+        'fr_fr': 'Code OTP ou numéro de téléphone invalide. Veuillez vérifier et réessayer.'
+    },
+    "PHONE_VERIFIED_AND_TRANSFERRED": {
+        'en_us': 'Phone number verified and transferred to your account.',
+        'es_co': 'Número de teléfono verificado y transferido a su cuenta.',
+        'fr_fr': 'Numéro de téléphone vérifié et transféré à votre compte.'
+    },
+    "PHONE_VERIFICATION_SUCCESSFUL": {
+        'en_us': 'Phone number verified successfully.',
+        'es_co': 'Número de teléfono verificado exitosamente.',
+        'fr_fr': 'Numéro de téléphone vérifié avec succès.'
     }
 };
 

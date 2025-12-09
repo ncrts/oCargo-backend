@@ -1269,10 +1269,15 @@ const createQuizQuestion = catchAsync(async (req, res) => {
     }
 
     // ===== BUILD QUESTION DATA =====
+    // Count existing questions for this quiz to set the sequence
+    const existingQuestionsCount = await QuizQuestion.countDocuments({ quizId });
+    const questionSequence = existingQuestionsCount + 1; // Default sequence = count + 1 (1-based)
+
     const questionData = {
         quizId,
         categoryId,
         type,
+        sequence: questionSequence,
         timeLimit: timeLimit || 30,
         difficaltyLavel: difficaltyLavel || 'Easy',
         maxScore: maxScore || parseInt(getPerQuestionPointConfig(difficaltyLavel || 'Easy')),
@@ -1449,22 +1454,24 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             return { valid: false, error: 'Slider.min must be less than Slider.max' };
         }
 
-        // Validate correctRange
-        if (!Array.isArray(sliderObj.correctRange) || sliderObj.correctRange.length !== 2) {
-            return { valid: false, error: 'Slider.correctRange must be an array with exactly 2 numbers [min, max]' };
+        // Validate step if provided
+        if (sliderObj.step !== undefined && sliderObj.step !== null) {
+            if (typeof sliderObj.step !== 'number' || sliderObj.step <= 0) {
+                return { valid: false, error: 'Slider.step must be a positive number' };
+            }
         }
 
-        const [correctMin, correctMax] = sliderObj.correctRange;
-        if (typeof correctMin !== 'number' || typeof correctMax !== 'number') {
-            return { valid: false, error: 'Slider.correctRange must contain numeric values' };
+        // Validate correctRange (single number value between min and max)
+        if (sliderObj.correctRange === undefined || sliderObj.correctRange === null) {
+            return { valid: false, error: 'Slider.correctRange is required and must be a number' };
         }
 
-        if (correctMin >= correctMax) {
-            return { valid: false, error: 'Slider.correctRange[0] must be less than correctRange[1]' };
+        if (typeof sliderObj.correctRange !== 'number') {
+            return { valid: false, error: 'Slider.correctRange must be a numeric value' };
         }
 
         // Validate correctRange is within min-max bounds
-        if (correctMin < sliderObj.min || correctMax > sliderObj.max) {
+        if (sliderObj.correctRange < sliderObj.min || sliderObj.correctRange > sliderObj.max) {
             return { valid: false, error: `Slider.correctRange must be within [${sliderObj.min}, ${sliderObj.max}]` };
         }
 
@@ -2004,6 +2011,171 @@ const deleteQuizQuestion = catchAsync(async (req, res) => {
         success: true,
         message: getMessage ? getMessage("QUIZ_QUESTION_DELETED_SUCCESS", res.locals.language) : "Quiz question deleted successfully",
         data: null
+    });
+});
+
+/**
+ * Bulk update question sequences for a particular quiz.
+ * PATCH /quiz/bulk-update-sequence
+ * 
+ * Request body:
+ * {
+ *   quizId (required),
+ *   sequences (required) - array of objects with questionId and newSequence
+ *   [
+ *     { questionId: "id1", newSequence: 1 },
+ *     { questionId: "id2", newSequence: 2 },
+ *     { questionId: "id3", newSequence: 3 }
+ *   ]
+ * }
+ * 
+ * Validation:
+ * - quizId must be provided and must exist in database
+ * - sequences must be an array with at least one entry
+ * - Each sequence object must have questionId and newSequence
+ * - Each questionId must exist and belong to the provided quizId
+ * - newSequence must be a positive integer
+ * - All sequence numbers must be unique
+ * 
+ * Returns: updated quiz with reordered questions array and sequence mapping
+ */
+const updateQuestionSequence = catchAsync(async (req, res) => {
+    const { quizId, sequences } = req.body;
+
+    // ===== VALIDATION: quizId =====
+    if (!quizId || typeof quizId !== 'string') {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: 'quizId is required and must be a valid string',
+            data: null
+        });
+    }
+
+    // Check if quiz exists
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: 'Quiz not found',
+            data: null
+        });
+    }
+
+    // ===== VALIDATION: sequences array =====
+    if (!Array.isArray(sequences) || sequences.length === 0) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: 'sequences must be a non-empty array of objects with questionId and newSequence',
+            data: null
+        });
+    }
+
+    // Validate each sequence object
+    const sequenceMap = {}; // Map to track questionId -> newSequence
+    const usedSequences = new Set(); // Track unique sequences
+    const questionIds = [];
+
+    for (let i = 0; i < sequences.length; i++) {
+        const { questionId, newSequence } = sequences[i];
+
+        // Validate questionId
+        if (!questionId || typeof questionId !== 'string') {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: `sequences[${i}].questionId is required and must be a valid string`,
+                data: null
+            });
+        }
+
+        // Validate newSequence
+        if (newSequence === undefined || newSequence === null || typeof newSequence !== 'number') {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: `sequences[${i}].newSequence is required and must be a number`,
+                data: null
+            });
+        }
+
+        // Validate newSequence is positive integer
+        if (!Number.isInteger(newSequence) || newSequence <= 0) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: `sequences[${i}].newSequence must be a positive integer`,
+                data: null
+            });
+        }
+
+        // Check for duplicate sequences
+        if (usedSequences.has(newSequence)) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: `Duplicate sequence number ${newSequence} found. All sequences must be unique`,
+                data: null
+            });
+        }
+
+        usedSequences.add(newSequence);
+        sequenceMap[questionId] = newSequence;
+        questionIds.push(questionId);
+    }
+
+    // ===== VALIDATE ALL QUESTIONS EXIST AND BELONG TO THIS QUIZ =====
+    const questionsInDb = await QuizQuestion.find({
+        _id: { $in: questionIds },
+        quizId: quizId
+    });
+
+    if (questionsInDb.length !== questionIds.length) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: 'One or more questions do not exist or do not belong to this quiz',
+            data: null
+        });
+    }
+
+    // ===== BULK UPDATE SEQUENCES =====
+    const bulkOps = Object.keys(sequenceMap).map(questionId => ({
+        updateOne: {
+            filter: { _id: questionId },
+            update: { $set: { sequence: sequenceMap[questionId] } }
+        }
+    }));
+
+    await QuizQuestion.bulkWrite(bulkOps);
+
+    // ===== FETCH ALL QUESTIONS FOR THIS QUIZ SORTED BY SEQUENCE =====
+    const allQuestionsForQuiz = await QuizQuestion.find({ quizId })
+        .sort({ sequence: 1 })
+        .select('_id sequence');
+
+    // ===== UPDATE QUIZ QUESTIONS ARRAY WITH ORDERED IDs =====
+    const orderedQuestionIds = allQuestionsForQuiz.map(q => q._id);
+    await Quiz.findByIdAndUpdate(quizId, { $set: { questions: orderedQuestionIds } });
+
+    // ===== FETCH UPDATED QUIZ WITH POPULATED DATA =====
+    const updatedQuiz = await Quiz.findById(quizId)
+        .populate({ path: 'author.id', select: 'firstName lastName email role' })
+        .populate({ path: 'category', select: 'name description' })
+        .populate({
+            path: 'questions',
+            select: 'questionText type sequence difficaltyLavel categoryId',
+            options: { sort: { sequence: 1 } }
+        });
+
+    // ===== BUILD SEQUENCE MAPPING FOR RESPONSE =====
+    const sequenceMapping = orderedQuestionIds.map((qId, index) => ({
+        questionId: qId.toString(),
+        sequence: index + 1
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage ? getMessage("QUIZ_SEQUENCE_UPDATED_SUCCESS", res.locals.language) : "Question sequences updated successfully",
+        data: {
+            quiz: updatedQuiz,
+            sequenceMapping: sequenceMapping,
+            totalQuestionsReordered: orderedQuestionIds.length
+        }
     });
 });
 
@@ -4396,6 +4568,7 @@ module.exports = {
     createQuizQuestion,
     updateQuizQuestion,
     deleteQuizQuestion,
+    updateQuestionSequence,
     createQuizGameSession,
     getQuizGameSessionById,
     getQuizGameSessions,

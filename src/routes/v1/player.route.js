@@ -35,5 +35,7 @@ router
 router.post('/firebase/custom-token', languageDetectionMiddleware, authToken.playerProtect, playerController.createFirebaseCustomToken);
 router.post('/firebase/signout', languageDetectionMiddleware, authToken.playerProtect, playerController.singoutFirebaseCustomToken);
 
+router.post('/phone/add-or-update', languageDetectionMiddleware, authToken.playerProtect, playerController.addOrUpdatePlayerPhoneNumber);
+router.post('/phone/verify', languageDetectionMiddleware, authToken.playerProtect, playerController.verifyPlayerPhoneNumber);
 
 module.exports = router;

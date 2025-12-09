@@ -39,6 +39,9 @@ router.patch('/quiz/question/:id', languageDetectionMiddleware, authToken.common
 // Quiz Question Delete
 router.delete('/quiz/question/:id', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.deleteQuizQuestion);
 
+// Bulk Update Question Sequences
+router.patch('/quiz/bulk-update-sequence', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.updateQuestionSequence);
+
 // Get Quiz Questions by Quiz ID
 router.get('/quiz/questions', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizQuestionsByQuizId);
 

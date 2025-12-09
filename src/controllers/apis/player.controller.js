@@ -21,7 +21,22 @@ const { getMessage } = require("../../../config/languageLocalization");
 
 const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilloinstant = require('twilio')(accountSid, authToken);
 
+const sendOtp = catchAsync(async (textBody, sendingNumber) => {
+    console.log("textBody", textBody, "sendingNumber", sendingNumber)
+    twilloinstant.messages.create({
+        body: textBody,
+        from: process.env.TWILIO_NUMBER,
+        to: sendingNumber
+    })
+        .then(message => console.log(message.sid))
+        .catch(err => {
+            console.log("err", err)
+        })
+})
 
 /**
  * Generates 10 unique pseudo-names for players.
@@ -979,6 +994,126 @@ const globalFileDeleteWithS3 = async (key) => {
 };
 
 /**
+ * Adds or updates the player's phone number and sends verification SMS.
+ * @async
+ * @function addOrUpdatePlayerPhoneNumber
+ * @param {Object} req - Express request object containing phonenoPrefix and phoneno.
+ * @param {Object} res - Express response object used to send the result.
+ * @returns {Promise<void>} Sends a response indicating the result of the operation.
+ */
+const addOrUpdatePlayerPhoneNumber = catchAsync(async (req, res) => {
+    const { phonenoPrefix, phoneno } = req.body;
+    if (!phonenoPrefix || !phoneno) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage('PHONE_NUMBER_AND_PREFIX_REQUIRED', res.locals.language),
+            data: null
+        });
+    }
+
+    // Check if phone number exists for another player
+    const existingPlayer = await Player.findOne({ phonenoPrefix, phoneno, isDeleted: false });
+    const verificationCode = randomstring.generate({ length: 6, charset: 'numeric' });
+
+    if (existingPlayer && existingPlayer._id.toString() !== req.player._id.toString()) {
+        // Phone number exists for another player, send verification SMS
+        existingPlayer.phonenoVerificationCode = verificationCode;
+        await existingPlayer.save();
+        sendOtp(`${getMessage('PHONE_VERIFICATION_CODE_MESSAGE', res.locals.language)} ${verificationCode}`, `${phonenoPrefix}${phoneno}`);
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage('PHONE_NUMBER_EXISTS_FOR_OTHER_PLAYER', res.locals.language),
+            data: { otp: verificationCode }
+        });
+    } else {
+        // Phone number is new or belongs to this player, set and send verification SMS
+        let player = await Player.findOne({ _id: req.player._id, isDeleted: false });
+        if (!player) {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: getMessage('PLAYER_NOT_FOUND', res.locals.language),
+                data: null
+            });
+        }
+        player.phonenoPrefix = phonenoPrefix;
+        player.phoneno = phoneno;
+        player.phonenoVerificationCode = verificationCode;
+        player.isPhonenoVerified = false;
+        await player.save();
+        sendOtp(`${getMessage('PHONE_VERIFICATION_CODE_MESSAGE', res.locals.language)} ${verificationCode}`, `Sent by MyOCargo`);
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage('PHONE_NUMBER_SET_VERIFICATION_SMS_SENT', res.locals.language),
+            data: { otp: verificationCode }
+        });
+    }
+});
+
+/**
+ * Verifies the player's phone number using OTP, phoneno, and phonenoPrefix.
+ * If verified and phone number exists for another player, transfer to current player.
+ * @async
+ * @function verifyPlayerPhoneNumber
+ * @param {Object} req - Express request object containing phonenoPrefix, phoneno, and otp.
+ * @param {Object} res - Express response object used to send the result.
+ * @returns {Promise<void>} Sends a response indicating the result of the operation.
+ */
+const verifyPlayerPhoneNumber = catchAsync(async (req, res) => {
+    const { phonenoPrefix, phoneno, otp } = req.body;
+    if (!phonenoPrefix || !phoneno || !otp) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage('PHONE_OTP_PREFIX_REQUIRED', res.locals.language),
+            data: null
+        });
+    }
+
+    // Find player with this phone and OTP
+    const playerWithPhone = await Player.findOne({ phonenoPrefix, phoneno, phonenoVerificationCode: otp, isDeleted: false });
+    if (!playerWithPhone) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage('PHONE_VERIFICATION_INVALID_OTP', res.locals.language),
+            data: null
+        });
+    }
+
+    // If phone belongs to another player, remove from them and assign to current player
+    if (playerWithPhone._id.toString() !== req.player._id.toString()) {
+        // Remove phone from the other player
+        playerWithPhone.phonenoPrefix = null;
+        playerWithPhone.phoneno = null;
+        playerWithPhone.phonenoVerificationCode = '';
+        playerWithPhone.isPhonenoVerified = false;
+        await playerWithPhone.save();
+
+        // Assign phone to current player
+        let currentPlayer = await Player.findOne({ _id: req.player._id, isDeleted: false });
+        currentPlayer.phonenoPrefix = phonenoPrefix;
+        currentPlayer.phoneno = phoneno;
+        currentPlayer.phonenoVerificationCode = '';
+        currentPlayer.isPhonenoVerified = true;
+        await currentPlayer.save();
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage('PHONE_VERIFIED_AND_TRANSFERRED', res.locals.language),
+            data: null
+        });
+    } else {
+        // Phone belongs to this player, verify it
+        playerWithPhone.phonenoVerificationCode = '';
+        playerWithPhone.isPhonenoVerified = true;
+        await playerWithPhone.save();
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage('PHONE_VERIFICATION_SUCCESSFUL', res.locals.language),
+            data: null
+        });
+    }
+});
+
+/**
  * Submits feedback and rating for a quiz game session by a player
  * @route POST /quiz/game-session/feedback
  * @param {Object} req - Express request object
@@ -1078,5 +1213,7 @@ module.exports = {
     deletePlayerProfilePicture,
     createFirebaseCustomToken,
     singoutFirebaseCustomToken,
-    submitQuizFeedback
+    submitQuizFeedback,
+    addOrUpdatePlayerPhoneNumber,
+    verifyPlayerPhoneNumber
 };
