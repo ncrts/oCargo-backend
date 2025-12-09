@@ -2877,7 +2877,7 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
 
         // If this is a new player session, count it as played game (increment by 1)
         if (isNewPlayerSession) {
-            totalPlayedGamesCount += 1;
+            totalPlayedGamesCount = 1;
         }
 
         /** JOIN FIREBASE PLAYER */
