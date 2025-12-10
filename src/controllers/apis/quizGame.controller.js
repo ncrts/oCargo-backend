@@ -53,6 +53,34 @@ const translate = (cat, lang = "en_us") => {
 
 // ================================
 // 📌 Create Multiple Categories
+/**
+ * Fetches average quiz ratings for all quizzes.
+ * Returns: [{ title, avgRating, reviewCount }]
+ * GET /quiz/average-ratings
+ */
+const getAverageQuizRatings = catchAsync(async (req, res) => {
+    const Quiz = require('../../models/quiz.model');
+    // Fetch all quizzes with their clientRating
+    const quizzes = await Quiz.find({}, { title: 1, clientRating: 1 });
+    let ratings = quizzes.map(q => ({
+        title: q.title,
+        avgRating: q.clientRating && typeof q.clientRating.avg === 'number' ? Number(q.clientRating.avg.toFixed(1)) : null,
+        reviewCount: q.clientRating && typeof q.clientRating.count === 'number' ? q.clientRating.count : 0
+    }));
+    // Sort by avgRating descending (highest to lowest)
+    ratings = ratings.sort((a, b) => {
+        if (a.avgRating === null && b.avgRating === null) return 0;
+        if (a.avgRating === null) return 1;
+        if (b.avgRating === null) return -1;
+        return b.avgRating - a.avgRating;
+    });
+    return res.status(200).json({
+        success: true,
+        message: 'Average quiz ratings fetched successfully',
+        data: ratings
+    });
+});
+
 // ================================
 const createMultipleCategories = catchAsync(async (req, res) => {
     if (req.body.adminData == true) {
@@ -4558,6 +4586,8 @@ let createBulkFranchiseeLeaderboard = catchAsync(async (req, res) => {
     });
 });
 
+
+
 module.exports = {
     createMultipleCategories,
     getCategory,
@@ -4588,5 +4618,6 @@ module.exports = {
     getFranchiseeLeaderboard,
     createBulkLocalLeaderboard,
     createBulkNationalLeaderboard,
-    createBulkFranchiseeLeaderboard
+    createBulkFranchiseeLeaderboard,
+    getAverageQuizRatings
 }

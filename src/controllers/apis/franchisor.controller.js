@@ -20,6 +20,7 @@ const { getMessage } = require("../../../config/languageLocalization");
 const validator = require('validator');
 
 
+const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
 
 
 /**
@@ -627,6 +628,7 @@ const getFranchiseeInfoList = async (req, res) => {
 			success: true,
 			message: getMessage("FRANCHISEE_INFO_LIST_FETCH_SUCCESS", res.locals.language),
 			data: franchiseeInfos,
+			s3BaseUrl,
 			count: franchiseeInfos.length,
 			totalCount: totalCount,
 			pagination: {

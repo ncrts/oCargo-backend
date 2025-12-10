@@ -40,11 +40,11 @@ router.patch('/franchisee-info/:id', authToken.franchisorProtect, languageDetect
 router.get('/franchisee-info', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeInfoList'), franchisorController.getFranchiseeInfoList);
 
 // Franchisee User Management
-router.post('/franchisee-user', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('createFranchiseeUser'), franchisorController.createFranchiseeUser);
-router.patch('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('updateFranchiseeUser'), franchisorController.updateFranchiseeUser);
-router.get('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeUser'), franchisorController.getFranchiseeUser);
-router.delete('/franchisee-user/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('deleteFranchiseeUser'), franchisorController.deleteFranchiseeUser);
-router.get('/franchisee-users', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeUsersList'), franchisorController.getFranchiseeUsersList);
+router.post('/franchisee-user', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('createFranchiseeUser'), franchisorController.createFranchiseeUser);
+router.patch('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('updateFranchiseeUser'), franchisorController.updateFranchiseeUser);
+router.get('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('getFranchiseeUser'), franchisorController.getFranchiseeUser);
+router.delete('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('deleteFranchiseeUser'), franchisorController.deleteFranchiseeUser);
+router.get('/franchisee-users', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('getFranchiseeUsersList'), franchisorController.getFranchiseeUsersList);
 
 // Bulk Insert XP Rules
 router.post('/xp-rules/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertXpRules'), franchisorController.bulkInsertXpRules);

@@ -3,7 +3,12 @@ const allRoles = {
     'demo'
   ],
   manager: [
-    'demo'
+    'demo',
+    'createFranchiseeUser',
+    'updateFranchiseeUser',
+    'getFranchiseeUser',
+    'deleteFranchiseeUser',
+    'getFranchiseeUsersList'
   ],
   staff: [
     'demo'

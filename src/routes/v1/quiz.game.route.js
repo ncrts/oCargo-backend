@@ -30,6 +30,9 @@ router.patch('/quiz/instant/:id', languageDetectionMiddleware, authToken.commonP
 // Instant Quiz List
 router.get('/quiz/instant/list', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizInstantList);
 
+// Fetch Average Quiz Ratings
+router.get('/quiz/average-ratings', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getAverageQuizRatings);
+
 // Quiz Question Creation
 router.post('/quiz/question', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizQuestion);
 
