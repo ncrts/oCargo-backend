@@ -38,4 +38,8 @@ router.post('/firebase/signout', languageDetectionMiddleware, authToken.playerPr
 router.post('/phone/add-or-update', languageDetectionMiddleware, authToken.playerProtect, playerController.addOrUpdatePlayerPhoneNumber);
 router.post('/phone/verify', languageDetectionMiddleware, authToken.playerProtect, playerController.verifyPlayerPhoneNumber);
 
+router.post('/auth/forgot-password/send-otp', languageDetectionMiddleware, playerController.sendForgotPasswordOtp);
+router.post('/auth/forgot-password/verify-otp', languageDetectionMiddleware, playerController.verifyForgotPasswordOtp);
+router.post('/auth/forgot-password/reset', languageDetectionMiddleware, playerController.resetPassword);
+
 module.exports = router;

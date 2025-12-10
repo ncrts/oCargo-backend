@@ -1198,6 +1198,128 @@ const submitQuizFeedback = catchAsync(async (req, res) => {
     });
 });
 
+const sendForgotPasswordOtp = catchAsync(async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("EMAIL_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+    const player = await Player.findOne({ email, isDeleted: false });
+    if (!player) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PLAYER_EMAIL_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+    const otp = randomstring.generate({ length: 6, charset: 'numeric' });
+    player.forgotPasswordCode = otp;
+    player.forgotPasswordCodeVerified = false;
+    player.forgotPasswordAttemptCount = 0;
+    player.forgotPasswordCodeExpiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 days
+    await player.save();
+    // Optionally send OTP via email here
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("FORGOT_PASSWORD_OTP_SENT", res.locals.language),
+        data: { otp }
+    });
+});
+
+const verifyForgotPasswordOtp = catchAsync(async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("EMAIL_AND_OTP_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+    const player = await Player.findOne({ email, isDeleted: false });
+    if (!player) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PLAYER_EMAIL_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+    if (player.forgotPasswordAttemptCount >= 5) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("FORGOT_PASSWORD_ATTEMPT_LIMIT", res.locals.language),
+            data: null
+        });
+    }
+    if (!player.forgotPasswordCodeExpiresAt || player.forgotPasswordCodeExpiresAt < new Date()) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("FORGOT_PASSWORD_OTP_EXPIRED", res.locals.language),
+            data: null
+        });
+    }
+    if (player.forgotPasswordCode !== otp) {
+        player.forgotPasswordAttemptCount += 1;
+        await player.save();
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("FORGOT_PASSWORD_OTP_INVALID", res.locals.language),
+            data: null
+        });
+    }
+    player.forgotPasswordCodeVerified = true;
+    player.forgotPasswordCode = '';
+    player.forgotPasswordCodeExpiresAt = null;
+    await player.save();
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("FORGOT_PASSWORD_OTP_VERIFIED", res.locals.language),
+        data: null
+    });
+});
+
+const resetPassword = catchAsync(async (req, res) => {
+    const { email, newPassword, confirmNewPassword } = req.body;
+    if (!email || !newPassword || !confirmNewPassword) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("EMAIL_AND_PASSWORD_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+    if (newPassword !== confirmNewPassword) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PASSWORDS_DO_NOT_MATCH", res.locals.language),
+            data: null
+        });
+    }
+    const player = await Player.findOne({ email, isDeleted: false });
+    if (!player) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PLAYER_EMAIL_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+    if (!player.forgotPasswordCodeVerified) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("FORGOT_PASSWORD_OTP_NOT_VERIFIED", res.locals.language),
+            data: null
+        });
+    }
+    player.password = newPassword;
+    player.forgotPasswordCodeVerified = false;
+    await player.save();
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("PASSWORD_RESET_SUCCESS", res.locals.language),
+        data: null
+    });
+});
 
 module.exports = {
     signup,
@@ -1215,5 +1337,8 @@ module.exports = {
     singoutFirebaseCustomToken,
     submitQuizFeedback,
     addOrUpdatePlayerPhoneNumber,
-    verifyPlayerPhoneNumber
+    verifyPlayerPhoneNumber,
+    sendForgotPasswordOtp,
+    verifyForgotPasswordOtp,
+    resetPassword
 };

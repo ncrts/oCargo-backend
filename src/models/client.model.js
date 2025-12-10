@@ -174,6 +174,27 @@ const clientSchema = new mongoose.Schema({
         description: 'Client date of birth (used for eligibility checks and personalization).'
     },
 
+    forgotPasswordCode: {
+        type: String,
+        default: '',
+        description: 'Temporary code for password reset verification.'
+    },
+    forgotPasswordCodeVerified: {
+        type: Boolean,
+        default: false,
+        description: 'Flag indicating if the forgot password code has been verified.'
+    },
+    forgotPasswordCodeExpiresAt: {
+        type: Date,
+        default: null,
+        description: 'Expiration timestamp for the forgot password code.'
+    },
+
+    forgotPasswordAttemptCount: {
+        type: Number,
+        default: 5,
+        description: 'Count of failed attempts to use the forgot password code.'
+    },
     /**
      * 🔐 Password
      * Hashed password for authentication (if registered by email).
@@ -359,6 +380,10 @@ clientSchema.methods.generateAuthToken = async function () {
 clientSchema.statics.findByCredentials = async (email, password, role) => {
     const client = await Client.findOne({ email, isDeleted: false, role });
     if (!client) throw new ErrorResponse('Email does not exist for this role', 200);
+
+    if (client.isDeleteRequested) {
+        throw new ErrorResponse('Account deletion requested. Please contact support.', 200);
+    }
 
     const isMatch = await bcrypt.compare(password, client.password);
     if (!isMatch) throw new ErrorResponse('Invalid login credentials', 200);

@@ -1,30 +1,30 @@
 const languageLocalization = {
-    "PLAYER_PSEUDO_NAME_NOT_FOUND":{
+    "PLAYER_PSEUDO_NAME_NOT_FOUND": {
         'en_us': 'Pseudo name is required.',
         'es_co': 'Se requiere un nombre de usuario.',
         'fr_fr': 'Le nom d\'utilisateur est requis.'
     },
-    'FIREBASE_CUSTOM_TOKEN_GENERATED_SUCCESS':{
+    'FIREBASE_CUSTOM_TOKEN_GENERATED_SUCCESS': {
         'en_us': 'Firebase custom token generated successfully.',
         'es_co': 'Token personalizado de Firebase generado con éxito.',
         'fr_fr': 'Jeton personnalisé Firebase généré avec succès.'
     },
-    'PLAYER_NOT_FOUND':{
+    'PLAYER_NOT_FOUND': {
         'en_us': 'Player not found.',
         'es_co': 'Jugador no encontrado.',
         'fr_fr': 'Joueur non trouvé.'
     },
-    'PLAYER_PROFILE_NOT_FOUND':{
+    'PLAYER_PROFILE_NOT_FOUND': {
         'en_us': 'Player profile not found.',
         'es_co': 'Perfil de jugador no encontrado.',
         'fr_fr': 'Profil du joueur non trouvé.'
     },
-    'PLAYER_PROFILE_FETCHED_SUCCESS':{
+    'PLAYER_PROFILE_FETCHED_SUCCESS': {
         'en_us': 'Player profile fetched successfully!',
         'es_co': '¡Perfil de jugador obtenido con éxito!',
         'fr_fr': 'Profil du joueur récupéré avec succès !'
     },
-    'CLIENTID_REQUIRED':{
+    'CLIENTID_REQUIRED': {
         'en_us': 'clientId is required.',
         'es_co': 'Se requiere clientId.',
         'fr_fr': 'clientId est requis.'
@@ -44,7 +44,7 @@ const languageLocalization = {
         'es_co': 'Nombre de usuario ya tomado. Por favor, elija otro.',
         'fr_fr': 'Nom d\'utilisateur déjà pris. Veuillez en choisir un autre.'
     },
-    "MODE_REQUIRED":{
+    "MODE_REQUIRED": {
         'en_us': 'Signup mode is required.',
         'es_co': 'Se requiere el modo de registro.',
         'fr_fr': 'Le mode d\'inscription est requis.'
@@ -115,17 +115,17 @@ const languageLocalization = {
         'es_co': '¡El franquiciador ha iniciado sesión con éxito!',
         'fr_fr': 'Le franchisé s\'est connecté avec succès !'
     },
-    "FRANCHISOR_SIGNOUT_SUCCESS":{
+    "FRANCHISOR_SIGNOUT_SUCCESS": {
         'en_us': 'Franchisor signed out successfully!',
         'es_co': '¡El franquiciador ha cerrado sesión con éxito!',
         'fr_fr': 'Le franchisé s\'est déconnecté avec succès !'
     },
-    "FRANCHISEE_INFO_CREATED":{
+    "FRANCHISEE_INFO_CREATED": {
         'en_us': 'Franchisee information created successfully!',
         'es_co': '¡Información del franquiciado creada con éxito!',
         'fr_fr': 'Informations sur le franchisé créées avec succès !'
     },
-    "FRANCHISEE_USER_CREATED":{
+    "FRANCHISEE_USER_CREATED": {
         'en_us': 'Franchisee user created successfully!',
         'es_co': '¡Usuario del franquiciado creado con éxito!',
         'fr_fr': 'Utilisateur du franchisé créé avec succès !'
@@ -135,272 +135,272 @@ const languageLocalization = {
         'es_co': '¡El franquiciado ha iniciado sesión con éxito!',
         'fr_fr': 'Le franchisé s\'est connecté avec succès !'
     },
-    "FRANCHISEE_SIGNOUT_SUCCESS":{
+    "FRANCHISEE_SIGNOUT_SUCCESS": {
         'en_us': 'Franchisee signed out successfully!',
         'es_co': '¡El franquiciado ha cerrado sesión con éxito!',
         'fr_fr': 'Le franchisé s\'est déconnecté avec succès !'
     },
-    "FRANCHISEES_FETCHED_SUCCESS":{
+    "FRANCHISEES_FETCHED_SUCCESS": {
         'en_us': 'Franchisees fetched successfully!',
         'es_co': '¡Franquiciados obtenidos con éxito!',
         'fr_fr': 'Franchisés récupérés avec succès !'
     },
-    "FRANCHISEE_FETCHED_SUCCESS":{
+    "FRANCHISEE_FETCHED_SUCCESS": {
         'en_us': 'Franchisee fetched successfully!',
         'es_co': '¡Franquiciado obtenido con éxito!',
         'fr_fr': 'Franchisé récupéré avec succès !'
     },
-    "FRANCHISEE_NOT_FOUND":{
+    "FRANCHISEE_NOT_FOUND": {
         'en_us': 'Franchisee not found.',
         'es_co': 'Franquiciado no encontrado.',
         'fr_fr': 'Franchisé non trouvé.'
     },
-    "QUIZ_CREATED_SUCCESS":{
+    "QUIZ_CREATED_SUCCESS": {
         'en_us': 'Quiz created successfully!',
         'es_co': '¡Cuestionario creado con éxito!',
         'fr_fr': 'Quiz créé avec succès !'
     },
-    "QUIZ_NOT_FOUND":{
+    "QUIZ_NOT_FOUND": {
         'en_us': 'Quiz not found.',
         'es_co': 'Cuestionario no encontrado.',
         'fr_fr': 'Quiz non trouvé.'
     },
-    "QUIZ_UPDATED_SUCCESS":{
+    "QUIZ_UPDATED_SUCCESS": {
         'en_us': 'Quiz updated successfully!',
         'es_co': '¡Cuestionario actualizado con éxito!',
         'fr_fr': 'Quiz mis à jour avec succès !'
     },
-    "QUIZ_LIST_FETCH_SUCCESS":{
+    "QUIZ_LIST_FETCH_SUCCESS": {
         'en_us': 'Quiz list fetched successfully!',
         'es_co': '¡Lista de cuestionarios obtenida con éxito!',
         'fr_fr': 'Liste des quiz récupérée avec succès !'
     },
-    "QUIZ_QUESTION_CREATED_SUCCESS":{
+    "QUIZ_QUESTION_CREATED_SUCCESS": {
         'en_us': 'Quiz question created successfully!',
         'es_co': '¡Pregunta del cuestionario creada con éxito!',
         'fr_fr': 'Question du quiz créée avec succès !'
     },
-    "QUIZ_QUESTIONS_FETCH_SUCCESS":{
+    "QUIZ_QUESTIONS_FETCH_SUCCESS": {
         'en_us': 'Quiz questions fetched successfully!',
         'es_co': '¡Preguntas del cuestionario obtenidas con éxito!',
         'fr_fr': 'Questions du quiz récupérées avec succès !'
     },
-    "QUIZ_QUESTION_UPDATED_SUCCESS":{
+    "QUIZ_QUESTION_UPDATED_SUCCESS": {
         'en_us': 'Quiz question updated successfully!',
         'es_co': '¡Pregunta del cuestionario actualizada con éxito!',
         'fr_fr': 'Question du quiz mise à jour avec succès !'
     },
-    "QUIZ_QUESTION_DELETED_SUCCESS":{
+    "QUIZ_QUESTION_DELETED_SUCCESS": {
         'en_us': 'Quiz question deleted successfully!',
         'es_co': '¡Pregunta del cuestionario eliminada con éxito!',
         'fr_fr': 'Question du quiz supprimée avec succès !'
     },
-    "QUIZ_GAME_SESSIONS_FETCH_SUCCESS":{
+    "QUIZ_GAME_SESSIONS_FETCH_SUCCESS": {
         'en_us': 'Quiz game sessions fetched successfully!',
         'es_co': '¡Sesiones de juegos de cuestionarios obtenidas con éxito!',
         'fr_fr': 'Sessions de jeu de quiz récupérées avec succès !'
     },
-    'FOOD_LIST_RETRIEVED_SUCCESSFULLY':{
+    'FOOD_LIST_RETRIEVED_SUCCESSFULLY': {
         'en_us': 'Food list retrieved successfully',
         'es_co': 'Lista de alimentos recuperada con éxito',
         'fr_fr': 'Liste des aliments récupérée avec succès'
     },
-    "FRANCHISOR_USER_FETCH_SUCCESS":{
+    "FRANCHISOR_USER_FETCH_SUCCESS": {
         'en_us': 'Franchisor user fetched successfully!',
         'es_co': '¡Usuario del franquiciador obtenido con éxito!',
         'fr_fr': 'Utilisateur franchiseur récupéré avec succès !'
     },
-    "FRANCHISOR_USERS_LIST_FETCH_SUCCESS":{
+    "FRANCHISOR_USERS_LIST_FETCH_SUCCESS": {
         'en_us': 'Franchisor users fetched successfully!',
         'es_co': '¡Usuarios del franquiciador obtenidos con éxito!',
         'fr_fr': 'Utilisateurs franchiseurs récupérés avec succès !'
     },
-    "FRANCHISOR_USER_NOT_FOUND":{
+    "FRANCHISOR_USER_NOT_FOUND": {
         'en_us': 'Franchisor user not found.',
         'es_co': 'Usuario del franquiciador no encontrado.',
         'fr_fr': 'Utilisateur franchiseur introuvable.'
     },
-    "FRANCHISOR_NOT_FOUND":{
+    "FRANCHISOR_NOT_FOUND": {
         'en_us': 'Active franchisor not found.',
         'es_co': 'No se encontró un franquiciador activo.',
         'fr_fr': 'Aucun franchiseur actif trouvé.'
     },
-    "FRANCHISEE_INPUT_INVALID":{
+    "FRANCHISEE_INPUT_INVALID": {
         'en_us': 'Invalid input. Required fields missing or incorrect.',
         'es_co': 'Entrada inválida. Faltan campos requeridos o son incorrectos.',
         'fr_fr': 'Entrée invalide. Champs requis manquants ou incorrects.'
     },
-    "FRANCHISEE_PHONE_ALREADY_EXISTS":{
+    "FRANCHISEE_PHONE_ALREADY_EXISTS": {
         'en_us': 'Phone number already in use for another franchisee.',
         'es_co': 'El número de teléfono ya está en uso por otro franquiciado.',
         'fr_fr': 'Le numéro de téléphone est déjà utilisé par un autre franchisé.'
     },
-    "FRANCHISEE_EMAIL_ALREADY_EXISTS":{
+    "FRANCHISEE_EMAIL_ALREADY_EXISTS": {
         'en_us': 'Email already in use for another franchisee.',
         'es_co': 'El correo electrónico ya está en uso por otro franquiciado.',
         'fr_fr': 'L\'e-mail est déjà utilisé par un autre franchisé.'
     },
-    "FRANCHISEE_INFO_UPDATED_SUCCESS":{
+    "FRANCHISEE_INFO_UPDATED_SUCCESS": {
         'en_us': 'Franchisee info updated successfully!',
         'es_co': '¡Información del franquiciado actualizada con éxito!',
         'fr_fr': 'Informations du franchisé mises à jour avec succès !'
     },
-    "FRANCHISEE_INFO_LIST_FETCH_SUCCESS":{
+    "FRANCHISEE_INFO_LIST_FETCH_SUCCESS": {
         'en_us': 'Franchisee info list fetched successfully!',
         'es_co': '¡Lista de información del franquiciado obtenida con éxito!',
         'fr_fr': 'Liste des informations du franchisé récupérée avec succès !'
     },
-    "FRANCHISEE_INFO_NOT_FOUND":{
+    "FRANCHISEE_INFO_NOT_FOUND": {
         'en_us': 'Franchisee info not found.',
         'es_co': 'Información del franquiciado no encontrada.',
         'fr_fr': 'Informations du franchisé introuvables.'
     },
-    "FRANCHISOR_USER_CREATED_SUCCESS":{
+    "FRANCHISOR_USER_CREATED_SUCCESS": {
         'en_us': 'Franchisor user created successfully!',
         'es_co': '¡Usuario del franquiciador creado con éxito!',
         'fr_fr': 'Utilisateur du franchiseur créé avec succès !'
     },
-    "FRANCHISOR_EMAIL_ALREADY_EXISTS":{
+    "FRANCHISOR_EMAIL_ALREADY_EXISTS": {
         'en_us': 'Email already in use.',
         'es_co': 'El correo electrónico ya está en uso.',
         'fr_fr': 'E-mail déjà utilisé.'
     },
-    "FRANCHISOR_PHONE_ALREADY_EXISTS":{
+    "FRANCHISOR_PHONE_ALREADY_EXISTS": {
         'en_us': 'Phone number already in use.',
         'es_co': 'El número de teléfono ya está en uso.',
         'fr_fr': 'Le numéro de téléphone est déjà utilisé.'
     },
-    "FRANCHISOR_USER_CREATION_FAILED":{
+    "FRANCHISOR_USER_CREATION_FAILED": {
         'en_us': 'Unable to create franchisor user. Please try again.',
         'es_co': 'No se pudo crear el usuario del franquiciador. Inténtalo de nuevo.',
         'fr_fr': 'Impossible de créer l’utilisateur franchiseur. Veuillez réessayer.'
     },
-    "FRANCHISOR_USER_UPDATED_SUCCESS":{
+    "FRANCHISOR_USER_UPDATED_SUCCESS": {
         'en_us': 'Franchisor user updated successfully!',
         'es_co': '¡Usuario del franquiciador actualizado con éxito!',
         'fr_fr': 'Utilisateur franchiseur mis à jour avec succès !'
     },
-    "FRANCHISOR_USER_DELETED_SUCCESS":{
+    "FRANCHISOR_USER_DELETED_SUCCESS": {
         'en_us': 'Franchisor user deleted successfully!',
         'es_co': '¡Usuario del franquiciador eliminado con éxito!',
         'fr_fr': 'Utilisateur franchiseur supprimé avec succès !'
     },
-    "FRANCHISEE_INPUT_INVALID_NAME":{
+    "FRANCHISEE_INPUT_INVALID_NAME": {
         'en_us': 'Invalid input. Name is required.',
         'es_co': 'Entrada inválida. Se requiere el nombre.',
         'fr_fr': 'Entrée invalide. Le nom est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_PHONE_PREFIX":{
+    "FRANCHISEE_INPUT_INVALID_PHONE_PREFIX": {
         'en_us': 'Invalid input. Phone prefix is required.',
         'es_co': 'Entrada inválida. Se requiere el prefijo telefónico.',
         'fr_fr': 'Entrée invalide. L’indicatif téléphonique est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_PHONE":{
+    "FRANCHISEE_INPUT_INVALID_PHONE": {
         'en_us': 'Invalid input. Phone number is required.',
         'es_co': 'Entrada inválida. Se requiere el número de teléfono.',
         'fr_fr': 'Entrée invalide. Le numéro de téléphone est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_VALID_FRANCHISEEINFO_ID":{
+    "FRANCHISEE_INPUT_INVALID_VALID_FRANCHISEEINFO_ID": {
         'en_us': 'Invalid input. Valid franchiseeInfoId is required.',
         'es_co': 'Entrada inválida. Se requiere un franchiseeInfoId válido.',
         'fr_fr': 'Entrée invalide. Un franchiseeInfoId valide est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_FIRSTNAME":{
+    "FRANCHISEE_INPUT_INVALID_FIRSTNAME": {
         'en_us': 'Invalid input. First name is required.',
         'es_co': 'Entrada inválida. Se requiere el nombre.',
         'fr_fr': 'Entrée invalide. Le prénom est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_LASTNAME":{
+    "FRANCHISEE_INPUT_INVALID_LASTNAME": {
         'en_us': 'Invalid input. Last name is required.',
         'es_co': 'Entrada inválida. Se requiere el apellido.',
         'fr_fr': 'Entrée invalide. Le nom de famille est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_EMAIL_REQUIRED":{
+    "FRANCHISEE_INPUT_INVALID_EMAIL_REQUIRED": {
         'en_us': 'Invalid input. Email is required.',
         'es_co': 'Entrada inválida. Se requiere el correo electrónico.',
         'fr_fr': 'Entrée invalide. L’e-mail est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_EMAIL_FORMAT":{
+    "FRANCHISEE_INPUT_INVALID_EMAIL_FORMAT": {
         'en_us': 'Invalid input. Email format is incorrect.',
         'es_co': 'Entrada inválida. El formato del correo electrónico es incorrecto.',
         'fr_fr': 'Entrée invalide. Le format de l’e-mail est incorrect.'
     },
-    "FRANCHISEE_INPUT_INVALID_PHONENOPREFIX":{
+    "FRANCHISEE_INPUT_INVALID_PHONENOPREFIX": {
         'en_us': 'Invalid input. Phone number prefix is required.',
         'es_co': 'Entrada inválida. Se requiere el prefijo del número de teléfono.',
         'fr_fr': 'Entrée invalide. Le préfixe du numéro de téléphone est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_PHONENO":{
+    "FRANCHISEE_INPUT_INVALID_PHONENO": {
         'en_us': 'Invalid input. Phone number is required.',
         'es_co': 'Entrada inválida. Se requiere el número de teléfono.',
         'fr_fr': 'Entrée invalide. Le numéro de téléphone est requis.'
     },
-    "FRANCHISEE_INPUT_INVALID_ROLE":{
+    "FRANCHISEE_INPUT_INVALID_ROLE": {
         'en_us': 'Invalid input. Role must be either "manager" or "staff".',
         'es_co': 'Entrada inválida. El rol debe ser "manager" o "staff".',
         'fr_fr': 'Entrée invalide. Le rôle doit être "manager" ou "staff".'
     },
-    "FRANCHISEE_INPUT_INVALID_PASSWORD":{
+    "FRANCHISEE_INPUT_INVALID_PASSWORD": {
         'en_us': 'Invalid input. Password must be between 8 and 100 characters and contain at least one letter and one number.',
         'es_co': 'Entrada inválida. La contraseña debe tener entre 8 y 100 caracteres y contener al menos una letra y un número.',
         'fr_fr': 'Entrée invalide. Le mot de passe doit comporter entre 8 et 100 caractères et contenir au moins une lettre et un chiffre.'
     },
-    "FRANCHISEE_INPUT_INVALID_CREATOROBJ":{
+    "FRANCHISEE_INPUT_INVALID_CREATOROBJ": {
         'en_us': 'Invalid input. creatorObj must be an object.',
         'es_co': 'Entrada inválida. creatorObj debe ser un objeto.',
         'fr_fr': 'Entrée invalide. creatorObj doit être un objet.'
     },
-    "FRANCHISEE_INPUT_INVALID_CREATORID":{
+    "FRANCHISEE_INPUT_INVALID_CREATORID": {
         'en_us': 'Invalid input. creatorObj.creatorId is required and must be a valid ID.',
         'es_co': 'Entrada inválida. Se requiere creatorObj.creatorId y debe ser un ID válido.',
         'fr_fr': 'Entrée invalide. creatorObj.creatorId est requis et doit être un ID valide.'
     },
-    "FRANCHISEE_INPUT_INVALID_CREATORROLE":{
+    "FRANCHISEE_INPUT_INVALID_CREATORROLE": {
         'en_us': 'Invalid input. creatorObj.creatorRole must be either "FranchiseeUser" or "FranchisorUser".',
         'es_co': 'Entrada inválida. creatorObj.creatorRole debe ser "FranchiseeUser" o "FranchisorUser".',
         'fr_fr': 'Entrée invalide. creatorObj.creatorRole doit être "FranchiseeUser" ou "FranchisorUser".'
     },
-    "FRANCHISEE_INPUT_INVALID_FRANCHISEEUSER_NOT_FOUND":{
+    "FRANCHISEE_INPUT_INVALID_FRANCHISEEUSER_NOT_FOUND": {
         'en_us': 'Invalid input. Creator FranchiseeUser not found.',
         'es_co': 'Entrada inválida. Usuario del franquiciado creador no encontrado.',
         'fr_fr': 'Entrée invalide. Utilisateur du franchisé créateur non trouvé.'
     },
-    "FRANCHISEE_INPUT_INVALID_FRANCHISORUSER_NOT_FOUND":{
+    "FRANCHISEE_INPUT_INVALID_FRANCHISORUSER_NOT_FOUND": {
         'en_us': 'Invalid input. Creator FranchisorUser not found.',
         'es_co': 'Entrada inválida. Usuario del franquiciador creador no encontrado.',
         'fr_fr': 'Entrée invalide. Utilisateur du franchiseur créateur non trouvé.'
     },
-    "FRANCHISEE_USER_NOT_FOUND":{
+    "FRANCHISEE_USER_NOT_FOUND": {
         'en_us': 'Franchisee user not found.',
         'es_co': 'Usuario del franquiciado no encontrado.',
         'fr_fr': 'Utilisateur franchisé non trouvé.'
     },
-    "FRANCHISEE_USER_FETCH_SUCCESS":{
+    "FRANCHISEE_USER_FETCH_SUCCESS": {
         'en_us': 'Franchisee user fetched successfully.',
         'es_co': 'Usuario del franquiciado obtenido con éxito.',
         'fr_fr': 'Utilisateur franchisé récupéré avec succès.'
     },
-    "FRANCHISEE_USER_UPDATED_SUCCESS":{
+    "FRANCHISEE_USER_UPDATED_SUCCESS": {
         'en_us': 'Franchisee user updated successfully.',
         'es_co': 'Usuario del franquiciado actualizado con éxito.',
         'fr_fr': 'Utilisateur franchisé mis à jour avec succès.'
     },
-    "FRANCHISEE_USER_DELETED_SUCCESS":{
+    "FRANCHISEE_USER_DELETED_SUCCESS": {
         'en_us': 'Franchisee user deleted successfully.',
         'es_co': 'Usuario del franquiciado eliminado con éxito.',
         'fr_fr': 'Utilisateur franchisé supprimé avec succès.'
     },
-    "FRANCHISEE_USER_LIST_FETCH_SUCCESS":{
+    "FRANCHISEE_USER_LIST_FETCH_SUCCESS": {
         'en_us': 'Franchisee users list fetched successfully.',
         'es_co': 'Lista de usuarios del franquiciado obtenida con éxito.',
         'fr_fr': 'Liste des utilisateurs franchisés récupérée avec succès.'
     },
-    "FRANCHISEE_PASSWORD_LENGTH_INVALID":{
+    "FRANCHISEE_PASSWORD_LENGTH_INVALID": {
         'en_us': 'Password must be between 8 and 100 characters.',
         'es_co': 'La contraseña debe tener entre 8 y 100 caracteres.',
         'fr_fr': 'Le mot de passe doit comporter entre 8 et 100 caractères.'
     },
-    "FRANCHISEE_PASSWORD_FORMAT_INVALID":{
+    "FRANCHISEE_PASSWORD_FORMAT_INVALID": {
         'en_us': 'Password must contain at least one letter and one number.',
         'es_co': 'La contraseña debe contener al menos una letra y un número.',
         'fr_fr': 'Le mot de passe doit contenir au moins une lettre et un chiffre.'
@@ -410,132 +410,132 @@ const languageLocalization = {
         'es_co': '¡Jugador registrado exitosamente! Por favor, verifique su correo electrónico para continuar.',
         'fr_fr': 'Joueur inscrit avec succès ! Veuillez vérifier votre e-mail pour continuer.'
     },
-    "FRANCHISEE_INFO_ID_REQUIRED":{
+    "FRANCHISEE_INFO_ID_REQUIRED": {
         'en_us': 'franchiseeInfoId is required.',
         'es_co': 'franchiseeInfoId es requerido.',
         'fr_fr': 'franchiseeInfoId est requis.'
     },
-    "FRANCHISEE_INFO_NOT_FOUND_IN_DB":{
+    "FRANCHISEE_INFO_NOT_FOUND_IN_DB": {
         'en_us': 'Franchisee not found in database.',
         'es_co': 'Franquiciado no encontrado en la base de datos.',
         'fr_fr': 'Franchisé non trouvé dans la base de données.'
     },
-    "QUIZ_TITLE_REQUIRED":{
+    "QUIZ_TITLE_REQUIRED": {
         'en_us': 'Quiz title is required.',
         'es_co': 'El título del cuestionario es obligatorio.',
         'fr_fr': 'Le titre du quiz est requis.'
     },
-    "QUIZ_DESCRIPTION_REQUIRED":{
+    "QUIZ_DESCRIPTION_REQUIRED": {
         'en_us': 'Quiz description is required.',
         'es_co': 'La descripción del cuestionario es obligatoria.',
         'fr_fr': 'La description du quiz est requise.'
     },
-    "QUIZ_AUTHOR_REQUIRED":{
+    "QUIZ_AUTHOR_REQUIRED": {
         'en_us': 'Author information is required.',
         'es_co': 'La información del autor es obligatoria.',
         'fr_fr': 'Les informations de l\'auteur sont requises.'
     },
-    "QUIZ_AUTHOR_ID_REQUIRED":{
+    "QUIZ_AUTHOR_ID_REQUIRED": {
         'en_us': 'Author ID is required.',
         'es_co': 'El ID del autor es obligatorio.',
         'fr_fr': 'L\'ID de l\'auteur est requis.'
     },
-    "QUIZ_AUTHOR_ROLE_REQUIRED":{
+    "QUIZ_AUTHOR_ROLE_REQUIRED": {
         'en_us': 'Author role is required.',
         'es_co': 'El rol del autor es obligatorio.',
         'fr_fr': 'Le rôle de l\'auteur est requis.'
     },
-    "QUIZ_AUTHOR_ROLE_INVALID":{
+    "QUIZ_AUTHOR_ROLE_INVALID": {
         'en_us': 'Author role must be either "FranchisorUser" or "FranchiseeUser".',
         'es_co': 'El rol del autor debe ser "FranchisorUser" o "FranchiseeUser".',
         'fr_fr': 'Le rôle de l\'auteur doit être "FranchisorUser" ou "FranchiseeUser".'
     },
-    "QUIZ_CATEGORY_REQUIRED":{
+    "QUIZ_CATEGORY_REQUIRED": {
         'en_us': 'Category is required.',
         'es_co': 'La categoría es obligatoria.',
         'fr_fr': 'La catégorie est requise.'
     },
-    "QUIZ_CATEGORY_NOT_FOUND":{
+    "QUIZ_CATEGORY_NOT_FOUND": {
         'en_us': 'Category not found in database.',
         'es_co': 'Categoría no encontrada en la base de datos.',
         'fr_fr': 'Catégorie non trouvée dans la base de données.'
     },
-    "QUIZ_VISIBILITY_REQUIRED":{
+    "QUIZ_VISIBILITY_REQUIRED": {
         'en_us': 'Visibility is required.',
         'es_co': 'La visibilidad es obligatoria.',
         'fr_fr': 'La visibilité est requise.'
     },
-    "QUIZ_VISIBILITY_INVALID":{
+    "QUIZ_VISIBILITY_INVALID": {
         'en_us': 'Visibility must be either "Local" or "National".',
         'es_co': 'La visibilidad debe ser "Local" o "National".',
         'fr_fr': 'La visibilité doit être "Local" ou "National".'
     },
-    "QUIZ_LANGUAGE_INVALID":{
+    "QUIZ_LANGUAGE_INVALID": {
         'en_us': 'Language must be either "en_us" or "fr_fr".',
         'es_co': 'El idioma debe ser "en_us" o "fr_fr".',
         'fr_fr': 'La langue doit être "en_us" ou "fr_fr".'
     },
-    "QUIZ_ID_REQUIRED":{
+    "QUIZ_ID_REQUIRED": {
         'en_us': 'Quiz ID is required.',
         'es_co': 'El ID del cuestionario es obligatorio.',
         'fr_fr': 'L\'ID du quiz est requis.'
     },
-    "QUIZ_NOT_FOUND_FOR_UPDATE":{
+    "QUIZ_NOT_FOUND_FOR_UPDATE": {
         'en_us': 'Quiz not found for update.',
         'es_co': 'Cuestionario no encontrado para actualizar.',
         'fr_fr': 'Quiz non trouvé pour la mise à jour.'
     },
-    "QUIZ_NO_FIELDS_PROVIDED":{
+    "QUIZ_NO_FIELDS_PROVIDED": {
         'en_us': 'At least one field must be provided for update.',
         'es_co': 'Se debe proporcionar al menos un campo para actualizar.',
         'fr_fr': 'Au moins un champ doit être fourni pour la mise à jour.'
     },
-    "QUIZ_AUTHOR_NOT_VALID":{
+    "QUIZ_AUTHOR_NOT_VALID": {
         'en_us': 'Author object must contain id and authorRole.',
         'es_co': 'El objeto de autor debe contener id y authorRole.',
         'fr_fr': 'L\'objet auteur doit contenir id et authorRole.'
     },
-    "QUIZ_CATEGORY_ID_INVALID":{
+    "QUIZ_CATEGORY_ID_INVALID": {
         'en_us': 'Category ID is invalid or does not exist.',
         'es_co': 'El ID de categoría es inválido o no existe.',
         'fr_fr': 'L\'ID de catégorie est invalide ou n\'existe pas.'
     },
-    "QUIZ_STATUS_INVALID":{
+    "QUIZ_STATUS_INVALID": {
         'en_us': 'Status must be one of: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.',
         'es_co': 'El estado debe ser uno de: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.',
         'fr_fr': 'Le statut doit être l\'un des éléments suivants: DraftLocal, ActiveLocal, DraftNational, ActiveNational, InModeration, ModeratedAccepted, ModeratedRejected, HiddenLocal, HiddenNational.'
     },
-    "QUIZ_UPDATED_SUCCESS":{
+    "QUIZ_UPDATED_SUCCESS": {
         'en_us': 'Quiz updated successfully!',
         'es_co': '¡Cuestionario actualizado con éxito!',
         'fr_fr': 'Quiz mis à jour avec succès!'
     },
-    "PLAYER_PSEUDO_NAME_NOT_FOUND":{
+    "PLAYER_PSEUDO_NAME_NOT_FOUND": {
         'en_us': 'Pseudo name is required.',
         'es_co': 'Se requiere un nombre de usuario.',
         'fr_fr': 'Le nom d\'utilisateur est requis.'
     },
-    "QUIZ_LIST_CATEGORY_INVALID":{
+    "QUIZ_LIST_CATEGORY_INVALID": {
         'en_us': 'Category must be a string or array of valid category IDs.',
         'es_co': 'La categoría debe ser una cadena o matriz de ID de categorías válidas.',
         'fr_fr': 'La catégorie doit être une chaîne ou un tableau d\'ID de catégories valides.'
     },
-    "QUIZ_LIST_VISIBILITY_INVALID":{
+    "QUIZ_LIST_VISIBILITY_INVALID": {
         'en_us': 'Visibility must be Local, National, or array of these values.',
         'es_co': 'La visibilidad debe ser Local, National o una matriz de estos valores.',
         'fr_fr': 'La visibilité doit être Local, National ou un tableau de ces valeurs.'
     },
-    "QUIZ_LIST_STATUS_INVALID":{
+    "QUIZ_LIST_STATUS_INVALID": {
         'en_us': 'Status must be a valid status value or array of valid status values.',
         'es_co': 'El estado debe ser un valor de estado válido o una matriz de valores de estado válidos.',
         'fr_fr': 'Le statut doit être une valeur de statut valide ou un tableau de valeurs de statut valides.'
     },
-    "QUIZ_AUTHOR_ID_INVALID":{
+    "QUIZ_AUTHOR_ID_INVALID": {
         'en_us': 'Author ID is invalid or does not exist.',
         'es_co': 'El ID del autor es inválido o no existe.',
         'fr_fr': 'L\'ID de l\'auteur est invalide ou n\'existe pas.'
     },
-    "PLAYER_NOT_FOUND_SIGNUP_FIRST":{
+    "PLAYER_NOT_FOUND_SIGNUP_FIRST": {
         'en_us': 'Player not found. Please sign up first.',
         'es_co': 'Jugador no encontrado. Por favor regístrese primero.',
         'fr_fr': 'Joueur non trouvé. Veuillez vous inscrire d\'abord.'
@@ -649,6 +649,61 @@ const languageLocalization = {
         'en_us': 'Phone number verified successfully.',
         'es_co': 'Número de teléfono verificado exitosamente.',
         'fr_fr': 'Numéro de téléphone vérifié avec succès.'
+    },
+    "EMAIL_REQUIRED": {
+        'en_us': 'Email is required.',
+        'es_co': 'Se requiere correo electrónico.',
+        'fr_fr': 'L\'e-mail est requis.'
+    },
+    "FORGOT_PASSWORD_OTP_SENT": {
+        'en_us': 'OTP for password reset sent successfully.',
+        'es_co': 'OTP para restablecer la contraseña enviado con éxito.',
+        'fr_fr': 'OTP pour la réinitialisation du mot de passe envoyé avec succès.'
+    },
+    "EMAIL_AND_OTP_REQUIRED": {
+        'en_us': 'Email and OTP are required.',
+        'es_co': 'Se requieren correo electrónico y OTP.',
+        'fr_fr': 'L\'e-mail et l\'OTP sont requis.'
+    },
+    "FORGOT_PASSWORD_ATTEMPT_LIMIT": {
+        'en_us': 'Maximum OTP attempts reached. Please request a new OTP.',
+        'es_co': 'Se alcanzó el máximo de intentos de OTP. Solicite un nuevo OTP.',
+        'fr_fr': 'Nombre maximum de tentatives OTP atteint. Veuillez demander un nouvel OTP.'
+    },
+    "FORGOT_PASSWORD_OTP_EXPIRED": {
+        'en_us': 'OTP has expired. Please request a new one.',
+        'es_co': 'El OTP ha expirado. Solicite uno nuevo.',
+        'fr_fr': 'L\'OTP a expiré. Veuillez en demander un nouveau.'
+    },
+    "FORGOT_PASSWORD_OTP_INVALID": {
+        'en_us': 'Invalid OTP. Please try again.',
+        'es_co': 'OTP inválido. Por favor, inténtelo de nuevo.',
+        'fr_fr': 'OTP invalide. Veuillez réessayer.'
+    },
+    "FORGOT_PASSWORD_OTP_VERIFIED": {
+        'en_us': 'OTP verified successfully. You may now reset your password.',
+        'es_co': 'OTP verificado con éxito. Ahora puede restablecer su contraseña.',
+        'fr_fr': 'OTP vérifié avec succès. Vous pouvez maintenant réinitialiser votre mot de passe.'
+    },
+    "EMAIL_AND_PASSWORD_REQUIRED": {
+        'en_us': 'Email, new password, and confirm password are required.',
+        'es_co': 'Se requieren correo electrónico, nueva contraseña y confirmación de contraseña.',
+        'fr_fr': 'L\'e-mail, le nouveau mot de passe et la confirmation du mot de passe sont requis.'
+    },
+    "PASSWORDS_DO_NOT_MATCH": {
+        'en_us': 'New password and confirm password do not match.',
+        'es_co': 'La nueva contraseña y la confirmación no coinciden.',
+        'fr_fr': 'Le nouveau mot de passe et la confirmation ne correspondent pas.'
+    },
+    "FORGOT_PASSWORD_OTP_NOT_VERIFIED": {
+        'en_us': 'OTP not verified. Please verify OTP before resetting password.',
+        'es_co': 'OTP no verificado. Verifique el OTP antes de restablecer la contraseña.',
+        'fr_fr': 'OTP non vérifié. Veuillez vérifier l\'OTP avant de réinitialiser le mot de passe.'
+    },
+    "PASSWORD_RESET_SUCCESS": {
+        'en_us': 'Password reset successfully.',
+        'es_co': 'Contraseña restablecida con éxito.',
+        'fr_fr': 'Mot de passe réinitialisé avec succès.'
     }
 };
 
