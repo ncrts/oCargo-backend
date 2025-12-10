@@ -9,6 +9,7 @@ const { getMessage } = require("../../../config/languageLocalization");
 const AvatarMaster = require('../../models/avatar.model');
 const Food = require('../../models/food.model');
 const BadgeMaster = require('../../models/badge.master.model');
+const Cms = require('../../models/cms.model');
 
 const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({
@@ -115,6 +116,43 @@ const getAllBadges = catchAsync(async (req, res) => {
     });
 });
 
+const createdCms = catchAsync(async (req, res) => {
+    const cmsObj = {
+        pageTitle: req.body.pageTitle,
+        pageContent: req.body.pageContent,
+        contentType: req.body.contentType ? req.body.contentType : 1,
+        link: req.body.link ? req.body.link : "",
+        sequence: req.body.sequence ? req.body.sequence : null
+    }
+
+    let newCms = new Cms(cmsObj)
+    await newCms.save();
+
+    res.status(httpStatus.CREATED).json({ success: true, message: `${req.body.pageTitle} cms created successfully` })
+})
+
+const updateCms = catchAsync(async (req, res) => {
+    const filterObj = { "_id": req.params.id };
+    const updateObj = {
+        pageTitle: req.body.pageTitle,
+        pageContent: req.body.pageContent,
+        contentType: req.body.contentType ? req.body.contentType : 1,
+        link: req.body.link ? req.body.link : "",
+        sequence: req.body.sequence ? req.body.sequence : null
+    }
+
+    await Cms.findOneAndUpdate(filterObj, updateObj)
+    res.status(httpStatus.OK).json({ success: true, message: `${req.body.pageTitle} cms updated successfully` })
+})
+
+const getCms = catchAsync(async (req, res) => {
+    let cmsData = await Cms.findOne({ slug: req.params.slug }).select("pageTitle pageContent slug")
+    if (!cmsData) {
+        return res.status(httpStatus.NON_AUTHORITATIVE_INFORMATION).json({ success: false, message: `${req.params.slug} cms not found.` })
+    }
+    return res.status(httpStatus.OK).json({ success: true, message: `${req.params.slug} cms fetched successfully`, data: { cmsData } })
+})
+
 module.exports = {
     commonS3FileUploadedKeys,
     sendRequestBodyData,
@@ -122,5 +160,8 @@ module.exports = {
     getAllAvatars,
     insertMultipleFoods,
     getAllFoods,
-    getAllBadges
+    getAllBadges,
+    createdCms,
+    updateCms,
+    getCms
 }

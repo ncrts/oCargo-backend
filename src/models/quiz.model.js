@@ -218,24 +218,14 @@ const quizSchema = new mongoose.Schema({
             default: null,
             description: 'Maximum rating given by a player.'
         },
-
-        /**
-         * 🧾 Individual Ratings
-         * Collection of all player ratings for granular analytics.
+        /** 📈 Rating Count
+         * Total number of ratings submitted by players.
          */
-        ratings: [
-            {
-                clientId: {
-                    type: mongoose.SchemaTypes.ObjectId,
-                    ref: 'Client',
-                    description: 'Reference to the client who rated this quiz.'
-                },
-                value: {
-                    type: Number,
-                    description: 'Rating value given by the client (1–10).'
-                }
-            }
-        ]
+        count: {
+            type: Number,
+            default: 0,
+            description: 'Total number of player ratings received.'
+        }
     },
 
     // ------------------------------------------------
@@ -352,18 +342,5 @@ const quizSchema = new mongoose.Schema({
     }
 });
 
-/**
- * 🔧 Static Method: updateClientRatingStats
- * Updates the aggregated client rating statistics (avg, min, max, count)
- * after feedback recalculation.
- */
-quizSchema.statics.updateClientRatingStats = async function (quizId, avg, min, max, count) {
-    await this.findByIdAndUpdate(quizId, {
-        'clientRating.avg': avg,
-        'clientRating.min': min,
-        'clientRating.max': max,
-        'clientRating.count': count
-    });
-};
 
 module.exports = mongoose.model('Quiz', quizSchema);

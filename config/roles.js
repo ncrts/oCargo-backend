@@ -20,7 +20,8 @@ const allRoles = {
     'updateFranchiseeUser',
     'getFranchiseeUser',
     'getFranchiseeUsersList',
-    'deleteFranchiseeUser'
+    'deleteFranchiseeUser',
+    'manageCms'
   ],
   admin: [
     'createFranchisorInfo',
@@ -39,7 +40,8 @@ const allRoles = {
     'getFranchiseeUsersList',
     'deleteFranchiseeUser',
     'deleteFranchisorUser',
-    'bulkInsertBadgeMasters'
+    'bulkInsertBadgeMasters',
+    'manageCms'
   ],
 };
 

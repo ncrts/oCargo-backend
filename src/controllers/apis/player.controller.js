@@ -1193,16 +1193,12 @@ const submitQuizFeedback = catchAsync(async (req, res) => {
         const min = ratingsArr.length ? Math.min(...ratingsArr) : null;
         const max = ratingsArr.length ? Math.max(...ratingsArr) : null;
         const avg = ratingsArr.length ? (ratingsArr.reduce((a, b) => a + b, 0) / ratingsArr.length) : null;
+        
         // Build ratings array for quiz model
-        const ratings = allFeedbacks.map(fb => ({
-            clientId: fb.playerId,
-            value: fb.rating
-        }));
         quiz.clientRating = quiz.clientRating || {};
         quiz.clientRating.avg = avg;
         quiz.clientRating.min = min;
         quiz.clientRating.max = max;
-        quiz.clientRating.ratings = ratings;
         quiz.clientRating.count = ratingsArr.length;
         await quiz.save();
     }
