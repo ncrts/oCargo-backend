@@ -191,12 +191,12 @@ const quizSchema = new mongoose.Schema({
     clientRating: {
         /**
          * 📊 Average Rating
-         * The computed mean value (1–10) from all client ratings.
+         * The computed mean value (1–5) from all client ratings.
          */
         avg: {
             type: Number,
             default: null,
-            description: 'Average player rating score (1–10).'
+            description: 'Average player rating score (5).'
         },
 
         /**

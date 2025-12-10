@@ -17,6 +17,8 @@ const PlayerStat = require('../../models/clientStat.model');
 const PlayerCommunication = require('../../models/clientCommunication.model');
 const QuizGameSession = require('../../models/quizGameSession.model');
 const QuizFeedback = require('../../models/quizFeedback.model');
+const Quiz = require('../../models/quiz.model');
+
 const { getMessage } = require("../../../config/languageLocalization");
 
 const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
@@ -1182,6 +1184,29 @@ const submitQuizFeedback = catchAsync(async (req, res) => {
     // Save feedback to database
     await newFeedback.save();
 
+    // --- Update Quiz clientRating stats ---
+    const quiz = await Quiz.findById(quizGameSession.quizId);
+    if (quiz) {
+        // Get all feedback ratings for this quiz
+        const allFeedbacks = await QuizFeedback.find({ quizId: quiz._id });
+        const ratingsArr = allFeedbacks.map(fb => fb.rating);
+        const min = ratingsArr.length ? Math.min(...ratingsArr) : null;
+        const max = ratingsArr.length ? Math.max(...ratingsArr) : null;
+        const avg = ratingsArr.length ? (ratingsArr.reduce((a, b) => a + b, 0) / ratingsArr.length) : null;
+        // Build ratings array for quiz model
+        const ratings = allFeedbacks.map(fb => ({
+            clientId: fb.playerId,
+            value: fb.rating
+        }));
+        quiz.clientRating = quiz.clientRating || {};
+        quiz.clientRating.avg = avg;
+        quiz.clientRating.min = min;
+        quiz.clientRating.max = max;
+        quiz.clientRating.ratings = ratings;
+        quiz.clientRating.count = ratingsArr.length;
+        await quiz.save();
+    }
+
     return res.status(httpStatus.CREATED).json({
         success: true,
         message: getMessage('QUIZ_FEEDBACK_SUBMITTED_SUCCESS', res.locals.language),
@@ -1193,7 +1218,8 @@ const submitQuizFeedback = catchAsync(async (req, res) => {
             rating: newFeedback.rating,
             feedbackText: newFeedback.feedbackText,
             status: newFeedback.status,
-            submittedAt: newFeedback.submittedAt
+            submittedAt: newFeedback.submittedAt,
+            clientRating: quiz ? quiz.clientRating : null
         }
     });
 });
