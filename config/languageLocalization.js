@@ -695,6 +695,58 @@ const languageLocalization = {
         'es_co': 'La nueva contraseña y la confirmación no coinciden.',
         'fr_fr': 'Le nouveau mot de passe et la confirmation ne correspondent pas.'
     },
+    // Boot in/out player session
+    "PLAYER_BOOTED_OUT_SUCCESS": {
+        'en_us': 'Player has been booted out successfully.',
+        'es_co': 'El jugador ha sido expulsado con éxito.',
+        'fr_fr': 'Le joueur a été expulsé avec succès.'
+    },
+    "PLAYER_BOOTED_IN_SUCCESS": {
+        'en_us': 'Player has been booted in successfully.',
+        'es_co': 'El jugador ha sido readmitido con éxito.',
+        'fr_fr': 'Le joueur a été réadmis avec succès.'
+    },
+    "PLAYER_SESSION_NOT_FOUND": {
+        'en_us': 'Player session not found.',
+        'es_co': 'Sesión de jugador no encontrada.',
+        'fr_fr': 'Session de joueur non trouvée.'
+    },
+    "PLAYER_BOOT_TYPE_INVALID": {
+        'en_us': 'Invalid type. Must be "bootOut" or "bootIn".',
+        'es_co': 'Tipo inválido. Debe ser "bootOut" o "bootIn".',
+        'fr_fr': 'Type invalide. Doit être "bootOut" ou "bootIn".'
+    },
+    "PLAYER_BOOT_TYPE_REQUIRED": {
+        'en_us': 'playerSessionId and type are required.',
+        'es_co': 'playerSessionId y type son obligatorios.',
+        'fr_fr': 'playerSessionId et type sont requis.'
+    },
+    // Boot in/out player session
+    "PLAYER_BOOTED_OUT_SUCCESS": {
+        'en_us': 'Player has been booted out successfully.',
+        'es_co': 'El jugador ha sido expulsado con éxito.',
+        'fr_fr': 'Le joueur a été expulsé avec succès.'
+    },
+    "PLAYER_BOOTED_IN_SUCCESS": {
+        'en_us': 'Player has been booted in successfully.',
+        'es_co': 'El jugador ha sido readmitido con éxito.',
+        'fr_fr': 'Le joueur a été réadmis avec succès.'
+    },
+    "PLAYER_SESSION_NOT_FOUND": {
+        'en_us': 'Player session not found.',
+        'es_co': 'Sesión de jugador no encontrada.',
+        'fr_fr': 'Session de joueur non trouvée.'
+    },
+    "PLAYER_BOOT_TYPE_INVALID": {
+        'en_us': 'Invalid type. Must be "bootOut" or "bootIn".',
+        'es_co': 'Tipo inválido. Debe ser "bootOut" o "bootIn".',
+        'fr_fr': 'Type invalide. Doit être "bootOut" ou "bootIn".'
+    },
+    "PLAYER_BOOT_TYPE_REQUIRED": {
+        'en_us': 'playerSessionId and type are required.',
+        'es_co': 'playerSessionId y type son obligatorios.',
+        'fr_fr': 'playerSessionId et type sont requis.'
+    },
     "FORGOT_PASSWORD_OTP_NOT_VERIFIED": {
         'en_us': 'OTP not verified. Please verify OTP before resetting password.',
         'es_co': 'OTP no verificado. Verifique el OTP antes de restablecer la contraseña.',
@@ -704,6 +756,41 @@ const languageLocalization = {
         'en_us': 'Password reset successfully.',
         'es_co': 'Contraseña restablecida con éxito.',
         'fr_fr': 'Mot de passe réinitialisé avec succès.'
+    },
+    "PLAYER_BOOTED_OUT_SUCCESS": {
+        'en_us': 'Player has been booted out successfully.',
+        'es_co': 'El jugador ha sido expulsado con éxito.',
+        'fr_fr': 'Le joueur a été expulsé avec succès.'
+    },
+    "PLAYER_BOOTED_IN_SUCCESS": {
+        'en_us': 'Player has been booted in successfully.',
+        'es_co': 'El jugador ha sido readmitido con éxito.',
+        'fr_fr': 'Le joueur a été réadmis avec succès.'
+    },
+    "PLAYER_SESSION_NOT_FOUND": {
+        'en_us': 'Player session not found.',
+        'es_co': 'Sesión de jugador no encontrada.',
+        'fr_fr': 'Session de joueur non trouvée.'
+    },
+    "PLAYER_BOOT_TYPE_INVALID": {
+        'en_us': 'Invalid type. Must be "bootOut" or "bootIn".',
+        'es_co': 'Tipo inválido. Debe ser "bootOut" o "bootIn".',
+        'fr_fr': 'Type invalide. Doit être "bootOut" ou "bootIn".'
+    },
+    "PLAYER_BOOT_TYPE_REQUIRED": {
+        'en_us': 'playerSessionId and type are required.',
+        'es_co': 'playerSessionId y type son obligatorios.',
+        'fr_fr': 'playerSessionId et type sont requis.'
+    },
+    "PLAYER_ALREADY_BOOTED_OUT": {
+        'en_us': 'Player is already booted out.',
+        'es_co': 'El jugador ya está expulsado.',
+        'fr_fr': 'Le joueur est déjà expulsé.'
+    },
+    "PLAYER_ALREADY_BOOTED_IN": {
+        'en_us': 'Player is already booted in.',
+        'es_co': 'El jugador ya está readmitido.',
+        'fr_fr': 'Le joueur est déjà réadmis.'
     }
 };
 

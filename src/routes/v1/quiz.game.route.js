@@ -66,6 +66,8 @@ router.delete('/quiz/game-session/:id', languageDetectionMiddleware, authToken.f
 
 // Quiz Game Session Player Routes
 router.post('/quiz/game-session/join', languageDetectionMiddleware, authToken.playerProtect, quizGameController.joinQuizGameSession);
+// Boot in/out a player from a game session
+router.post('/quiz/game-session/player/boot', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.controlGameSessionPlayerBoot);
 
 router.post('/quiz/game-session/answer', languageDetectionMiddleware, authToken.playerProtect, quizGameController.submitQuizAnswer);
 

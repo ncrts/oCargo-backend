@@ -1,4 +1,3 @@
-
 const path = require('path');
 const base64 = require('base-64')
 const httpStatus = require('http-status');
@@ -29,8 +28,6 @@ const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const Franchisee = require('../../models/franchisee.user.model');
 const Franchisor = require('../../models/franchisor.user.model');
 const FranchisorInfo = require('../../models/franchisorInfo.model');
-
-
 
 const { getMessage } = require("../../../config/languageLocalization")
 
@@ -2656,6 +2653,8 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
     });
 });
 
+
+
 /**
  * Lists quiz game sessions with optional filters and pagination.
  * GET /quiz/game-sessions
@@ -3238,6 +3237,9 @@ const joinQuizGameSession = catchAsync(async (req, res) => {
         });
     }
 });
+
+
+
 
 /**
  * Submit answer for a quiz question in an active game session.
@@ -4711,6 +4713,108 @@ let createBulkFranchiseeLeaderboard = catchAsync(async (req, res) => {
 });
 
 
+// Boot in/out a player from a quiz game session with localized responses
+const controlGameSessionPlayerBoot = catchAsync(async (req, res) => {
+    const { quizGameSessionId, clientId, type } = req.body;
+    if (!quizGameSessionId || !clientId || !type) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("PLAYER_BOOT_TYPE_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+    if (!['bootOut', 'bootIn'].includes(type)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("PLAYER_BOOT_TYPE_INVALID", res.locals.language),
+            data: null
+        });
+    }
+    // Find the player session
+    const playerSession = await QuizSessionPlayer.findOne({ quizGameSessionId, clientId });
+    if (!playerSession) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("PLAYER_SESSION_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+    const isBooted = type === 'bootOut';
+    // If already booted out and trying to boot out again
+    if (isBooted && playerSession.isBooted) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PLAYER_ALREADY_BOOTED_OUT", res.locals.language),
+            data: playerSession
+        });
+    }
+    // If already booted in and trying to boot in again
+    if (!isBooted && !playerSession.isBooted) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("PLAYER_ALREADY_BOOTED_IN", res.locals.language),
+            data: playerSession
+        });
+    }
+    // Firebase RTDB logic
+    // Assumes firebaseDB is initialized and available
+    try {
+        const firebaseSessionRef = firebaseDB.ref(`quizGameSessions/${quizGameSessionId}`);
+        if (isBooted) {
+            // Boot Out: Remove player data and store under bootOutPlayer
+            const [answersSnap, playersSnap, scoreSnap] = await Promise.all([
+                firebaseSessionRef.child(`answers/${clientId}`).once('value'),
+                firebaseSessionRef.child(`players/${clientId}`).once('value'),
+                firebaseSessionRef.child(`score/${clientId}`).once('value')
+            ]);
+            const answersData = answersSnap.val();
+            const playersData = playersSnap.val();
+            const scoreData = scoreSnap.val();
+
+            // Remove from main locations
+            await Promise.all([
+                firebaseSessionRef.child(`answers/${clientId}`).remove(),
+                firebaseSessionRef.child(`players/${clientId}`).remove(),
+                firebaseSessionRef.child(`score/${clientId}`).remove()
+            ]);
+
+            // Store under bootOutPlayer
+            await firebaseSessionRef.child(`bootOutPlayer/${clientId}`).set({
+                answers: answersData || null,
+                players: playersData || null,
+                score: scoreData || null
+            });
+        } else {
+            // Boot In: Restore player data from bootOutPlayer and remove from bootOutPlayer
+            const bootOutSnap = await firebaseSessionRef.child(`bootOutPlayer/${clientId}`).once('value');
+            const bootOutData = bootOutSnap.val();
+            if (bootOutData) {
+                if (bootOutData.answers)
+                    await firebaseSessionRef.child(`answers/${clientId}`).set(bootOutData.answers);
+                if (bootOutData.players)
+                    await firebaseSessionRef.child(`players/${clientId}`).set(bootOutData.players);
+                if (bootOutData.score)
+                    await firebaseSessionRef.child(`score/${clientId}`).set(bootOutData.score);
+                await firebaseSessionRef.child(`bootOutPlayer/${clientId}`).remove();
+            }
+        }
+    } catch (firebaseErr) {
+        // Log error but continue with boot status update
+        console.error('Firebase RTDB error in controlGameSessionPlayerBoot:', firebaseErr);
+    }
+    // Update boot status
+    playerSession.isBooted = isBooted;
+    await playerSession.save();
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: isBooted
+            ? getMessage("PLAYER_BOOTED_OUT_SUCCESS", res.locals.language)
+            : getMessage("PLAYER_BOOTED_IN_SUCCESS", res.locals.language),
+        data: playerSession
+    });
+});
+
+
 
 module.exports = {
     createMultipleCategories,
@@ -4745,5 +4849,6 @@ module.exports = {
     createBulkFranchiseeLeaderboard,
     getAverageQuizRatings,
     getRecentFranchiseeReviews,
-    getFranchiseeRatingDistribution
+    getFranchiseeRatingDistribution,
+    controlGameSessionPlayerBoot
 }

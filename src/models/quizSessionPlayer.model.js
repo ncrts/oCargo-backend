@@ -225,6 +225,16 @@ const quizSessionPlayerSchema = new mongoose.Schema({
     },
 
     /**
+     * 🚫 Booted Flag
+     * Indicates whether the player was forcibly removed ("booted out") from the quiz session.
+     */
+    isBooted: {
+        type: Boolean,
+        default: false,
+        description: 'True if the player was booted out of the session.'
+    },
+    
+    /**
      * 🕒 Created Timestamp
      * Automatically records when this player’s session record was created.
      */
