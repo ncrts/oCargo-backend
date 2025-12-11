@@ -1096,7 +1096,18 @@ const getFranchiseeUser = async (req, res) => {
  */
 const getFranchiseeUsersList = async (req, res) => {
 	try {
-		const { firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, searchKey, limit = 20, skip = 0 } = req.query;
+		// Determine franchiseeInfoId based on user type
+		let { firstName, lastName, email, phoneno, role, franchiseeInfoId, isActive, searchKey, limit = 20, skip = 0 } = req.query;
+
+		// If manager, force franchiseeInfoId from req.franchiseeUser
+		if (req.franchiseeUser && req.franchiseeUser.role === 'manager') {
+			franchiseeInfoId = req.franchiseeUser.franchiseeInfoId;
+		} else if (req.franchisorUser) {
+			// If franchisorUser, allow franchiseeInfoId from req.body if provided
+			if (req.body && req.body.franchiseeInfoId) {
+				franchiseeInfoId = req.body.franchiseeInfoId;
+			}
+		}
 
 		const filter = { isDeleted: false };
 

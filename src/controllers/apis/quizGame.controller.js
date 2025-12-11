@@ -1,3 +1,4 @@
+
 const path = require('path');
 const base64 = require('base-64')
 const httpStatus = require('http-status');
@@ -28,6 +29,7 @@ const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const Franchisee = require('../../models/franchisee.user.model');
 const Franchisor = require('../../models/franchisor.user.model');
 const FranchisorInfo = require('../../models/franchisorInfo.model');
+
 
 
 const { getMessage } = require("../../../config/languageLocalization")
@@ -80,6 +82,128 @@ const getAverageQuizRatings = catchAsync(async (req, res) => {
         data: ratings
     });
 });
+
+
+const getRecentFranchiseeReviews = catchAsync(async (req, res) => {
+    let franchiseeInfoId;
+    let { limit = 20, skip = 0 } = req.query;
+
+    // If manager, use their franchiseeInfoId
+    if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
+        franchiseeInfoId = req.franchiseeUser.franchiseeInfoId;
+    } else if (req.franchisorUser) {
+        // If franchisorUser, require franchiseeInfoId from body
+        franchiseeInfoId = req.body && req.body.franchiseeInfoId ? req.body.franchiseeInfoId : undefined;
+    } else {
+        // Otherwise, fallback to query param
+        franchiseeInfoId = req.query.franchiseeInfoId;
+    }
+
+    if (!franchiseeInfoId) {
+        return res.status(httpStatus.OK).json({ success: false, message: 'franchiseeInfoId is required', data: null });
+    }
+
+    // Parse limit and skip as integers
+    const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
+    const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+    // Get total count for pagination info
+    const totalCount = await QuizFeedback.countDocuments({ franchiseId: franchiseeInfoId, rating: { $ne: null } });
+
+    // Find recent feedbacks for this franchisee
+    const feedbacks = await QuizFeedback.find({ franchiseId: franchiseeInfoId, rating: { $ne: null } })
+        .sort({ submittedAt: -1 })
+        .limit(pageLimit)
+        .skip(pageSkip)
+        .populate({ path: 'quizId', select: 'title' })
+        .populate({ path: 'playerId', select: 'firstName lastName pseudoName' })
+        .populate({ path: 'franchiseId', select: 'name' });
+
+    // Format for UI
+    const reviews = feedbacks.map(fb => ({
+        quizTitle: fb.quizId && fb.quizId.title ? fb.quizId.title : null,
+        playerName: fb.playerId ? `${fb.playerId.firstName || ''} ${fb.playerId.lastName || ''}`.trim() : null,
+        pseudoName: fb.pseudoName || null,
+        franchiseName: fb.franchiseId && fb.franchiseId.name ? fb.franchiseId.name : null,
+        rating: fb.rating,
+        feedbackText: fb.feedbackText,
+        submittedAt: fb.submittedAt
+    }));
+
+    return res.status(200).json({
+        success: true,
+        message: 'Recent reviews fetched successfully',
+        data: reviews,
+        count: reviews.length,
+        totalCount: totalCount,
+        pagination: {
+            limit: pageLimit,
+            skip: pageSkip,
+            page: Math.floor(pageSkip / pageLimit) + 1,
+            totalPages: Math.ceil(totalCount / pageLimit)
+        }
+    });
+});
+
+
+/**
+ * Get Rating Distribution and Accuracy for a Franchisee
+ * Returns: { distribution: [{ rating, count, percent, accuracy }], totalCount }
+ * GET /quiz/rating-distribution
+ */
+const getFranchiseeRatingDistribution = catchAsync(async (req, res) => {
+    let franchiseeInfoId;
+    // If manager, use their franchiseeInfoId
+    if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
+        franchiseeInfoId = req.franchiseeUser.franchiseeInfoId;
+    } else if (req.franchisorUser) {
+        // If franchisorUser, require franchiseeInfoId from body
+        franchiseeInfoId = req.body && req.body.franchiseeInfoId ? req.body.franchiseeInfoId : undefined;
+    } else {
+        // Otherwise, fallback to query param
+        franchiseeInfoId = req.query.franchiseeInfoId;
+    }
+
+    if (!franchiseeInfoId) {
+        return res.status(httpStatus.OK).json({ success: false, message: 'franchiseeInfoId is required', data: null });
+    }
+
+    // Aggregate rating counts for this franchisee
+    const pipeline = [
+        { $match: { franchiseId: typeof franchiseeInfoId === 'string' ? require('mongoose').Types.ObjectId(franchiseeInfoId) : franchiseeInfoId, rating: { $ne: null } } },
+        { $group: { _id: '$rating', count: { $sum: 1 } } }
+    ];
+    const results = await QuizFeedback.aggregate(pipeline);
+
+    // Get total count
+    const totalCount = results.reduce((sum, r) => sum + r.count, 0);
+
+    // Map for quick lookup
+    const ratingMap = {};
+    results.forEach(r => { ratingMap[r._id] = r.count; });
+
+
+    // Build distribution array (5 to 1)
+    const distribution = [5, 4, 3, 2, 1].map(rating => {
+        const count = ratingMap[rating] || 0;
+        const percent = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+        return {
+            rating,
+            count,
+            percent
+        };
+    });
+
+    return res.status(200).json({
+        success: true,
+        message: 'Rating distribution fetched successfully',
+        data: {
+            distribution,
+            totalCount
+        }
+    });
+});
+
 
 // ================================
 const createMultipleCategories = catchAsync(async (req, res) => {
@@ -4619,5 +4743,7 @@ module.exports = {
     createBulkLocalLeaderboard,
     createBulkNationalLeaderboard,
     createBulkFranchiseeLeaderboard,
-    getAverageQuizRatings
+    getAverageQuizRatings,
+    getRecentFranchiseeReviews,
+    getFranchiseeRatingDistribution
 }

@@ -32,6 +32,9 @@ router.get('/quiz/instant/list', languageDetectionMiddleware, authToken.commonPr
 
 // Fetch Average Quiz Ratings
 router.get('/quiz/average-ratings', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getAverageQuizRatings);
+router.get('/quiz/recent-franchisee-reviews', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getRecentFranchiseeReviews);
+router.get('/quiz/rating-distribution', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getFranchiseeRatingDistribution);
+
 
 // Quiz Question Creation
 router.post('/quiz/question', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.createQuizQuestion);

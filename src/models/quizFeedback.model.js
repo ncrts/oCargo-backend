@@ -52,7 +52,7 @@ const quizFeedbackSchema = new mongoose.Schema({
      */
     playerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Client',
         default: null,
         description: 'Reference to the player (client) submitting feedback.'
     },
@@ -64,9 +64,9 @@ const quizFeedbackSchema = new mongoose.Schema({
      */
     franchiseId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Franchise',
+        ref: 'FranchiseeInfo',
         default: null,
-        description: 'Reference to the franchise where the quiz session occurred.'
+        description: 'Reference to the FranchiseeInfo where the quiz session occurred.'
     },
 
     // ------------------------------------------------
