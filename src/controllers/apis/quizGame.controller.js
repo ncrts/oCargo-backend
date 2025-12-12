@@ -2,6 +2,7 @@ const path = require('path');
 const base64 = require('base-64')
 const httpStatus = require('http-status');
 const catchAsync = require('../../utils/catchAsync');
+const mongoose = require('mongoose');
 const randomstring = require('randomstring');
 const MailHelper = require('../../utils/mailHelper');
 const { is18Plus } = require('../../utils/commonHelper');
@@ -89,8 +90,8 @@ const getRecentFranchiseeReviews = catchAsync(async (req, res) => {
     if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
         franchiseeInfoId = req.franchiseeUser.franchiseeInfoId;
     } else if (req.franchisorUser) {
-        // If franchisorUser, require franchiseeInfoId from body
-        franchiseeInfoId = req.body && req.body.franchiseeInfoId ? req.body.franchiseeInfoId : undefined;
+        // If franchisorUser, require franchiseeInfoId from query
+        franchiseeInfoId = req.query && req.query.franchiseeInfoId ? req.query.franchiseeInfoId : undefined;
     } else {
         // Otherwise, fallback to query param
         franchiseeInfoId = req.query.franchiseeInfoId;
@@ -104,11 +105,23 @@ const getRecentFranchiseeReviews = catchAsync(async (req, res) => {
     const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20)); // Max 100, default 20
     const pageSkip = Math.max(0, parseInt(skip) || 0);
 
+    // Prepare franchiseeInfoId for query (ObjectId if string)
+    let matchFranchiseId;
+    if (typeof franchiseeInfoId === 'string') {
+        try {
+            matchFranchiseId = new mongoose.Types.ObjectId(franchiseeInfoId);
+        } catch (e) {
+            return res.status(httpStatus.OK).json({ success: false, message: 'Invalid franchiseeInfoId', data: null });
+        }
+    } else {
+        matchFranchiseId = franchiseeInfoId;
+    }
+
     // Get total count for pagination info
-    const totalCount = await QuizFeedback.countDocuments({ franchiseId: franchiseeInfoId, rating: { $ne: null } });
+    const totalCount = await QuizFeedback.countDocuments({ franchiseId: matchFranchiseId, rating: { $ne: null } });
 
     // Find recent feedbacks for this franchisee
-    const feedbacks = await QuizFeedback.find({ franchiseId: franchiseeInfoId, rating: { $ne: null } })
+    const feedbacks = await QuizFeedback.find({ franchiseId: matchFranchiseId, rating: { $ne: null } })
         .sort({ submittedAt: -1 })
         .limit(pageLimit)
         .skip(pageSkip)
@@ -154,8 +167,8 @@ const getFranchiseeRatingDistribution = catchAsync(async (req, res) => {
     if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
         franchiseeInfoId = req.franchiseeUser.franchiseeInfoId;
     } else if (req.franchisorUser) {
-        // If franchisorUser, require franchiseeInfoId from body
-        franchiseeInfoId = req.body && req.body.franchiseeInfoId ? req.body.franchiseeInfoId : undefined;
+        // If franchisorUser, require franchiseeInfoId from query
+        franchiseeInfoId = req.query && req.query.franchiseeInfoId ? req.query.franchiseeInfoId : undefined;
     } else {
         // Otherwise, fallback to query param
         franchiseeInfoId = req.query.franchiseeInfoId;
@@ -165,9 +178,19 @@ const getFranchiseeRatingDistribution = catchAsync(async (req, res) => {
         return res.status(httpStatus.OK).json({ success: false, message: 'franchiseeInfoId is required', data: null });
     }
 
-    // Aggregate rating counts for this franchisee
+    let matchFranchiseId;
+    if (typeof franchiseeInfoId === 'string') {
+        try {
+            matchFranchiseId = new mongoose.Types.ObjectId(franchiseeInfoId);
+        } catch (e) {
+            return res.status(httpStatus.OK).json({ success: false, message: 'Invalid franchiseeInfoId', data: null });
+        }
+    } else {
+        matchFranchiseId = franchiseeInfoId;
+    }
+
     const pipeline = [
-        { $match: { franchiseId: typeof franchiseeInfoId === 'string' ? require('mongoose').Types.ObjectId(franchiseeInfoId) : franchiseeInfoId, rating: { $ne: null } } },
+        { $match: { franchiseId: matchFranchiseId, rating: { $ne: null } } },
         { $group: { _id: '$rating', count: { $sum: 1 } } }
     ];
     const results = await QuizFeedback.aggregate(pipeline);
