@@ -63,7 +63,8 @@ const updateFranchisorInfo = catchAsync(async (req, res) => {
  */
 const getFranchisorInfo = catchAsync(async (req, res) => {
 	try {
-		const franchisorInfo = await FranchisorInfo.findById(req.params.id);
+		let franchisorInfoId = req.query.id || "691868714fb84e48f683a761"
+		const franchisorInfo = await FranchisorInfo.findById(franchisorInfoId);
 		if (!franchisorInfo) {
 			return res.status(httpStatus.OK).json({ success: false, message: 'Franchisor info not found', data: null });
 		}

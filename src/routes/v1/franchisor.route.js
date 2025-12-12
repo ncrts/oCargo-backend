@@ -19,7 +19,7 @@ const router = express.Router();
 router
     .post('/info', franchisorController.createFranchisorInfo)
     .patch('/info/:id', franchisorController.updateFranchisorInfo)
-    .get('/info/:id', franchisorController.getFranchisorInfo)
+    .get('/info', franchisorController.getFranchisorInfo)
 
 // Franchisor User Auth
 router

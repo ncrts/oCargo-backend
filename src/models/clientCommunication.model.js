@@ -31,7 +31,7 @@ const clientCommunicationSchema = new mongoose.Schema({
      */
     preferencesEmail: {
         type: Boolean,
-        default: false,
+        default: true,
         description: 'True if the client agrees to receive email communications.'
     },
 
@@ -42,7 +42,7 @@ const clientCommunicationSchema = new mongoose.Schema({
      */
     preferencesPush: {
         type: Boolean,
-        default: false,
+        default: true,
         description: 'True if the client agrees to receive push notifications through the app.'
     },
 
@@ -53,7 +53,7 @@ const clientCommunicationSchema = new mongoose.Schema({
      */
     preferencesSMS: {
         type: Boolean,
-        default: false,
+        default: true,
         description: 'True if the client agrees to receive SMS communications.'
     },
 
