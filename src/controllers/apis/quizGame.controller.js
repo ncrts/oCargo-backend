@@ -2696,13 +2696,42 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
  * Returns: array of sessions with populated references and pagination info
  */
 const getQuizGameSessions = catchAsync(async (req, res) => {
-    const { quizId, franchiseId, hostId, status, limit = 20, skip = 0 } = req.query;
+
+    let { quizId, franchiseId, hostId, status, limit = 20, skip = 0 } = req.query;
+
+    // Determine franchiseId based on user type
+    if (req.franchisorUser) {
+        if (!franchiseId) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: 'franchiseId is required for franchisor user',
+                data: null
+            });
+        }
+    } else if (req.franchiseeUser) {
+        franchiseId = req.franchiseeUser.franchiseeInfoId;
+    }
 
     const filter = {};
     if (quizId) filter.quizId = quizId;
     if (franchiseId) filter.franchiseId = franchiseId;
     if (hostId) filter.hostId = hostId;
-    if (status) filter.status = status;
+    if (status) {
+        // Allow status to be a comma-separated string or array
+        let statusArr = status;
+        if (typeof status === 'string') {
+            if (status.includes(',')) {
+                statusArr = status.split(',').map(s => s.trim());
+            }
+        }
+        if (Array.isArray(statusArr)) {
+            filter.status = { $in: statusArr };
+        } else {
+            filter.status = statusArr;
+        }
+    } else {
+        filter.status = { $in: ['Scheduled'] };
+    }
 
     if (req.query.startTime) {
         const start = new Date(req.query.startTime);

@@ -14,8 +14,12 @@ const FranchisorInfo = require('../../models/franchisorInfo.model');
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const FranchiseeUser = require('../../models/franchisee.user.model');
 
+const Restaurant = require('../../models/restaurant.model');
+
 
 const { getMessage } = require("../../../config/languageLocalization");
+
+const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
 
 
 /**
@@ -25,17 +29,17 @@ const { getMessage } = require("../../../config/languageLocalization");
  * Returns JWT token and user data if successful
  */
 const signinFranchiseeUser = async (req, res) => {
-	try {
-		const { email, password } = req.body;
-		const franchiseeUser = await FranchiseeUser.findByCredentials(email, password);
-		if (!franchiseeUser.isEmailVerified) {
-			return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
-		}
-		const token = await franchiseeUser.generateAuthToken();
-		res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNIN_SUCCESS", res.locals.language), data: { franchiseeUser, token } });
-	} catch (err) {
-		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
-	}
+    try {
+        const { email, password } = req.body;
+        const franchiseeUser = await FranchiseeUser.findByCredentials(email, password);
+        if (!franchiseeUser.isEmailVerified) {
+            return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
+        }
+        const token = await franchiseeUser.generateAuthToken();
+        res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNIN_SUCCESS", res.locals.language), data: { franchiseeUser, token } });
+    } catch (err) {
+        res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+    }
 };
 
 /**
@@ -45,13 +49,13 @@ const signinFranchiseeUser = async (req, res) => {
  * Requires authentication middleware to set req.franchiseeUser
  */
 const signoutFranchiseeUser = async (req, res) => {
-	try {
-		req.franchiseeUser.token = '';
-		await req.franchiseeUser.save();
-		res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNOUT_SUCCESS", res.locals.language), data: null });
-	} catch (err) {
-		res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
-	}
+    try {
+        req.franchiseeUser.token = '';
+        await req.franchiseeUser.save();
+        res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNOUT_SUCCESS", res.locals.language), data: null });
+    } catch (err) {
+        res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
+    }
 };
 
 
@@ -67,26 +71,26 @@ const getFranchiseeData = catchAsync(async (req, res) => {
 
         // If ID is provided, return single franchisee
         if (id) {
-            const franchisee = await FranchiseeInfo.find({ 
-                _id: id, 
-                isDeleted: false 
+            const franchisee = await FranchiseeInfo.find({
+                _id: id,
+                isDeleted: false
             }).populate({
                 path: 'franchisorInfoId',
                 select: 'name brandName'
             })
 
             if (!franchisee) {
-                return res.status(httpStatus.OK).json({ 
-                    success: false, 
-                    message: getMessage("FRANCHISEE_NOT_FOUND", res.locals.language), 
-                    data: null 
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: getMessage("FRANCHISEE_NOT_FOUND", res.locals.language),
+                    data: null
                 });
             }
 
-            return res.status(httpStatus.OK).json({ 
-                success: true, 
-                message: getMessage("FRANCHISEE_FETCHED_SUCCESS", res.locals.language), 
-                data: { franchisees: franchisee, totalCount: 1}
+            return res.status(httpStatus.OK).json({
+                success: true,
+                message: getMessage("FRANCHISEE_FETCHED_SUCCESS", res.locals.language),
+                data: { franchisees: franchisee, totalCount: 1 }
             });
         }
 
@@ -137,23 +141,339 @@ const getFranchiseeData = catchAsync(async (req, res) => {
             })
             .sort({ createdAt: -1 });
 
-        res.status(httpStatus.OK).json({ 
-            success: true, 
-            message: getMessage("FRANCHISEES_FETCHED_SUCCESS", res.locals.language), 
-            data: {franchisees, totalCount: franchisees.length }
+        res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("FRANCHISEES_FETCHED_SUCCESS", res.locals.language),
+            data: { franchisees, totalCount: franchisees.length }
         });
 
     } catch (err) {
-        res.status(httpStatus.OK).json({ 
-            success: false, 
-            message: err.message, 
-            data: null 
+        res.status(httpStatus.OK).json({
+            success: false,
+            message: err.message,
+            data: null
         });
     }
 });
 
+/**
+ * Create Restaurant
+ * POST /franchisee/restaurant
+ * Validates input as per restaurant schema and creates a new restaurant
+ */
+const createRestaurant = catchAsync(async (req, res) => {
+    const {
+        franchiseeInfoId,
+        name,
+        description,
+        backgroundImage,
+        type,
+        menuCardS3Key,
+        openingHours,
+        address,
+        location
+    } = req.body;
+
+    // Validation
+    if (!franchiseeInfoId) {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'franchiseeInfoId is required', data: null });
+    }
+    if (!name || typeof name !== 'string') {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Restaurant name must be a string', data: null });
+    }
+    if (description && typeof description !== 'string') {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Description must be a string', data: null });
+    }
+    if (backgroundImage && typeof backgroundImage !== 'string') {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'backgroundImage must be a string (S3 key)', data: null });
+    }
+    if (type && typeof type !== 'string') {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'type must be a string', data: null });
+    }
+    if (menuCardS3Key && typeof menuCardS3Key !== 'string') {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'menuCardS3Key must be a string (S3 key)', data: null });
+    }
+    // Validate openingHours if provided
+    if (openingHours) {
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        for (const day of days) {
+            if (openingHours[day]) {
+                const { status, openTime, closeTime } = openingHours[day];
+                if (status && !['open', 'close'].includes(status)) {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `Invalid status for ${day}`, data: null });
+                }
+                if (openTime && typeof openTime !== 'string') {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `openTime for ${day} must be a string`, data: null });
+                }
+                if (closeTime && typeof closeTime !== 'string') {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `closeTime for ${day} must be a string`, data: null });
+                }
+            }
+        }
+    }
+    // Validate address if provided
+    if (address) {
+        if (typeof address !== 'object') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address must be an object', data: null });
+        }
+        const { line1, city, state, postalCode, country } = address;
+        if (line1 && typeof line1 !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.line1 must be a string', data: null });
+        }
+        if (city && typeof city !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.city must be a string', data: null });
+        }
+        if (state && typeof state !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.state must be a string', data: null });
+        }
+        if (postalCode && typeof postalCode !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.postalCode must be a string', data: null });
+        }
+        if (country && typeof country !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.country must be a string', data: null });
+        }
+    }
+    // Validate location if provided
+    if (location) {
+        if (typeof location !== 'object') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location must be an object', data: null });
+        }
+        const { placeId, coordinates } = location;
+        if (placeId && typeof placeId !== 'string') {
+            return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.placeId must be a string', data: null });
+        }
+        if (coordinates) {
+            if (typeof coordinates !== 'object') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates must be an object', data: null });
+            }
+            const { latitude, longitude } = coordinates;
+            if (latitude && typeof latitude !== 'number') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates.latitude must be a number', data: null });
+            }
+            if (longitude && typeof longitude !== 'number') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates.longitude must be a number', data: null });
+            }
+        }
+    }
+
+    // Check franchiseeInfoId exists
+    const franchisee = await FranchiseeInfo.findOne({ _id: franchiseeInfoId, isDeleted: false });
+    if (!franchisee) {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid franchiseeInfoId', data: null });
+    }
+
+    // Create restaurant
+    const restaurant = new Restaurant({
+        franchiseeInfoId,
+        name,
+        description,
+        backgroundImage,
+        type,
+        menuCardS3Key,
+        openingHours,
+        address,
+        location
+    });
+    await restaurant.save();
+    res.status(httpStatus.OK).json({ success: true, message: 'Restaurant created successfully', data: { restaurant } });
+});
+
+/**
+ * Update Restaurant
+ * PATCH /franchisee/restaurant/:id
+ * Updates only fields present in req.body, with validation
+ */
+const updateRestaurant = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Restaurant id is required', data: null });
+    }
+    const restaurant = await Restaurant.findOne({ _id: id, isDeleted: false });
+    if (!restaurant) {
+        return res.status(httpStatus.NOT_FOUND).json({ success: false, message: 'Restaurant not found', data: null });
+    }
+
+    const allowedFields = [
+        'franchiseeInfoId', 'name', 'description', 'backgroundImage', 'type', 'menuCardS3Key',
+        'openingHours', 'address', 'location', 'isActive', 'isDeleted'
+    ];
+    const updates = {};
+    for (const key of Object.keys(req.body)) {
+        if (!allowedFields.includes(key)) continue;
+        const value = req.body[key];
+        // Validation per field
+        if (key === 'franchiseeInfoId' && value) {
+            const franchisee = await FranchiseeInfo.findOne({ _id: value, isDeleted: false });
+            if (!franchisee) {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid franchiseeInfoId', data: null });
+            }
+            updates.franchiseeInfoId = value;
+        } else if (key === 'name' && value) {
+            if (typeof value !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'name must be a string', data: null });
+            }
+            updates.name = value;
+        } else if (key === 'description' && value) {
+            if (typeof value !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'description must be a string', data: null });
+            }
+            updates.description = value;
+        } else if (key === 'backgroundImage' && value) {
+            if (typeof value !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'backgroundImage must be a string', data: null });
+            }
+            updates.backgroundImage = value;
+        } else if (key === 'type' && value) {
+            if (typeof value !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'type must be a string', data: null });
+            }
+            updates.type = value;
+        } else if (key === 'menuCardS3Key' && value) {
+            if (typeof value !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'menuCardS3Key must be a string', data: null });
+            }
+            updates.menuCardS3Key = value;
+        } else if (key === 'openingHours' && value) {
+            if (typeof value !== 'object') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'openingHours must be an object', data: null });
+            }
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            for (const day of days) {
+                if (value[day]) {
+                    const { status, openTime, closeTime } = value[day];
+                    if (status && !['open', 'close'].includes(status)) {
+                        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `Invalid status for ${day}`, data: null });
+                    }
+                    if (openTime && typeof openTime !== 'string') {
+                        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `openTime for ${day} must be a string`, data: null });
+                    }
+                    if (closeTime && typeof closeTime !== 'string') {
+                        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: `closeTime for ${day} must be a string`, data: null });
+                    }
+                }
+            }
+            updates.openingHours = value;
+        } else if (key === 'address' && value) {
+            if (typeof value !== 'object') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address must be an object', data: null });
+            }
+            const { line1, city, state, postalCode, country } = value;
+            if (line1 && typeof line1 !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.line1 must be a string', data: null });
+            }
+            if (city && typeof city !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.city must be a string', data: null });
+            }
+            if (state && typeof state !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.state must be a string', data: null });
+            }
+            if (postalCode && typeof postalCode !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.postalCode must be a string', data: null });
+            }
+            if (country && typeof country !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'address.country must be a string', data: null });
+            }
+            updates.address = value;
+        } else if (key === 'location' && value) {
+            if (typeof value !== 'object') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location must be an object', data: null });
+            }
+            const { placeId, coordinates } = value;
+            if (placeId && typeof placeId !== 'string') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.placeId must be a string', data: null });
+            }
+            if (coordinates) {
+                if (typeof coordinates !== 'object') {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates must be an object', data: null });
+                }
+                const { latitude, longitude } = coordinates;
+                if (latitude && typeof latitude !== 'number') {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates.latitude must be a number', data: null });
+                }
+                if (longitude && typeof longitude !== 'number') {
+                    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'location.coordinates.longitude must be a number', data: null });
+                }
+            }
+            updates.location = value;
+        } else if (key === 'isActive') {
+            if (typeof value !== 'boolean') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'isActive must be a boolean', data: null });
+            }
+            updates.isActive = value;
+        } else if (key === 'isDeleted') {
+            if (typeof value !== 'boolean') {
+                return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'isDeleted must be a boolean', data: null });
+            }
+            updates.isDeleted = value;
+        }
+    }
+    updates.updatedAt = new Date();
+    Object.assign(restaurant, updates);
+    await restaurant.save();
+    res.status(httpStatus.OK).json({ success: true, message: 'Restaurant updated successfully', data: { restaurant } });
+});
+
+
+/**
+ * Get Restaurant List or Single Restaurant
+ * GET /franchisee/restaurant/list
+ * Query params: franchiseeInfoId (required), name (optional), id (optional)
+ * Returns single restaurant if id provided, otherwise returns filtered list
+ */
+const getRestaurantList = catchAsync(async (req, res) => {
+    const { franchiseeInfoId, name, id } = req.query;
+    if (!franchiseeInfoId && !id) {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'franchiseeInfoId or id is required', data: null });
+    }
+    // Get single restaurant by id
+    if (id) {
+        const restaurant = await Restaurant.find({ _id: id, isDeleted: false })
+            .populate({ path: 'franchiseeInfoId', select: 'name email phone address location' });
+        if (!restaurant) {
+            return res.status(httpStatus.NOT_FOUND).json({ success: false, message: 'Restaurant not found', data: null });
+        }
+        return res.status(httpStatus.OK).json({ success: true, message: 'Restaurant fetched successfully', data: { restaurant, totalCount: 1 } });
+    }
+    // Build filter for list
+    let filter = { isDeleted: false, franchiseeInfoId };
+    if (name) {
+        filter.name = { $regex: name, $options: 'i' };
+    }
+
+    const restaurants = await Restaurant.find(filter)
+        .populate({ path: 'franchiseeInfoId', select: 'name email phone address location' })
+        .sort({ createdAt: -1 });
+    res.status(httpStatus.OK).json({ success: true, message: 'Restaurants fetched successfully', data: { s3BaseUrl, restaurants, totalCount: restaurants.length } });
+});
+
+
+/**
+ * Delete Restaurant (soft delete)
+ * PATCH /franchisee/restaurant/delete/:id
+ * Sets isDeleted to true for the given restaurant id
+ */
+const deleteRestaurant = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Restaurant id is required', data: null });
+    }
+    const restaurant = await Restaurant.findOne({ _id: id, isDeleted: false });
+    if (!restaurant) {
+        return res.status(httpStatus.NOT_FOUND).json({ success: false, message: 'Restaurant not found', data: null });
+    }
+    restaurant.isDeleted = true;
+    restaurant.updatedAt = new Date();
+    await restaurant.save();
+    res.status(httpStatus.OK).json({ success: true, message: 'Restaurant deleted successfully', data: null });
+});
+
 module.exports = {
-	signinFranchiseeUser,
-	signoutFranchiseeUser,
-    getFranchiseeData
+    signinFranchiseeUser,
+    signoutFranchiseeUser,
+    getFranchiseeData,
+    createRestaurant,
+    updateRestaurant,
+    getRestaurantList,
+    deleteRestaurant
 };
+

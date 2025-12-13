@@ -57,7 +57,7 @@ router.post('/quiz/game-session', languageDetectionMiddleware, authToken.commonP
 
 router.get('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.getQuizGameSessionById);
 
-router.get('/quiz/game-sessions', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.getQuizGameSessions);
+router.get('/quiz/game-sessions', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizGameSessions);
 
 router.patch('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.updateQuizGameSession);
 

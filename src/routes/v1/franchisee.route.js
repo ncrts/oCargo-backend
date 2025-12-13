@@ -25,4 +25,19 @@ router.post('/auth/signout', authToken.franchiseeProtect, languageDetectionMiddl
 // Get franchisee list or single franchisee data
 router.get('/info/list', authToken.commonProtect, languageDetectionMiddleware, franchiseeController.getFranchiseeData);
 
+// Create Restaurant (requires franchisee authentication)
+router.post('/restaurant', authToken.franchiseeProtect, franchiseeController.createRestaurant);
+
+// Update Restaurant (requires franchisee authentication)
+router.patch('/restaurant/:id', authToken.franchiseeProtect, franchiseeController.updateRestaurant);
+
+// Get Restaurant List or Single Restaurant (requires common authentication)
+router.get('/restaurant/list', authToken.commonProtect, franchiseeController.getRestaurantList);
+
+// Delete Restaurant (soft delete, requires franchisee authentication)
+router.patch('/restaurant/delete/:id', authToken.franchiseeProtect, franchiseeController.deleteRestaurant);
+
+
+
 module.exports = router;
+
