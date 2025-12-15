@@ -1,4 +1,34 @@
 const languageLocalization = {
+    "TALENT_SHOW_JOIN_SUCCESS": {
+        'en_us': 'Joined talent show session successfully.',
+        'es_co': 'Unido a la sesión de talent show con éxito.',
+        'fr_fr': 'Rejoint la session de talent show avec succès.'
+    },
+    "TALENT_SHOW_ALREADY_JOINED": {
+        'en_us': 'You have already joined this talent show session as this type.',
+        'es_co': 'Ya te has unido a esta sesión de talent show como este tipo.',
+        'fr_fr': 'Vous avez déjà rejoint cette session de talent show en tant que ce type.'
+    },
+    "TALENT_SHOW_JURY_PIN_INVALID": {
+        'en_us': 'Invalid jury PIN for this session.',
+        'es_co': 'PIN de jurado inválido para esta sesión.',
+        'fr_fr': 'PIN du jury invalide pour cette session.'
+    },
+    "TALENT_SHOW_AUDIENCE_PIN_INVALID": {
+        'en_us': 'Invalid audience PIN for this session.',
+        'es_co': 'PIN de audiencia inválido para esta sesión.',
+        'fr_fr': 'PIN du public invalide pour cette session.'
+    },
+    "TALENT_SHOW_PARTICIPANT_JOINEDBY_REQUIRED": {
+        'en_us': 'Participant must be joined by a franchisee user.',
+        'es_co': 'El participante debe ser unido por un usuario franquiciado.',
+        'fr_fr': 'Le participant doit être rejoint par un utilisateur franchisé.'
+    },
+    "TALENT_SHOW_JOIN_TYPE_INVALID": {
+        'en_us': 'Invalid join type. Must be Jury, Audience, or Participant.',
+        'es_co': 'Tipo de unión inválido. Debe ser Jurado, Audiencia o Participante.',
+        'fr_fr': 'Type de participation invalide. Doit être Jury, Audience ou Participant.'
+    },
     "PLAYER_PSEUDO_NAME_NOT_FOUND": {
         'en_us': 'Pseudo name is required.',
         'es_co': 'Se requiere un nombre de usuario.',
@@ -791,7 +821,53 @@ const languageLocalization = {
         'en_us': 'Player is already booted in.',
         'es_co': 'El jugador ya está readmitido.',
         'fr_fr': 'Le joueur est déjà réadmis.'
-    }
+    },
+    "TALENT_SHOW_SESSION_CREATED_SUCCESS": {
+        'en_us': 'Talent show session created successfully!',
+        'es_co': '¡Sesión de show de talentos creada con éxito!',
+        'fr_fr': 'Session de spectacle de talents créée avec succès !'
+    },
+    "TALENT_SHOW_NAME_REQUIRED": {
+        'en_us': 'Talent show name is required.',
+        'es_co': 'Se requiere el nombre del show de talentos.',
+        'fr_fr': 'Le nom du spectacle de talents est requis.'
+    },
+    "FRANCHISE_INFO_ID_REQUIRED": {
+        'en_us': 'franchiseInfoId is required.',
+        'es_co': 'franchiseInfoId es requerido.',
+        'fr_fr': 'franchiseInfoId est requis.'
+    },
+    "UNAUTHORIZED": {
+        'en_us': 'Unauthorized. Franchisee user login required.',
+        'es_co': 'No autorizado. Se requiere inicio de sesión de usuario franquiciado.',
+        'fr_fr': 'Non autorisé. Connexion utilisateur franchisé requise.'
+    },
+    "TALENT_SHOW_STARTTIME_IN_PAST": {
+        'en_us': 'Start time cannot be in the past.',
+        'es_co': 'La hora de inicio no puede estar en el pasado.',
+        'fr_fr': 'L\'heure de début ne peut pas être dans le passé.'
+    },
+    "TALENT_SHOW_STATUS_INVALID": {
+        'en_us': 'Status must be either "Scheduled", "Ongoing", or "Completed".',
+        'es_co': 'El estado debe ser "Programado", "En curso" o "Completado".',
+        'fr_fr': 'Le statut doit être "Programmé", "En cours" ou "Terminé".'
+    },
+    "TALENT_SHOW_SESSION_NOT_FOUND": {
+        'en_us': 'Talent show session not found.',
+        'es_co': 'Sesión de show de talentos no encontrada.',
+        'fr_fr': 'Session de spectacle de talents non trouvée.'
+    },
+    "TALENT_SHOW_SESSION_UPDATED_SUCCESS": {
+        'en_us': 'Talent show session updated successfully!',
+        'es_co': '¡Sesión de show de talentos actualizada con éxito!',
+        'fr_fr': 'Session de spectacle de talents mise à jour avec succès !'
+    },
+    "TALENT_SHOW_SESSION_LIST_FETCH_SUCCESS": {
+        'en_us': 'Talent show session list fetched successfully!',
+        'es_co': '¡Lista de sesiones de show de talentos obtenida con éxito!',
+        'fr_fr': 'Liste des sessions de spectacle de talents récupérée avec succès !'
+    },
+    
 };
 
 

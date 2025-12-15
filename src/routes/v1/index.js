@@ -4,6 +4,7 @@ const playerRoute = require('./player.route');
 const franchiseeRoute = require('./franchisee.route');
 const franchisorRoute = require('./franchisor.route');
 const quizGameRoute = require('./quiz.game.route');
+const talentShowRoute = require('./talent.show.route');
 
 
 const router = express.Router();
@@ -29,6 +30,10 @@ const defaultRoutes = [
     path: '/quiz-game',
     route: quizGameRoute,
   },
+  {
+    path: '/talent-show',
+    route: talentShowRoute,
+  }
 ]
 
 /*
