@@ -103,6 +103,14 @@ const talentShowSessionSchema = new mongoose.Schema({
     default: 0,
     description: 'Total number of jury members in the talent show.'
   },
+
+  // Total jury members to connect the talent show session count
+  totalJuryConnectCount: {
+    type: Number,
+    default: 0,
+    description: 'Total number of jury members in the talent show.'
+  },
+  
   // Total audience count
   totalAudienceCount: {
     type: Number,
@@ -133,7 +141,7 @@ const talentShowSessionSchema = new mongoose.Schema({
     default: null,
     description: 'QR code image or link for jury quick access.'
   },
-  
+
   // Created/updated timestamps
   createdAt: {
     type: Date,
@@ -147,14 +155,14 @@ const talentShowSessionSchema = new mongoose.Schema({
   }
 });
 
-talentShowSessionSchema.pre('save', function(next) {
+talentShowSessionSchema.pre('save', function (next) {
   if (this.endTime && this.startTime && !this.duration) {
     this.duration = Math.floor((this.endTime - this.startTime) / 1000);
   }
   next();
 });
 
-talentShowSessionSchema.pre('findOneAndUpdate', function(next) {
+talentShowSessionSchema.pre('findOneAndUpdate', function (next) {
   const update = this.getUpdate();
   if (update.endTime && update.startTime && !update.duration) {
     update.duration = Math.floor((update.endTime - update.startTime) / 1000);

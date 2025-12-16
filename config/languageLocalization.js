@@ -1,4 +1,14 @@
 const languageLocalization = {
+    "NEW_JURY_WITH_OUT_ASSIGN_NOT_JOIN": {
+        'en_us': 'New jury without assignment cannot join.',
+        'es_co': 'Nuevo jurado sin asignación no puede unirse.',
+        'fr_fr': 'Nouveau jury sans affectation ne peut pas rejoindre.'
+    },
+    "TALENT_SHOW_JURY_JOIN_SUCCESS": {
+        'en_us': 'Joined talent show session as Jury successfully.',
+        'es_co': 'Unido a la sesión de talent show como jurado con éxito.',
+        'fr_fr': 'Rejoint la session de talent show en tant que jury avec succès.'
+    },
     "TALENT_SHOW_JOIN_SUCCESS": {
         'en_us': 'Joined talent show session successfully.',
         'es_co': 'Unido a la sesión de talent show con éxito.',

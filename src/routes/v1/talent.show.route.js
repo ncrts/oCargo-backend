@@ -31,6 +31,13 @@ router.get('/sessions', authToken.commonProtectForFranchiseeAndFranchisor, langu
 // POST /v1/talent-show/session/:id/join-participant
 router.post('/session/:id/join-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsParticipant);
 
+// POST /v1/talent-show/session/join-jury
+router.post('/session/:id/join-jury', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsJuryFromWeb);
+
+// POST /v1/talent-show/session/join-mobile (for mobile app join by pin/qr)
+router.post('/session/join-mobile', authToken.playerProtect, languageDetectionMiddleware, talentShowController.joinTalentShowByPinOrQr);
+
+
 
 
 module.exports = router;
