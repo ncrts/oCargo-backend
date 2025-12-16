@@ -59,6 +59,18 @@ const talentShowSessionSchema = new mongoose.Schema({
     default: 'Schedule',
     description: 'Current status of the talent show session.'
   },
+  // Total number of show rounds in this session
+  totalSessionShowRound: {
+    type: Number,
+    default: 2,
+    description: 'Total number of show rounds in this session.'
+  },
+  // Current round number
+  currentRound: {
+    type: Number,
+    default: 1,
+    description: 'Current round number in the session.'
+  },
   // Start date and time (timestamp in ms)
   startTime: {
     type: Number,
@@ -121,6 +133,7 @@ const talentShowSessionSchema = new mongoose.Schema({
     default: null,
     description: 'QR code image or link for jury quick access.'
   },
+  
   // Created/updated timestamps
   createdAt: {
     type: Date,

@@ -11,6 +11,7 @@ const { languageDetectionMiddleware } = require('../../utils/languageConverter')
 
 
 const franchisorController = require('../../controllers/apis/franchisor.controller');
+const franchiseeController = require('../../controllers/apis/franchisee.controller');
 
 const router = express.Router();
 
@@ -45,6 +46,18 @@ router.patch('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFran
 router.get('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('getFranchiseeUser'), franchisorController.getFranchiseeUser);
 router.delete('/franchisee-user/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('deleteFranchiseeUser'), franchisorController.deleteFranchiseeUser);
 router.get('/franchisee-users', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('getFranchiseeUsersList'), franchisorController.getFranchiseeUsersList);
+
+// Create Restaurant (requires franchisee authentication)
+router.post('/restaurant', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.createRestaurant);
+
+// Update Restaurant (requires franchisee authentication)
+router.patch('/restaurant/:id', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.updateRestaurant);
+
+// Get Restaurant List or Single Restaurant (requires common authentication)
+router.get('/restaurant/list', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.getRestaurantList);
+
+// Delete Restaurant (soft delete, requires franchisee authentication)
+router.patch('/restaurant/delete/:id', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.deleteRestaurant);
 
 // Bulk Insert XP Rules
 router.post('/xp-rules/bulk-insert', authToken.franchisorProtect, accessRoleRights('bulkInsertXpRules'), franchisorController.bulkInsertXpRules);

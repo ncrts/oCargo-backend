@@ -28,8 +28,9 @@ router.patch('/session/:id', authToken.commonProtectForFranchiseeAndFranchisor, 
 // GET /v1/talent-show/sessions
 router.get('/sessions', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getTalentShowSessionsList);
 
-// POST /v1/talent-show/session/:id/join
-router.post('/session/:id/join', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShow);
+// POST /v1/talent-show/session/:id/join-participant
+router.post('/session/:id/join-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsParticipant);
+
 
 
 module.exports = router;
