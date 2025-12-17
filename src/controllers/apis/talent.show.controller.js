@@ -243,7 +243,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 canVote: true,
                 sessionStatus: 'Lobby',
                 participants: participantData,
-                currentParticipantId: participantData[0] ? Object.keys(participantData)[0] : null
+                currentParticipantId: Object.keys(participantData)[0] || ""
             };
 
             await firebaseDB.ref(`talentShowSession/${session._id}`).set(sessionInfo);
@@ -712,6 +712,21 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
         }
     }
 
+});
+
+// Placeholder for managing voters (to be implemented)
+const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
+    // To be implemented
+
+});
+
+// Placeholder for qualifier board (to be implemented)
+const qulifierBoard = catchAsync(async (req, res) => {
+    // To be implemented
+});
+
+const changedTalentRound = catchAsync(async (req, res) => {
+    // To be implemented
 });
 
 module.exports = {
