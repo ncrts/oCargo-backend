@@ -37,7 +37,7 @@ router.post('/session/:id/join-jury', authToken.commonProtectForFranchiseeAndFra
 // POST /v1/talent-show/session/join-mobile (for mobile app join by pin/qr)
 router.post('/session/join-mobile', authToken.playerProtect, languageDetectionMiddleware, talentShowController.joinTalentShowByPinOrQr);
 
-router.post('/session/manage-voter-on-off', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.manageVoteOnOffAftherCompleteRounds);
+router.post('/session/manage-voter-on-off', authToken.commonProtectForFranchiseeAndFranchisor, talentShowController.manageVoteOnOffAftherCompleteRounds);
 
 router.post('/session/change-talent-round', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.changedTalentRound);
 

@@ -722,6 +722,84 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
 // Placeholder for managing voters (to be implemented)
 const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
     // To be implemented
+    let language = res.locals.language;
+    if(!req.body.sessionId){
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_REQUIRED", language),
+            data: null
+        });
+    }
+    let sessionId = req.body.sessionId;
+
+    const sessionRef = firebaseDB.ref(`talentShowSession/${sessionId}`);
+    const snapshot = await sessionRef.once('value');
+    const sessionData = snapshot.val();
+
+    let talentShowSession = await TalentShowSession.findById(sessionId);
+
+    if(sessionData.currentRound == 1){
+        // Manage voting for round 1
+        // Convert RTDB score object to TalentShowVote model format
+        const votes = [];
+        const scoreObj = sessionData.score || {};
+        const talentShowId = req.body.sessionId;
+        // const franchiseeInfoId = sessionData.franchiseeInfoId || null; // update if available in RTDB
+        const votedAt = Date.now();
+        for (const performerId in scoreObj) {
+            const performerVotes = scoreObj[performerId];
+            for (const clientId in performerVotes) {
+                const { isJury, rating } = performerVotes[clientId];
+                votes.push({
+                    talentShowId,
+                    participantId: performerId,
+                    votedId: clientId,
+                    franchiseeInfoId: talentShowSession.franchiseInfoId || null,
+                    voterType: isJury ? 'jury' : 'audience',
+                    takeVote: rating,
+                    votedAt,
+                    votingRound: sessionData.currentRound
+                });
+            }
+        }
+
+        await TalentShowVote.insertMany(votes);
+
+        await firebaseDB.ref(`talentShowSession/${sessionId}/canVote`).set(false);
+        await firebaseDB.ref(`talentShowSession/${sessionId}/score`).remove();
+        await firebaseDB.ref(`talentShowSession/${sessionId}/alreadyPerformed`).remove();
+
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("TALENT_SHOW_SESSION_RDTB_FETCH_SUCCESS", language),
+            data: votes
+        });
+        // votes is now an array of objects ready for TalentShowVote insert
+    }else if(sessionData.currentRound == 2){
+        // Manage voting for round 2
+
+
+    }else{
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_INVALID_ROUND_FOR_VOTING_MANAGE", language),
+            data: null
+        });
+    }
+
+    if (!sessionData) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_SESSION_RDTB_FETCH_SUCCESS", language),
+        data: sessionData
+    });
 
 });
 

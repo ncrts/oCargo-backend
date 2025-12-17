@@ -56,6 +56,11 @@ const talentShowVoteSchema = new mongoose.Schema({
     required: true,
     description: 'Timestamp (ms) when the vote was cast.'
   },
+  votingRound: {
+    type: Number,
+    default: null,
+    description: 'The round number of the talent show for which the vote was cast.'
+  },
   // Created timestamp
   createdAt: {
     type: Date,
