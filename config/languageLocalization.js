@@ -1,4 +1,9 @@
 const languageLocalization = {
+    "TALENT_SHOW_ALREADY_JOINED_AS_PARTICIPANT":{
+        'en_us': 'You have already joined this talent show session as Participant.',
+        'es_co': 'Ya te has unido a esta sesión de talent show como participante.',
+        'fr_fr': 'Vous avez déjà rejoint cette session de talent show en tant que participant.'
+    },
     "NEW_JURY_WITH_OUT_ASSIGN_NOT_JOIN": {
         'en_us': 'New jury without assignment cannot join.',
         'es_co': 'Nuevo jurado sin asignación no puede unirse.',

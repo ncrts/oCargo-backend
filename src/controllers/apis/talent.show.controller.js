@@ -229,7 +229,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                         talent: p.clientId.talent || '',
                         talentDesc: p.clientId.talentDesc || '',
                         participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
-                        pseudoName: p.clientId.pseudoName ?  p.clientId.pseudoName : ''
+                        pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : ''
                     };
                 }
             });
@@ -241,7 +241,8 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 votingTimeInSec: 120,
                 canVote: true,
                 sessionStatus: 'Lobby',
-                participants: participantData
+                participants: participantData,
+                currentParticipantId: participantData[0] ? Object.keys(participantData)[0] : null
             };
 
             // Write to RTDB
@@ -594,33 +595,49 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
  */
 
 const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
-    const { joinType, pin, qrCode } = req.body;
-    let clientId = req.body.clientId;
-    const language = res.locals.language;
-    const now = Date.now();
-
-    // Use req.player.id if clientId not provided
-    if (!clientId && req.player && req.player.id) {
-        clientId = req.player.id;
-    }
-
-    // Validate joinType
-    if (!['Audience', 'Jury'].includes(joinType)) {
+    // PIN -> PIN OR CHECK 
+    if (!req.body.pin) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_JOIN_TYPE_INVALID", language),
+            message: getMessage("TALENT_SHOW_PIN_OR_QR_REQUIRED", language),
             data: null
         });
     }
-
-    // Validate clientId
-    if (!clientId || !mongoose.Types.ObjectId.isValid(clientId)) {
+    if (!req.body.clientId) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
             message: getMessage("CLIENTID_REQUIRED", language),
             data: null
         });
     }
+
+    const now = Date.now();
+    const language = res.locals.language;
+    let clientId = req.body.clientId;
+    let pin = req.body.pin || null;
+    let joinType = null
+    let session = null;
+
+    let talentShowSessionAudiencePin = await TalentShowSession.findOne({ audienceGamePin: pin });
+    if (talentShowSessionAudiencePin) {
+        joinType = 'Audience';
+        session = talentShowSessionAudiencePin;
+    }
+
+    let talentShowSessionJuryPin = await TalentShowSession.findOne({ juryJoinGamePin: pin });
+    if (talentShowSessionJuryPin) {
+        joinType = 'Jury';
+        session = talentShowSessionJuryPin;
+    }
+
+    if (!talentShowSessionJuryPin && !talentShowSessionAudiencePin) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PIN_INVALID", language),
+            data: null
+        });
+    }
+
     // Validate client exists and is not deleted
     const client = await Player.findOne({ _id: clientId, isDeleted: false });
     if (!client) {
@@ -631,36 +648,11 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
         });
     }
 
-    // Find session by pin or qrCode
-    let session = null;
-    if (joinType === 'Audience') {
-        session = await TalentShowSession.findOne({
-            $or: [
-                { audienceGamePin: pin },
-                { audienceQrCode: qrCode }
-            ]
-        });
-    } else if (joinType === 'Jury') {
-        session = await TalentShowSession.findOne({
-            $or: [
-                { juryJoinGamePin: pin },
-                { juryJoinQrCode: qrCode }
-            ]
-        });
-    }
-    if (!session) {
-        return res.status(httpStatus.NOT_FOUND).json({
-            success: false,
-            message: getMessage(joinType === 'Audience' ? "TALENT_SHOW_AUDIENCE_PIN_INVALID" : "TALENT_SHOW_JURY_PIN_INVALID", language),
-            data: null
-        });
-    }
-
     // Prevent duplicate join for this session, client, and joinType
-    const existing = await TalentShowJoin.findOne({ talentShowId: session._id, clientId, joinType, isDeleted: false, isRemoved: false });
+    const existing = await TalentShowJoin.findOne({ talentShowId: session._id, clientId, isDeleted: false, isRemoved: false });
     if (existing) {
         // If Jury, update isConnectedJury to true if not already, do not create new
-        if (joinType === 'Jury') {
+        if (existing.joinType === 'Jury') {
             if (!existing.isConnectedJury) {
                 existing.isConnectedJury = true;
                 session.totalJuryConnectCount = (session.totalJuryConnectCount || 0) + 1;
@@ -672,58 +664,60 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
                 message: getMessage("TALENT_SHOW_ALREADY_JOINED", language),
                 data: existing
             });
+        } else if (existing.joinType === 'Participant') {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_ALREADY_JOINED_AS_PARTICIPANT", language),
+                data: existing
+            });
+        } else {
+            return res.status(httpStatus.OK).json({
+                success: true,
+                message: getMessage("TALENT_SHOW_ALREADY_JOINED", language),
+                data: existing
+            });
         }
-        // For Audience, just return existing
-        return res.status(httpStatus.OK).json({
-            success: true,
-            message: getMessage("TALENT_SHOW_ALREADY_JOINED", language),
-            data: existing
-        });
-    }
+    } else {
+        if (joinType === 'Jury') {
+            // Create join record for Jury
+            return res.status(httpStatus.CREATED).json({
+                success: false,
+                message: getMessage("NEW_JURY_WITH_OUT_ASSIGN_NOT_JOIN", language),
+                data: null
+            });
+        }else if (joinType === 'Audience') {
+            // Get currentRound from session (totalSessionShowRound or default 1)
+            let currentRound = 1;
+            if (session.currentRound && Number.isInteger(session.currentRound) && session.currentRound > 0) {
+                currentRound = session.currentRound;
+            }
 
-    if (joinType === 'Jury') {
-        // Create join record for Jury
-        return res.status(httpStatus.CREATED).json({
-            success: false,
-            message: getMessage("NEW_JURY_WITH_OUT_ASSIGN_NOT_JOIN", language),
-            data: null
-        });
-    }
+            // Create join record
+            let joinData = {
+                talentShowId: session._id,
+                franchiseeInfoId: session.franchiseInfoId,
+                clientId,
+                joinType,
+                currentRound,
+                joinedAt: now,
+                isRemoved: false,
+                isPerformed: false
+            };
+            const join = new TalentShowJoin(joinData);
+            await join.save();
 
-    // Only create join record for Audience
-    if (joinType === 'Audience') {
-        // Get currentRound from session (totalSessionShowRound or default 1)
-        let currentRound = 1;
-        if (session.currentRound && Number.isInteger(session.currentRound) && session.currentRound > 0) {
-            currentRound = session.currentRound;
+            // Update session counts
+            session.totalAudienceCount = (session.totalAudienceCount || 0) + 1;
+            await session.save();
+
+            return res.status(httpStatus.CREATED).json({
+                success: true,
+                message: getMessage("TALENT_SHOW_JOIN_SUCCESS", language),
+                data: join
+            });
         }
-
-        // Create join record
-        let joinData = {
-            talentShowId: session._id,
-            franchiseeInfoId: session.franchiseInfoId,
-            clientId,
-            joinType,
-            currentRound,
-            joinedAt: now,
-            isRemoved: false,
-            isPerformed: false
-        };
-        const join = new TalentShowJoin(joinData);
-        await join.save();
-
-        // Update session counts
-        session.totalAudienceCount = (session.totalAudienceCount || 0) + 1;
-        await session.save();
-
-        return res.status(httpStatus.CREATED).json({
-            success: true,
-            message: getMessage("TALENT_SHOW_JOIN_SUCCESS", language),
-            data: join
-        });
     }
 
-    
 });
 
 module.exports = {
