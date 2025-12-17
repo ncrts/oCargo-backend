@@ -55,7 +55,7 @@ const talentShowSessionSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['Schedule', 'Lobby', 'Start', 'Stop', 'Complete', 'Cancelled'],
+    enum: ['Schedule', 'Lobby', 'Start', 'Stop', 'completed', 'Cancelled'],
     default: 'Schedule',
     description: 'Current status of the talent show session.'
   },
@@ -110,7 +110,7 @@ const talentShowSessionSchema = new mongoose.Schema({
     default: 0,
     description: 'Total number of jury members in the talent show.'
   },
-  
+
   // Total audience count
   totalAudienceCount: {
     type: Number,

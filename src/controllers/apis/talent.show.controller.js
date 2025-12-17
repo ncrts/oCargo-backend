@@ -171,8 +171,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         });
     }
 
-    // Only allow valid status values
-    const validStatuses = ['Schedule', 'Lobby', 'Start', 'Stop', 'Complete', 'Cancelled'];
+    const validStatuses = ['Schedule', 'Lobby', 'Start', 'Stop', 'completed', 'Cancelled'];
     if (!validStatuses.includes(status)) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
@@ -181,7 +180,6 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         });
     }
 
-    // Find session
     const session = await TalentShowSession.findById(id);
     if (!session) {
         return res.status(httpStatus.NOT_FOUND).json({
@@ -191,9 +189,10 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         });
     }
 
-    // Franchisee user logic: if moving to Lobby, update startTime to now
     let updateFields = { status };
     let isLobbyTransition = false;
+    let isStartTransition = false;
+
     if (
         req.franchiseeUser &&
         status === 'Lobby' &&
@@ -203,13 +202,17 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         isLobbyTransition = true;
     }
 
+    // Detect transition to Start
+    if (status === 'Start' && session.status !== 'Start') {
+        isStartTransition = true;
+    }
+
     session.set(updateFields);
     await session.save();
 
     // If transitioning to Lobby, create RTDB entry for session and participants
     if (isLobbyTransition) {
         try {
-            // Fetch all participants for this session
             const participants = await TalentShowJoin.find({
                 talentShowId: session._id,
                 joinType: 'Participant',
@@ -220,7 +223,6 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 select: 'profileAvatar pseudoName'
             });
 
-            // Prepare participant data as object keyed by id
             const participantData = {};
             participants.forEach(p => {
                 if (p.clientId && p.clientId._id) {
@@ -234,7 +236,6 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 }
             });
 
-            // Prepare session info
             const sessionInfo = {
                 totalRounds: session.totalSessionShowRound || 2,
                 currentRound: session.currentRound || 1,
@@ -245,11 +246,18 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 currentParticipantId: participantData[0] ? Object.keys(participantData)[0] : null
             };
 
-            // Write to RTDB
             await firebaseDB.ref(`talentShowSession/${session._id}`).set(sessionInfo);
         } catch (err) {
-            // Log error but do not block response
             console.error('RTDB write error:', err);
+        }
+    }
+
+    // If transitioning to Start, update sessionStatus in RTDB
+    if (isStartTransition) {
+        try {
+            await firebaseDB.ref(`talentShowSession/${session._id}/sessionStatus`).set('Start');
+        } catch (err) {
+            console.error('RTDB update error (Start):', err);
         }
     }
 
