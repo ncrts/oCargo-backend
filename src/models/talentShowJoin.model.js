@@ -11,10 +11,10 @@ const roundDataSchema = new mongoose.Schema({
   round: { type: Number, default: 1 },
   totalJuryCount: { type: Number, default: 0 },
   totalJuryVotePoint: { type: Number, default: 0 },
-  totalAvgOfVote: { type: Number, default: 0 },
+  totalAvgOfVoteJury: { type: Number, default: 0 },
   totalAudience: { type: Number, default: 0 },
   totalAudienceVotePoint: { type: Number, default: 0 },
-  totalAvgAudience: { type: Number, default: 0 },
+  totalAvgVoteOfAudience: { type: Number, default: 0 },
   totalVoterCount: { type: Number, default: 0 },
   totalAvgVote: { type: Number, default: 0 },
   isQualified: { type: Boolean, default: false }

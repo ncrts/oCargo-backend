@@ -768,6 +768,8 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
         }
     }
 
+    updateRoundDataForParticipants(votes, sessionData.currentRound, talentShowId);
+
     await TalentShowVote.insertMany(votes);
 
     await firebaseDB.ref(`talentShowSession/${sessionId}/canVote`).set(false);
@@ -781,17 +783,173 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
     });
 });
 
+
+// Utility: Calculate roundData from votes array and update TalentShowJoin
+async function updateRoundDataForParticipants(votes, round = 1, talentShowId) {
+    // Group votes by participantId
+    const grouped = {};
+    for (const v of votes) {
+        if (!grouped[v.participantId]) grouped[v.participantId] = [];
+        grouped[v.participantId].push(v);
+    }
+
+    // For each participant, calculate roundData and update TalentShowJoin
+    for (const participantId in grouped) {
+        const participantVotes = grouped[participantId];
+        const juryVotes = participantVotes.filter(v => v.voterType === 'jury');
+        const audienceVotes = participantVotes.filter(v => v.voterType === 'audience');
+        const allVotes = participantVotes;
+
+        const totalJuryCount = juryVotes.length;
+        const totalJuryVotePoint = juryVotes.reduce((sum, v) => sum + v.takeVote, 0);
+        const totalAvgOfVoteJury = totalJuryCount ? totalJuryVotePoint / totalJuryCount : 0;
+
+        const totalAudience = audienceVotes.length;
+        const totalAudienceVotePoint = audienceVotes.reduce((sum, v) => sum + v.takeVote, 0);
+        const totalAvgVoteOfAudience = totalAudience ? totalAudienceVotePoint / totalAudience : 0;
+
+        const totalVoterCount = allVotes.length;
+        const totalVotePoint = allVotes.reduce((sum, v) => sum + v.takeVote, 0);
+        const totalAvgVote = totalVoterCount ? totalVotePoint / totalVoterCount : 0;
+
+        const roundData = {
+            round,
+            totalJuryCount,
+            totalJuryVotePoint,
+            totalAvgOfVoteJury,
+            totalAudience,
+            totalAudienceVotePoint,
+            totalAvgVoteOfAudience,
+            totalVoterCount,
+            totalAvgVote,
+            isQualified: false // Set as needed
+        };
+
+        // Update the participant's TalentShowJoin document
+        await TalentShowJoin.updateOne(
+            { clientId: participantId, talentShowId },
+            { $push: { roundData } }
+        );
+    }
+}
+
+
 // Placeholder for qualifier board (to be implemented)
 const scoreBoard = catchAsync(async (req, res) => {
-    // To be implemented
-    // Round one for qulifier board
+    // Get sessionId from request
+    const { sessionId } = req.body;
+    const language = res.locals.language;
+    if (!sessionId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_REQUIRED", language),
+            data: null
+        });
+    }
 
-    //Round two for final board
+    // Find all participants for this session
+    const participants = await TalentShowJoin.find({
+        talentShowId: sessionId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate({
+        path: 'clientId',
+        select: '-password' // all participant info except password
+    });
 
+    // Get current round from session
+    const session = await TalentShowSession.findById(sessionId);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+    const currentRound = session.currentRound || 1;
+
+    // Prepare new structure: { score, participantObj }
+    let result = participants.map(p => {
+        const roundData = (p.roundData || []).find(r => r.round === currentRound) || {};
+        let participantObj = {};
+        if (p.clientId) {
+            participantObj = {
+                participantId: p.clientId._id,
+                participantName: p.clientId.pseudoName || 'Anonymous',
+                talent: p.clientId.talent || '',
+                talentDesc: p.clientId.talentDesc || '',
+                participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
+                pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : ''
+            };
+        }
+        return {
+            _id: p._id,
+            score: roundData.totalAvgVote || 0,
+            participantObj,
+            roundData: roundData,
+        };
+    });
+
+    // Sort by score (descending)
+    result.sort((a, b) => b.score - a.score);
+
+    // Qualification logic
+    if (currentRound === 1) {
+        // Qualify top 50% (rounded up)
+        const qualifyCount = Math.ceil(result.length / 2);
+        const qualifiedIds = result.slice(0, qualifyCount).map(r => r._id.toString());
+        // Update isQualified in DB for round 1
+        await Promise.all(result.map(async (r, idx) => {
+            if (qualifiedIds.includes(r._id.toString())) {
+                await TalentShowJoin.updateOne(
+                    { _id: r._id, 'roundData.round': 1 },
+                    { $set: { 'roundData.$.isQualified': true } }
+                );
+                // Also update in-memory for response
+                if (r.roundData && r.roundData.round === 1) r.roundData.isQualified = true;
+            } else {
+                await TalentShowJoin.updateOne(
+                    { _id: r._id, 'roundData.round': 1 },
+                    { $set: { 'roundData.$.isQualified': false } }
+                );
+                if (r.roundData && r.roundData.round === 1) r.roundData.isQualified = false;
+            }
+        }));
+    } else if (currentRound === 2) {
+        // Qualify top 3
+        const qualifyCount = Math.min(3, result.length);
+        const qualifiedIds = result.slice(0, qualifyCount).map(r => r._id.toString());
+        await Promise.all(result.map(async (r, idx) => {
+            if (qualifiedIds.includes(r._id.toString())) {
+                await TalentShowJoin.updateOne(
+                    { _id: r._id, 'roundData.round': 2 },
+                    { $set: { 'roundData.$.isQualified': true } }
+                );
+                if (r.roundData && r.roundData.round === 2) r.roundData.isQualified = true;
+            } else {
+                await TalentShowJoin.updateOne(
+                    { _id: r._id, 'roundData.round': 2 },
+                    { $set: { 'roundData.$.isQualified': false } }
+                );
+                if (r.roundData && r.roundData.round === 2) r.roundData.isQualified = false;
+            }
+        }));
+    }
+
+    // Remove _id and roundData from response for clean output
+    result = result.map(r => ({ score: r.score, participantObj: r.participantObj }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_SCOREBOARD_FETCH_SUCCESS", language),
+        data: result
+    });
 });
 
 const changedTalentRound = catchAsync(async (req, res) => {
     // To be implemented
+
 });
 
 module.exports = {
