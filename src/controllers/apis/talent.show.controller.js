@@ -277,20 +277,6 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
     // Determine franchiseInfoId based on user type
     if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
         franchiseInfoId = req.franchiseeUser.franchiseeInfoId;
-    } else if (req.franchisorUser) {
-        if (!franchiseInfoId) {
-            return res.status(httpStatus.BAD_REQUEST).json({
-                success: false,
-                message: getMessage("FRANCHISE_INFO_ID_REQUIRED", language),
-                data: null
-            });
-        }
-    } else {
-        return res.status(httpStatus.UNAUTHORIZED).json({
-            success: false,
-            message: getMessage("UNAUTHORIZED", language),
-            data: null
-        });
     }
 
     // Build filter
