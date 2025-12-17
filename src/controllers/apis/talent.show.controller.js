@@ -237,6 +237,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
             });
 
             const sessionInfo = {
+                talentShowName: session.name,
                 totalRounds: session.totalSessionShowRound || 2,
                 currentRound: session.currentRound || 1,
                 votingTimeInSec: 120,
