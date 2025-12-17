@@ -306,6 +306,10 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
     const totalCount = await TalentShowSession.countDocuments(filter);
 
     const sessions = await TalentShowSession.find(filter)
+        .populate({
+            path: 'franchiseInfoId',
+            select: 'name'
+        })
         .sort({ createdAt: -1 })
         .limit(pageLimit)
         .skip(pageSkip);
@@ -679,7 +683,7 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
                 message: getMessage("NEW_JURY_WITH_OUT_ASSIGN_NOT_JOIN", language),
                 data: null
             });
-        }else if (joinType === 'Audience') {
+        } else if (joinType === 'Audience') {
             // Get currentRound from session (totalSessionShowRound or default 1)
             let currentRound = 1;
             if (session.currentRound && Number.isInteger(session.currentRound) && session.currentRound > 0) {
@@ -707,7 +711,7 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
             return res.status(httpStatus.CREATED).json({
                 success: true,
                 message: getMessage("TALENT_SHOW_JOIN_SUCCESS", language),
-                data: join
+                data: { join, session }
             });
         }
     }
@@ -721,8 +725,12 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
 });
 
 // Placeholder for qualifier board (to be implemented)
-const qulifierBoard = catchAsync(async (req, res) => {
+const scoreBoard = catchAsync(async (req, res) => {
     // To be implemented
+    // Round one for qulifier board
+
+    //Round two for final board
+
 });
 
 const changedTalentRound = catchAsync(async (req, res) => {
@@ -735,5 +743,8 @@ module.exports = {
     getTalentShowSessionsList,
     joinTalentShowAsParticipant,
     joinTalentShowAsJuryFromWeb,
-    joinTalentShowByPinOrQr
+    joinTalentShowByPinOrQr,
+    manageVoteOnOffAftherCompleteRounds,
+    scoreBoard,
+    changedTalentRound
 };
