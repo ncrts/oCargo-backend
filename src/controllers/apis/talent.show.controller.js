@@ -193,16 +193,64 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
 
     // Franchisee user logic: if moving to Lobby, update startTime to now
     let updateFields = { status };
+    let isLobbyTransition = false;
     if (
         req.franchiseeUser &&
         status === 'Lobby' &&
         session.status !== 'Lobby'
     ) {
         updateFields.startTime = Date.now();
+        isLobbyTransition = true;
     }
 
     session.set(updateFields);
     await session.save();
+
+    // If transitioning to Lobby, create RTDB entry for session and participants
+    if (isLobbyTransition) {
+        try {
+            // Fetch all participants for this session
+            const participants = await TalentShowJoin.find({
+                talentShowId: session._id,
+                joinType: 'Participant',
+                isDeleted: false,
+                isRemoved: false
+            }).populate({
+                path: 'clientId',
+                select: 'profileAvatar pseudoName'
+            });
+
+            // Prepare participant data as object keyed by id
+            const participantData = {};
+            participants.forEach(p => {
+                if (p.clientId && p.clientId._id) {
+                    participantData[p.clientId._id] = {
+                        participantName: p.clientId.pseudoName || 'Anonymous',
+                        talent: p.clientId.talent || '',
+                        talentDesc: p.clientId.talentDesc || '',
+                        participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
+                        pseudoName: p.clientId.pseudoName ?  p.clientId.pseudoName : ''
+                    };
+                }
+            });
+
+            // Prepare session info
+            const sessionInfo = {
+                totalRounds: session.totalSessionShowRound || 2,
+                currentRound: session.currentRound || 1,
+                votingTimeInSec: 120,
+                canVote: true,
+                sessionStatus: 'Lobby',
+                participants: participantData
+            };
+
+            // Write to RTDB
+            await firebaseDB.ref(`talentShowSession/${session._id}`).set(sessionInfo);
+        } catch (err) {
+            // Log error but do not block response
+            console.error('RTDB write error:', err);
+        }
+    }
 
     return res.status(httpStatus.OK).json({
         success: true,
