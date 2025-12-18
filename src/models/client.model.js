@@ -85,6 +85,13 @@ const clientSchema = new mongoose.Schema({
         description: 'Image URL or file path for the client’s avatar icon.'
     },
 
+    // Cloud Storage ID for Profile Avatar
+    profileImageCloudId: {
+        type: String,
+        default: null,
+        description: 'Cloud storage ID for the profile avatar image.'
+    },
+
     /**
      * 📧 Email Address
      * Optional for guest mode but required for registered clients.

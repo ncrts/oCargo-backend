@@ -54,6 +54,28 @@ const talentShowJoinSchema = new mongoose.Schema({
     description: 'Type of join: Participant, Jury, or Audience.'
   },
 
+  //performance details
+  perfomerName: {
+    type: String,
+    default: '',
+    description: 'Name of the performer (for Participants).'
+  },
+
+  // Performance title (for Participants)
+  performanceTitle: {
+    type: String,
+    default: '',
+    description: 'Title of the performance (for Participants).'
+  },
+
+  // Performance description (for Participants)
+  performanceDescription: {
+    type: String,
+    default: '',
+    description: 'Description of the performance (for Participants).'
+  },
+
+
   // Sequence for Participant (order of performance), default null
   sequence: {
     type: Number,

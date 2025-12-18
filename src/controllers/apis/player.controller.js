@@ -686,6 +686,18 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
             player.profileAvatar = req.body.profileAvatar.trim();
         }
 
+        // Update profileImageCloudId if provided
+        if (req.body.profileImageCloudId !== undefined && req.body.profileImageCloudId !== null) {
+            if (typeof req.body.profileImageCloudId !== 'string') {
+                return res.status(httpStatus.OK).json({
+                    status: false,
+                    message: 'Profile image cloud ID must be a string',
+                    data: null
+                });
+            }
+            player.profileImageCloudId = req.body.profileImageCloudId.trim();
+        }
+
         // Update dob if provided
         if (req.body.dob !== undefined && req.body.dob !== null) {
             const isValideAge = await is18Plus(req.body.dob);

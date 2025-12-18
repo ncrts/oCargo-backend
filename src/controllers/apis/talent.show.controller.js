@@ -220,18 +220,19 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
                 isRemoved: false
             }).populate({
                 path: 'clientId',
-                select: 'profileAvatar pseudoName'
+                select: 'profileAvatar pseudoName profileImageCloudId'
             });
 
             const participantData = {};
             participants.forEach(p => {
                 if (p.clientId && p.clientId._id) {
                     participantData[p.clientId._id] = {
-                        participantName: p.clientId.pseudoName || 'Anonymous',
-                        talent: p.clientId.talent || '',
-                        talentDesc: p.clientId.talentDesc || '',
-                        participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
-                        pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : ''
+                        participantName: p.perfomerName ? p.perfomerName : (p.clientId.pseudoName || 'Anonymous'),
+                        talent: p.performanceTitle || '',
+                        talentDesc: p.performanceDescription || '',
+                        participantProfilePic: (p.clientId.profileImageCloudId || '') ? (s3BaseUrl + p.clientId.profileImageCloudId) : '',
+                        pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : '',
+                        sequence: p.sequence || null
                     };
                 }
             });
@@ -394,6 +395,10 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
 
     // Get clientId from req.body and validate
     const clientId = req.body.clientId;
+    const performanceTitle = req.body.performanceTitle || '';
+    const performanceDescription = req.body.performanceDescription || '';
+    const perfomerName = req.body.perfomerName || '';
+
     if (!clientId || !mongoose.Types.ObjectId.isValid(clientId)) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
@@ -441,7 +446,10 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
         isPerformed: false,
         joinedBy,
         isRemoved: false,
-        sequence: participantCount + 1
+        sequence: participantCount + 1,
+        performanceTitle: performanceTitle,
+        performanceDescription: performanceDescription,
+        perfomerName: perfomerName
     });
     await join.save();
 
@@ -661,19 +669,19 @@ const joinTalentShowByPinOrQr = catchAsync(async (req, res) => {
             return res.status(httpStatus.OK).json({
                 success: true,
                 message: getMessage("TALENT_SHOW_ALREADY_JOINED", language),
-                data: existing
+                data: { session, join: existing }
             });
         } else if (existing.joinType === 'Participant') {
             return res.status(httpStatus.OK).json({
                 success: false,
                 message: getMessage("TALENT_SHOW_ALREADY_JOINED_AS_PARTICIPANT", language),
-                data: existing
+                data: { session, join: existing }
             });
         } else {
             return res.status(httpStatus.OK).json({
                 success: true,
                 message: getMessage("TALENT_SHOW_ALREADY_JOINED", language),
-                data: existing
+                data: { session, join: existing }
             });
         }
     } else {
@@ -938,8 +946,8 @@ const scoreBoard = catchAsync(async (req, res) => {
     }
 
     // Include isQualified in response
-    result = result.map(r => ({ 
-        score: r.score, 
+    result = result.map(r => ({
+        score: r.score,
         participantObj: r.participantObj,
         isQualified: r.roundData?.isQualified || false
     }));
@@ -1035,8 +1043,8 @@ const changedTalentRound = catchAsync(async (req, res) => {
     });
 
     // Get first qualified participant ID
-    const firstQualifiedId = qualifiedParticipants.length > 0 && qualifiedParticipants[0].clientId 
-        ? qualifiedParticipants[0].clientId._id.toString() 
+    const firstQualifiedId = qualifiedParticipants.length > 0 && qualifiedParticipants[0].clientId
+        ? qualifiedParticipants[0].clientId._id.toString()
         : '';
 
     // Update MongoDB session
@@ -1053,7 +1061,7 @@ const changedTalentRound = catchAsync(async (req, res) => {
             isRemoved: false
         },
         {
-            $set: { 
+            $set: {
                 currentRound: newRound,
                 isPerformed: false
             }
@@ -1293,19 +1301,19 @@ const talentShowPerformerHistory = catchAsync(async (req, res) => {
         isDeleted: false,
         isRemoved: false
     })
-    .populate({
-        path: 'talentShowId',
-        select: 'name description status startTime currentRound totalSessionShowRound franchiseInfoId createdAt',
-        populate: {
-            path: 'franchiseInfoId',
+        .populate({
+            path: 'talentShowId',
+            select: 'name description status startTime currentRound totalSessionShowRound franchiseInfoId createdAt',
+            populate: {
+                path: 'franchiseInfoId',
+                select: 'name'
+            }
+        })
+        .populate({
+            path: 'franchiseeInfoId',
             select: 'name'
-        }
-    })
-    .populate({
-        path: 'franchiseeInfoId',
-        select: 'name'
-    })
-    .sort({ joinedAt: -1 });
+        })
+        .sort({ joinedAt: -1 });
 
     // Filter out any joins where talentShowId was deleted/not found
     const validJoins = participantJoins.filter(join => join.talentShowId !== null);
@@ -1314,7 +1322,7 @@ const talentShowPerformerHistory = catchAsync(async (req, res) => {
     const sessions = await Promise.all(validJoins.map(async (join) => {
         let rank = null;
         let badges = [];
-        
+
         if (join.talentShowId && join.talentShowId._id) {
             // Get all participants for this session to calculate rank
             const allParticipants = await TalentShowJoin.find({
@@ -1326,7 +1334,7 @@ const talentShowPerformerHistory = catchAsync(async (req, res) => {
 
             // Determine which round to use for ranking (use the highest round available)
             const sessionRound = join.talentShowId.currentRound || 1;
-            
+
             // Create ranking array based on final round performance
             const rankings = allParticipants.map(p => {
                 const finalRoundData = (p.roundData || []).find(r => r.round === sessionRound) || {};
@@ -1432,15 +1440,15 @@ const talentShowFranchiseeHistory = catchAsync(async (req, res) => {
     const sessions = await TalentShowSession.find({
         franchiseInfoId: franchiseeInfoId
     })
-    .populate({
-        path: 'franchiseInfoId',
-        select: 'name address'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'name email'
-    })
-    .sort({ createdAt: -1 });
+        .populate({
+            path: 'franchiseInfoId',
+            select: 'name address'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'name email'
+        })
+        .sort({ createdAt: -1 });
 
     // Enrich each session with participant, jury, and audience counts
     const enrichedSessions = await Promise.all(sessions.map(async (session) => {
@@ -1494,7 +1502,7 @@ const talentShowFranchiseeHistory = catchAsync(async (req, res) => {
 
         // Sort by score descending
         participantsWithScores.sort((a, b) => b.score - a.score);
-        
+
         // Get top 3 for podium
         const topThree = participantsWithScores.slice(0, 3);
 
