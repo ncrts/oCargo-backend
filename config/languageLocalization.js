@@ -927,6 +927,11 @@ const languageLocalization = {
         'es_co': '¡Sesión de show de talentos completada con éxito!',
         'fr_fr': 'Session de spectacle de talents terminée avec succès !'
     },
+    "TALENT_SHOW_NO_VOTES_FOUND": {
+        'en_us': 'No valid votes found in the session.',
+        'es_co': 'No se encontraron votos válidos en la sesión.',
+        'fr_fr': 'Aucun vote valide trouvé dans la session.'
+    },
     "TALENT_SHOW_PERFORMER_HISTORY_FETCH_SUCCESS": {
         'en_us': 'Performer history fetched successfully!',
         'es_co': '¡Historial de artista obtenido con éxito!',

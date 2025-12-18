@@ -764,6 +764,13 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
         const performerVotes = scoreObj[performerId];
         for (const clientId in performerVotes) {
             const { isJury, rating } = performerVotes[clientId];
+            
+            // Validate rating exists before pushing
+            if (rating === undefined || rating === null) {
+                console.warn(`Missing rating for performer ${performerId}, voter ${clientId}`);
+                continue; // Skip this vote
+            }
+            
             votes.push({
                 talentShowId,
                 participantId: performerId,
@@ -777,7 +784,16 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
         }
     }
 
-    updateRoundDataForParticipants(votes, sessionData.currentRound, talentShowId);
+    // Check if we have any valid votes
+    if (votes.length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_NO_VOTES_FOUND", language),
+            data: null
+        });
+    }
+
+    await updateRoundDataForParticipants(votes, sessionData.currentRound, talentShowId);
 
     await TalentShowVote.insertMany(votes);
 
