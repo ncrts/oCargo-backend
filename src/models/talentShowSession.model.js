@@ -13,9 +13,11 @@ const podiumSchema = new mongoose.Schema({
   profileAvatar: { type: String },
   pseudoName: { type: String },
   totalVotingPoint: { type: Number, default: 0 },
+  rank: { type: Number },
   badges: [
     {
-      id: { type: mongoose.SchemaTypes.ObjectId, ref: 'BadgeMaster' },
+      id: { type: mongoose.SchemaTypes.ObjectId, ref: 'TalentBadgeMaster' },
+      badgeCode: { type: String },
       name: {
         en_us: { type: String },
         fr_fr: { type: String }

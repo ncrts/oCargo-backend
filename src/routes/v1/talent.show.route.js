@@ -49,4 +49,7 @@ router.post('/session/talent-history', authToken.commonProtectForFranchiseeAndFr
 
 router.post('/session/disqualify-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.disqualifyParticipant);
 
+// POST /v1/talent-show/badges/bulk-insert
+router.post('/badges/bulk-insert', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.bulkInsertTalentBadges);
+
 module.exports = router;

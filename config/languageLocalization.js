@@ -982,6 +982,31 @@ const languageLocalization = {
         'es_co': 'ID de información de franquicia inválido.',
         'fr_fr': 'ID d\'information de franchise invalide.'
     },
+    "TALENT_BADGE_BULK_INSERT_SUCCESS": {
+        'en_us': 'Talent badges inserted successfully!',
+        'es_co': '¡Insignias de talento insertadas con éxito!',
+        'fr_fr': 'Badges de talent insérés avec succès !'
+    },
+    "TALENT_BADGE_BULK_INSERT_PARTIAL_SUCCESS": {
+        'en_us': 'Some badges inserted. Duplicates were skipped.',
+        'es_co': 'Algunas insignias insertadas. Se omitieron los duplicados.',
+        'fr_fr': 'Certains badges insérés. Les doublons ont été ignorés.'
+    },
+    "TALENT_BADGE_BULK_INSERT_FAILED": {
+        'en_us': 'Failed to insert talent badges. Please try again.',
+        'es_co': 'Error al insertar insignias de talento. Inténtelo de nuevo.',
+        'fr_fr': 'Échec de l\'insertion des badges de talent. Veuillez réessayer.'
+    },
+    "TALENT_BADGE_ARRAY_REQUIRED": {
+        'en_us': 'Badges array is required and must not be empty.',
+        'es_co': 'Se requiere la matriz de insignias y no debe estar vacía.',
+        'fr_fr': 'Le tableau de badges est requis et ne doit pas être vide.'
+    },
+    "TALENT_BADGE_CODE_REQUIRED": {
+        'en_us': 'All badges must have a valid badgeCode.',
+        'es_co': 'Todas las insignias deben tener un badgeCode válido.',
+        'fr_fr': 'Tous les badges doivent avoir un badgeCode valide.'
+    },
     
 };
 

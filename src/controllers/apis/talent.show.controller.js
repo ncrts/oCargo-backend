@@ -32,6 +32,7 @@ const FranchisorInfo = require('../../models/franchisorInfo.model');
 const TalentShowSession = require('../../models/talentShowSession.model');
 const TalentShowJoin = require('../../models/talentShowJoin.model');
 const TalentShowVote = require('../../models/talentShowVote.model');
+const TalentBadgeMaster = require('../../models/talentBadgeMaster.model');
 
 const { getMessage } = require("../../../config/languageLocalization")
 
@@ -859,6 +860,70 @@ async function updateRoundDataForParticipants(votes, round = 1, talentShowId) {
 }
 
 
+// Helper function to award special badges for final round
+async function awardSpecialBadges(sessionId, finalRound) {
+    // Get all participants with their final round data
+    const participants = await TalentShowJoin.find({
+        talentShowId: sessionId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate('clientId', 'pseudoName');
+
+    let bestPerformer = null;
+    let juryFavorite = null;
+    let publicFavorite = null;
+
+    let maxOverallScore = -1;
+    let maxJuryScore = -1;
+    let maxAudienceScore = -1;
+
+    // Find winners for each category
+    for (const participant of participants) {
+        const finalRoundData = (participant.roundData || []).find(r => r.round === finalRound);
+        
+        if (!finalRoundData) continue;
+
+        // Best Performer (highest overall average)
+        if (finalRoundData.totalAvgVote > maxOverallScore) {
+            maxOverallScore = finalRoundData.totalAvgVote;
+            bestPerformer = {
+                participantId: participant.clientId._id,
+                name: participant.clientId.pseudoName,
+                score: finalRoundData.totalAvgVote
+            };
+        }
+
+        // Jury's Favorite (highest jury average)
+        if (finalRoundData.totalAvgOfVoteJury > maxJuryScore) {
+            maxJuryScore = finalRoundData.totalAvgOfVoteJury;
+            juryFavorite = {
+                participantId: participant.clientId._id,
+                name: participant.clientId.pseudoName,
+                score: finalRoundData.totalAvgOfVoteJury,
+                juryVoteCount: finalRoundData.totalJuryCount
+            };
+        }
+
+        // Public's Favorite (highest audience average)
+        if (finalRoundData.totalAvgVoteOfAudience > maxAudienceScore) {
+            maxAudienceScore = finalRoundData.totalAvgVoteOfAudience;
+            publicFavorite = {
+                participantId: participant.clientId._id,
+                name: participant.clientId.pseudoName,
+                score: finalRoundData.totalAvgVoteOfAudience,
+                audienceVoteCount: finalRoundData.totalAudience
+            };
+        }
+    }
+
+    return {
+        bestPerformer,
+        juryFavorite,
+        publicFavorite
+    };
+}
+
 // Placeholder for qualifier board (to be implemented)
 const scoreBoard = catchAsync(async (req, res) => {
     // Get sessionId from request
@@ -1015,12 +1080,119 @@ const changedTalentRound = catchAsync(async (req, res) => {
     // Check if current round is the final round - mark session as completed
     if (currentRound === totalRounds) {
         try {
-            // Update MongoDB session status to completed
+            // Calculate special badges for final round
+            const specialBadges = await awardSpecialBadges(sessionId, currentRound);
+
+            // Get all participants with their final round data for ranking
+            const allParticipants = await TalentShowJoin.find({
+                talentShowId: sessionId,
+                joinType: 'Participant',
+                isDeleted: false,
+                isRemoved: false
+            }).populate('clientId', 'pseudoName profileImageCloudId profileAvatar');
+
+            // Create ranking array based on final round scores (sorted descending by score)
+            const rankings = allParticipants.map(p => {
+                const finalRoundData = (p.roundData || []).find(r => r.round === currentRound) || {};
+                return {
+                    clientId: p.clientId._id,
+                    pseudoName: p.clientId.pseudoName || 'Anonymous',
+                    profileAvatar: p.clientId.profileImageCloudId ? (s3BaseUrl + p.clientId.profileImageCloudId) : (p.clientId.profileAvatar || ''),
+                    totalVotingPoint: finalRoundData.totalAvgVote || 0
+                };
+            }).sort((a, b) => b.totalVotingPoint - a.totalVotingPoint);
+
+            // Map to store special badge winners
+            const specialBadgeWinners = new Map();
+            
+            if (specialBadges.bestPerformer) {
+                const pId = specialBadges.bestPerformer.participantId.toString();
+                if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
+                specialBadgeWinners.get(pId).push('BEST_PERFORMER');
+            }
+            
+            if (specialBadges.juryFavorite) {
+                const pId = specialBadges.juryFavorite.participantId.toString();
+                if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
+                specialBadgeWinners.get(pId).push('JURY_FAVORITE');
+            }
+            
+            if (specialBadges.publicFavorite) {
+                const pId = specialBadges.publicFavorite.participantId.toString();
+                if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
+                specialBadgeWinners.get(pId).push('PUBLIC_FAVORITE');
+            }
+
+            // Build podium with top 3 players
+            const podium = [];
+            const top3Players = rankings.slice(0, 3);
+
+            // Fetch all required badges from TalentBadgeMaster
+            const rankBadgeCodes = ['GOLD_MEDAL', 'SILVER_MEDAL', 'BRONZE_MEDAL'];
+            const allBadgeCodes = [...rankBadgeCodes, 'BEST_PERFORMER', 'JURY_FAVORITE', 'PUBLIC_FAVORITE'];
+            const badgeRecords = await TalentBadgeMaster.find({
+                badgeCode: { $in: allBadgeCodes },
+                isActive: true
+            });
+
+            // Create badge lookup map
+            const badgeLookup = {};
+            badgeRecords.forEach(badge => {
+                badgeLookup[badge.badgeCode] = {
+                    id: badge._id,
+                    badgeCode: badge.badgeCode,
+                    name: badge.name || { en_us: badge.badgeCode, fr_fr: badge.badgeCode },
+                    iconUrl: badge.iconUrl ? (s3BaseUrl + badge.iconUrl) : ''
+                };
+            });
+
+            // Build podium for top 3 players with all badges populated
+            for (let i = 0; i < top3Players.length; i++) {
+                const player = top3Players[i];
+                const rank = i + 1;
+                const playerId = player.clientId.toString();
+                const badges = [];
+
+                // Add ranking badge (Gold/Silver/Bronze)
+                const rankBadgeCode = rankBadgeCodes[i];
+                if (badgeLookup[rankBadgeCode]) {
+                    badges.push(badgeLookup[rankBadgeCode]);
+                }
+
+                // Add special badges if this player won any
+                const specialBadgeCodes = specialBadgeWinners.get(playerId) || [];
+                specialBadgeCodes.forEach(badgeCode => {
+                    if (badgeLookup[badgeCode]) {
+                        badges.push(badgeLookup[badgeCode]);
+                    }
+                });
+
+                podium.push({
+                    playerId: player.clientId,
+                    pseudoName: player.pseudoName,
+                    profileAvatar: player.profileAvatar,
+                    totalVotingPoint: player.totalVotingPoint,
+                    rank: rank,
+                    badges: badges,
+                    joinedAt: Date.now()
+                });
+            }
+
+            // Update MongoDB session status to completed with podium
             session.status = 'Completed';
+            session.podium = podium;
             await session.save();
 
-            // Update RTDB session status to Completed
-            await firebaseDB.ref(`talentShowSession/${sessionId}/sessionStatus`).set('Completed');
+            // Update RTDB session status to Completed with badge info
+            await firebaseDB.ref(`talentShowSession/${sessionId}`).update({
+                sessionStatus: 'Completed',
+                podium: podium,
+                specialBadges: {
+                    bestPerformer: specialBadges.bestPerformer,
+                    juryFavorite: specialBadges.juryFavorite,
+                    publicFavorite: specialBadges.publicFavorite
+                }
+            });
 
             return res.status(httpStatus.OK).json({
                 success: true,
@@ -1029,7 +1201,9 @@ const changedTalentRound = catchAsync(async (req, res) => {
                     sessionId: session._id,
                     status: 'completed',
                     finalRound: currentRound,
-                    totalRounds: totalRounds
+                    totalRounds: totalRounds,
+                    podium: podium,
+                    specialBadges: specialBadges
                 }
             });
         } catch (err) {
@@ -1355,7 +1529,7 @@ const talentShowPerformerHistory = catchAsync(async (req, res) => {
     })
         .populate({
             path: 'talentShowId',
-            select: 'name description status startTime currentRound totalSessionShowRound franchiseInfoId createdAt',
+            select: 'name description status startTime currentRound totalSessionShowRound franchiseInfoId podium createdAt',
             populate: {
                 path: 'franchiseInfoId',
                 select: 'name'
@@ -1430,6 +1604,24 @@ const talentShowPerformerHistory = catchAsync(async (req, res) => {
                 // Participation badge for all
                 if (join.isPerformed) {
                     badges.push('Performer');
+                }
+            }
+
+            // Check for special badges (only for completed sessions)
+            if (join.talentShowId.status === 'Completed' && join.talentShowId.podium) {
+                const podiumEntry = join.talentShowId.podium.find(
+                    p => p.playerId && p.playerId.toString() === clientId.toString()
+                );
+                if (podiumEntry && podiumEntry.badges) {
+                    podiumEntry.badges.forEach(badge => {
+                        if (badge.badgeCode === 'BEST_PERFORMER') {
+                            badges.push('Best Performer');
+                        } else if (badge.badgeCode === 'JURY_FAVORITE') {
+                            badges.push("Jury's Favorite");
+                        } else if (badge.badgeCode === 'PUBLIC_FAVORITE') {
+                            badges.push("Public's Favorite");
+                        }
+                    });
                 }
             }
         }
@@ -1603,6 +1795,105 @@ const talentShowFranchiseeHistory = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Bulk insert talent show badges
+ * POST /talent-show/badges/bulk-insert
+ * 
+ * Request body:
+ * {
+ *   badges: [
+ *     {
+ *       badgeCode: String (required, uppercase),
+ *       purpose: String (optional),
+ *       name: { en_us: String, fr_fr: String },
+ *       iconUrl: String (optional),
+ *       priority: Number (optional, default: 1),
+ *       isActive: Boolean (optional, default: true)
+ *     }
+ *   ]
+ * }
+ */
+const bulkInsertTalentBadges = catchAsync(async (req, res) => {
+    const { badges } = req.body;
+    const language = res.locals.language;
+
+    // Validate badges array
+    if (!badges || !Array.isArray(badges) || badges.length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_BADGE_ARRAY_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate each badge has required badgeCode
+    const invalidBadges = badges.filter(b => !b.badgeCode || typeof b.badgeCode !== 'string');
+    if (invalidBadges.length > 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_BADGE_CODE_REQUIRED", language),
+            data: { invalidBadges }
+        });
+    }
+
+    // Convert badgeCodes to uppercase
+    const processedBadges = badges.map(badge => ({
+        badgeCode: badge.badgeCode.toUpperCase(),
+        purpose: badge.purpose || null,
+        name: {
+            en_us: badge.name?.en_us || null,
+            fr_fr: badge.name?.fr_fr || null
+        },
+        iconUrl: badge.iconUrl || null,
+        priority: badge.priority || 1,
+        isActive: badge.isActive !== undefined ? badge.isActive : true
+    }));
+
+    try {
+        // Use insertMany with ordered:false to continue on duplicate errors
+        const result = await TalentBadgeMaster.insertMany(processedBadges, { 
+            ordered: false,
+            rawResult: true 
+        });
+
+        return res.status(httpStatus.CREATED).json({
+            success: true,
+            message: getMessage("TALENT_BADGE_BULK_INSERT_SUCCESS", language),
+            data: {
+                inserted: result.insertedCount || result.length,
+                badges: result.ops || result
+            }
+        });
+    } catch (error) {
+        // Handle duplicate key errors
+        if (error.code === 11000) {
+            const insertedCount = error.result?.nInserted || 0;
+            const duplicates = error.writeErrors?.map(e => {
+                const match = e.errmsg.match(/dup key: { badgeCode: "([^"]+)" }/);
+                return match ? match[1] : 'unknown';
+            }) || [];
+
+            return res.status(httpStatus.PARTIAL_CONTENT).json({
+                success: true,
+                message: getMessage("TALENT_BADGE_BULK_INSERT_PARTIAL_SUCCESS", language),
+                data: {
+                    inserted: insertedCount,
+                    duplicates: duplicates,
+                    error: 'Some badges already exist'
+                }
+            });
+        }
+
+        // Handle other errors
+        console.error('Bulk insert error:', error);
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage("TALENT_BADGE_BULK_INSERT_FAILED", language),
+            data: null
+        });
+    }
+});
+
 
 
 module.exports = {
@@ -1617,5 +1908,6 @@ module.exports = {
     changedTalentRound,
     disqualifyParticipant,
     talentShowPerformerHistory,
-    talentShowFranchiseeHistory
+    talentShowFranchiseeHistory,
+    bulkInsertTalentBadges
 };
