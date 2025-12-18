@@ -43,4 +43,8 @@ router.post('/session/change-talent-round', authToken.commonProtectForFranchisee
 
 router.post('/session/score-board', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.scoreBoard);
 
+router.post('/session/performer-history', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.talentShowPerformerHistory);
+
+router.post('/session/talent-history', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.talentShowFranchiseeHistory);
+
 module.exports = router;

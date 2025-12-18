@@ -52,10 +52,10 @@ const talentShowSessionSchema = new mongoose.Schema({
     required: true,
     description: 'Reference to the franchisee user who created the talent show.'
   },
-  // Status
+  // Status // Schedule, 'Lobby', Live, 'Result awaited', "Completed", "Cancelled"
   status: {
     type: String,
-    enum: ['Schedule', 'Lobby', 'Start', 'Stop', 'completed', 'Cancelled'],
+    enum: ['Schedule', 'Lobby', 'Start', 'Stop', 'Completed', 'Cancelled'],
     default: 'Schedule',
     description: 'Current status of the talent show session.'
   },

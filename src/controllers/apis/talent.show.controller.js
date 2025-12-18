@@ -952,6 +952,296 @@ const changedTalentRound = catchAsync(async (req, res) => {
 
 });
 
+const talentShowPerformerHistory = catchAsync(async (req, res) => {
+    const { clientId } = req.body;
+    const language = res.locals.language;
+
+    // Validate clientId is provided
+    if (!clientId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("CLIENTID_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate clientId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(clientId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("CLIENTID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Check if client exists and is not deleted
+    const client = await Player.findOne({ _id: clientId, isDeleted: false });
+    if (!client) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("PLAYER_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Find all talent show sessions where this client joined as participant
+    const participantJoins = await TalentShowJoin.find({
+        clientId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    })
+    .populate({
+        path: 'talentShowId',
+        select: 'name description status startTime currentRound totalSessionShowRound franchiseInfoId createdAt',
+        populate: {
+            path: 'franchiseInfoId',
+            select: 'name'
+        }
+    })
+    .populate({
+        path: 'franchiseeInfoId',
+        select: 'name'
+    })
+    .sort({ joinedAt: -1 });
+
+    // Filter out any joins where talentShowId was deleted/not found
+    const validJoins = participantJoins.filter(join => join.talentShowId !== null);
+
+    // Format response data with rank and badges
+    const sessions = await Promise.all(validJoins.map(async (join) => {
+        let rank = null;
+        let badges = [];
+        
+        if (join.talentShowId && join.talentShowId._id) {
+            // Get all participants for this session to calculate rank
+            const allParticipants = await TalentShowJoin.find({
+                talentShowId: join.talentShowId._id,
+                joinType: 'Participant',
+                isDeleted: false,
+                isRemoved: false
+            }).select('clientId roundData');
+
+            // Determine which round to use for ranking (use the highest round available)
+            const sessionRound = join.talentShowId.currentRound || 1;
+            
+            // Create ranking array based on final round performance
+            const rankings = allParticipants.map(p => {
+                const finalRoundData = (p.roundData || []).find(r => r.round === sessionRound) || {};
+                return {
+                    clientId: p.clientId.toString(),
+                    score: finalRoundData.totalAvgVote || 0,
+                    isQualified: finalRoundData.isQualified || false
+                };
+            });
+
+            // Sort by score descending
+            rankings.sort((a, b) => b.score - a.score);
+
+            // Find current participant's rank
+            const participantRanking = rankings.findIndex(r => r.clientId === clientId.toString());
+            if (participantRanking !== -1) {
+                rank = participantRanking + 1;
+                const participantData = rankings[participantRanking];
+
+                // Determine badges based on rank and qualification
+                if (rank === 1) {
+                    badges.push('Gold Medal', 'Winner');
+                } else if (rank === 2) {
+                    badges.push('Silver Medal', 'Runner-up');
+                } else if (rank === 3) {
+                    badges.push('Bronze Medal', 'Third Place');
+                }
+
+                // Check if qualified for next round (from round 1)
+                const round1Data = (join.roundData || []).find(r => r.round === 1);
+                if (round1Data && round1Data.isQualified) {
+                    badges.push('Round 1 Qualifier');
+                }
+
+                // Check if qualified in round 2 (final)
+                const round2Data = (join.roundData || []).find(r => r.round === 2);
+                if (round2Data && round2Data.isQualified) {
+                    badges.push('Finalist');
+                }
+
+                // Participation badge for all
+                if (join.isPerformed) {
+                    badges.push('Performer');
+                }
+            }
+        }
+
+        return {
+            joinId: join._id,
+            session: join.talentShowId,
+            sequence: join.sequence,
+            currentRound: join.currentRound,
+            isPerformed: join.isPerformed,
+            joinedAt: join.joinedAt,
+            roundData: join.roundData || [],
+            franchiseeInfo: join.franchiseeInfoId,
+            rank: rank,
+            badges: badges
+        };
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_PERFORMER_HISTORY_FETCH_SUCCESS", language),
+        data: sessions,
+        count: sessions.length
+    });
+})
+
+const talentShowFranchiseeHistory = catchAsync(async (req, res) => {
+    const { franchiseeInfoId } = req.body;
+    const language = res.locals.language;
+
+    // Validate franchiseeInfoId is provided
+    if (!franchiseeInfoId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("FRANCHISE_INFO_ID_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate franchiseeInfoId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(franchiseeInfoId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("FRANCHISE_INFO_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Check if franchisee exists
+    const franchisee = await FranchiseeInfo.findOne({ _id: franchiseeInfoId });
+    if (!franchisee) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("FRANCHISE_INFO_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Find all talent show sessions for this franchisee
+    const sessions = await TalentShowSession.find({
+        franchiseInfoId: franchiseeInfoId
+    })
+    .populate({
+        path: 'franchiseInfoId',
+        select: 'name address'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'name email'
+    })
+    .sort({ createdAt: -1 });
+
+    // Enrich each session with participant, jury, and audience counts
+    const enrichedSessions = await Promise.all(sessions.map(async (session) => {
+        // Get participant details
+        const participants = await TalentShowJoin.find({
+            talentShowId: session._id,
+            joinType: 'Participant',
+            isDeleted: false,
+            isRemoved: false
+        }).populate({
+            path: 'clientId',
+            select: 'pseudoName profileAvatar'
+        });
+
+        // Get jury details
+        const jury = await TalentShowJoin.find({
+            talentShowId: session._id,
+            joinType: 'Jury',
+            isDeleted: false,
+            isRemoved: false
+        }).populate({
+            path: 'clientId',
+            select: 'pseudoName profileAvatar'
+        });
+
+        // Get audience count
+        const audienceCount = await TalentShowJoin.countDocuments({
+            talentShowId: session._id,
+            joinType: 'Audience',
+            isDeleted: false,
+            isRemoved: false
+        });
+
+        // Calculate all participants with scores based on current round
+        const currentRound = session.currentRound || 1;
+        const participantsWithScores = participants.map(p => {
+            const roundData = (p.roundData || []).find(r => r.round === currentRound) || {};
+            return {
+                joinId: p._id,
+                clientId: p.clientId?._id,
+                pseudoName: p.clientId?.pseudoName || 'Anonymous',
+                profileAvatar: p.clientId?.profileAvatar ? (s3BaseUrl + p.clientId.profileAvatar) : '',
+                score: roundData.totalAvgVote || 0,
+                sequence: p.sequence,
+                isPerformed: p.isPerformed,
+                currentRound: p.currentRound,
+                joinedAt: p.joinedAt,
+                roundData: p.roundData || []
+            };
+        });
+
+        // Sort by score descending
+        participantsWithScores.sort((a, b) => b.score - a.score);
+        
+        // Get top 3 for podium
+        const topThree = participantsWithScores.slice(0, 3);
+
+        // Get jury with full details
+        const juryWithDetails = jury.map(j => ({
+            joinId: j._id,
+            clientId: j.clientId?._id,
+            pseudoName: j.clientId?.pseudoName || 'Anonymous',
+            profileAvatar: j.clientId?.profileAvatar ? (s3BaseUrl + j.clientId.profileAvatar) : '',
+            isConnectedJury: j.isConnectedJury || false,
+            joinedAt: j.joinedAt,
+            currentRound: j.currentRound
+        }));
+
+        return {
+            sessionId: session._id,
+            name: session.name,
+            description: session.description,
+            status: session.status,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            duration: session.duration,
+            currentRound: session.currentRound,
+            totalSessionShowRound: session.totalSessionShowRound,
+            franchiseInfo: session.franchiseInfoId,
+            createdBy: session.createdBy,
+            totalParticipants: participants.length,
+            totalJury: jury.length,
+            totalAudience: audienceCount,
+            participants: participantsWithScores,
+            jury: juryWithDetails,
+            topThreePerformers: topThree,
+            audienceGamePin: session.audienceGamePin,
+            juryJoinGamePin: session.juryJoinGamePin,
+            podium: session.podium || [],
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt
+        };
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_FRANCHISEE_HISTORY_FETCH_SUCCESS", language),
+        data: enrichedSessions,
+        count: enrichedSessions.length
+    });
+});
+
+
 module.exports = {
     createTalentShowSession,
     updateTalentShowSession,
@@ -961,5 +1251,7 @@ module.exports = {
     joinTalentShowByPinOrQr,
     manageVoteOnOffAftherCompleteRounds,
     scoreBoard,
-    changedTalentRound
+    changedTalentRound,
+    talentShowPerformerHistory,
+    talentShowFranchiseeHistory
 };

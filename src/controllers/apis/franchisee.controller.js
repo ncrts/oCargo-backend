@@ -13,6 +13,7 @@ const FranchisorUser = require('../../models/franchisor.user.model');
 const FranchisorInfo = require('../../models/franchisorInfo.model');
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const FranchiseeUser = require('../../models/franchisee.user.model');
+const ClientProfile = require('../../models/clientProfile.model');
 
 const Restaurant = require('../../models/restaurant.model');
 
@@ -155,6 +156,8 @@ const getFranchiseeData = catchAsync(async (req, res) => {
         });
     }
 });
+
+
 
 /**
  * Create Restaurant
@@ -467,6 +470,159 @@ const deleteRestaurant = catchAsync(async (req, res) => {
     res.status(httpStatus.OK).json({ success: true, message: 'Restaurant deleted successfully', data: null });
 });
 
+/**
+ * Find Closest Franchisees by Location
+ * POST /franchisee/find-nearest
+ * Required fields: latitude, longitude
+ * Optional fields: radius (in km, default 50), limit (default 10)
+ * Returns franchisees sorted by distance from given coordinates
+ */
+const findNearestFranchisees = catchAsync(async (req, res) => {
+    const { latitude, longitude, radius = 50, limit = 10 } = req.body;
+    const language = res.locals.language;
+
+    // Validate latitude
+    if (!latitude || typeof latitude !== 'number') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("LATITUDE_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate longitude
+    if (!longitude || typeof longitude !== 'number') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("LONGITUDE_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate latitude range (-90 to 90)
+    if (latitude < -90 || latitude > 90) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("LATITUDE_INVALID_RANGE", language),
+            data: null
+        });
+    }
+
+    // Validate longitude range (-180 to 180)
+    if (longitude < -180 || longitude > 180) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("LONGITUDE_INVALID_RANGE", language),
+            data: null
+        });
+    }
+
+    // Validate radius
+    const searchRadius = Math.min(Math.max(1, Number(radius) || 50), 500); // Min 1km, Max 500km
+    const searchLimit = Math.min(Math.max(1, Number(limit) || 10), 100); // Min 1, Max 100
+
+    // Find franchisees with valid coordinates
+    const franchisees = await FranchiseeInfo.find({
+        'location.coordinates.latitude': { $exists: true, $ne: null },
+        'location.coordinates.longitude': { $exists: true, $ne: null },
+        isDeleted: false
+    }).populate({
+        path: 'franchisorInfoId',
+        select: 'name'
+    });
+
+    // Calculate distance for each franchisee
+    const franchiseesWithDistance = franchisees.map(franchisee => {
+        const lat1 = latitude;
+        const lon1 = longitude;
+        const lat2 = franchisee.location.coordinates.latitude;
+        const lon2 = franchisee.location.coordinates.longitude;
+
+        // Haversine formula to calculate distance in km
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        return {
+            _id: franchisee._id,
+            name: franchisee.name,
+            phone: franchisee.phone,
+            phonePrefix: franchisee.phonePrefix,
+            email: franchisee.email,
+            icon: franchisee.icon ? (s3BaseUrl + franchisee.icon) : null,
+            address: franchisee.address,
+            location: franchisee.location,
+            franchisorInfo: franchisee.franchisorInfoId,
+            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            distanceUnit: 'km'
+        };
+    });
+
+    // Filter by radius and sort by distance
+    const nearbyFranchisees = franchiseesWithDistance
+        .filter(f => f.distance <= searchRadius)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, searchLimit);
+
+    // If no franchisees found within radius
+    if (nearbyFranchisees.length === 0) {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("NO_FRANCHISEE_FOUND_IN_RADIUS", language),
+            data: [],
+            count: 0,
+            searchParams: {
+                latitude,
+                longitude,
+                radius: searchRadius,
+                radiusUnit: 'km'
+            }
+        });
+    }
+
+    // Update user's favoriteOCargoFoodCourt if user is authenticated player
+    if (req.player && req.player.clientProfileId && nearbyFranchisees.length > 0) {
+        try {
+            const closestFranchiseeId = nearbyFranchisees[0]._id;
+            await ClientProfile.findByIdAndUpdate(
+                req.player.clientProfileId,
+                { 
+                    favoriteOCargoFoodCourt: closestFranchiseeId,
+                    currentOcargoFoodCourt: closestFranchiseeId,
+                    updatedAt: new Date()
+                },
+                { new: true }
+            );
+        } catch (err) {
+            console.error('Error updating favorite food court:', err);
+            // Continue without throwing error - updating favorite is optional
+        }
+    }
+
+    // Return closest franchisee as primary + all within radius
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("FRANCHISEE_FOUND_SUCCESS", language),
+        data: {
+            closest: nearbyFranchisees[0],
+            nearby: nearbyFranchisees
+        },
+        count: nearbyFranchisees.length,
+        searchParams: {
+            latitude,
+            longitude,
+            radius: searchRadius,
+            radiusUnit: 'km'
+        }
+    });
+});
+
 module.exports = {
     signinFranchiseeUser,
     signoutFranchiseeUser,
@@ -474,6 +630,7 @@ module.exports = {
     createRestaurant,
     updateRestaurant,
     getRestaurantList,
-    deleteRestaurant
+    deleteRestaurant,
+    findNearestFranchisees
 };
 

@@ -25,6 +25,8 @@ router.post('/auth/signout', authToken.franchiseeProtect, languageDetectionMiddl
 // Get franchisee list or single franchisee data
 router.get('/info/list', authToken.commonProtect, languageDetectionMiddleware, franchiseeController.getFranchiseeData);
 
+router.post('/info/find-nearest', authToken.commonProtect, languageDetectionMiddleware, franchiseeController.findNearestFranchisees);
+
 // Create Restaurant (requires franchisee authentication)
 router.post('/restaurant', authToken.franchiseeProtect, franchiseeController.createRestaurant);
 
