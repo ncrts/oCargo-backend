@@ -922,6 +922,11 @@ const languageLocalization = {
         'es_co': '¡Ronda de show de talentos cambiada con éxito!',
         'fr_fr': 'Tour du spectacle de talents changé avec succès !'
     },
+    "TALENT_SHOW_SESSION_COMPLETED_SUCCESS": {
+        'en_us': 'Talent show session completed successfully!',
+        'es_co': '¡Sesión de show de talentos completada con éxito!',
+        'fr_fr': 'Session de spectacle de talents terminée avec succès !'
+    },
     "TALENT_SHOW_PERFORMER_HISTORY_FETCH_SUCCESS": {
         'en_us': 'Performer history fetched successfully!',
         'es_co': '¡Historial de artista obtenido con éxito!',

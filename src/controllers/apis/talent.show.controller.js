@@ -992,10 +992,42 @@ const changedTalentRound = catchAsync(async (req, res) => {
     }
 
     const currentRound = session.currentRound || 1;
+    const totalRounds = session.totalSessionShowRound || 2;
+
+    // Check if current round is the final round - mark session as completed
+    if (currentRound === totalRounds) {
+        try {
+            // Update MongoDB session status to completed
+            session.status = 'completed';
+            await session.save();
+
+            // Update RTDB session status to Completed
+            await firebaseDB.ref(`talentShowSession/${sessionId}/sessionStatus`).set('Completed');
+
+            return res.status(httpStatus.OK).json({
+                success: true,
+                message: getMessage("TALENT_SHOW_SESSION_COMPLETED_SUCCESS", language),
+                data: {
+                    sessionId: session._id,
+                    status: 'completed',
+                    finalRound: currentRound,
+                    totalRounds: totalRounds
+                }
+            });
+        } catch (err) {
+            console.error('Error completing talent show session:', err);
+            return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_RTDB_UPDATE_FAILED", language),
+                data: null
+            });
+        }
+    }
+
     const newRound = currentRound + 1;
 
     // Check if we can advance to next round
-    if (newRound > (session.totalSessionShowRound || 2)) {
+    if (newRound > totalRounds) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
             message: getMessage("TALENT_SHOW_MAX_ROUNDS_REACHED", language),
@@ -1033,11 +1065,12 @@ const changedTalentRound = catchAsync(async (req, res) => {
     qualifiedParticipants.forEach(p => {
         if (p.clientId && p.clientId._id) {
             participantsData[p.clientId._id.toString()] = {
-                participantName: p.clientId.pseudoName || 'Anonymous',
-                talent: p.clientId.talent || '',
-                talentDesc: p.clientId.talentDesc || '',
+                participantName: p.perfomerName ? p.perfomerName : (p.clientId.pseudoName || 'Anonymous'),
+                talent: p.performanceTitle || '',
+                talentDesc: p.performanceDescription || '',
                 participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
-                pseudoName: p.clientId.pseudoName || ''
+                pseudoName: p.clientId.pseudoName || '',
+                sequence: p.sequence || 0
             };
         }
     });
