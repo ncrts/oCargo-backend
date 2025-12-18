@@ -882,6 +882,96 @@ const languageLocalization = {
         'es_co': '¡Lista de sesiones de show de talentos obtenida con éxito!',
         'fr_fr': 'Liste des sessions de spectacle de talents récupérée avec succès !'
     },
+    "TALENT_SHOW_SESSION_ID_INVALID": {
+        'en_us': 'Invalid talent show session ID.',
+        'es_co': 'ID de sesión de show de talentos inválido.',
+        'fr_fr': 'ID de session de spectacle de talents invalide.'
+    },
+    "TALENT_SHOW_SESSION_ID_REQUIRED": {
+        'en_us': 'Talent show session ID is required.',
+        'es_co': 'Se requiere el ID de sesión de show de talentos.',
+        'fr_fr': 'L\'ID de session de spectacle de talents est requis.'
+    },
+    "TALENT_SHOW_PARTICIPANT_NOT_FOUND": {
+        'en_us': 'Participant not found in this talent show session.',
+        'es_co': 'Participante no encontrado en esta sesión de show de talentos.',
+        'fr_fr': 'Participant non trouvé dans cette session de spectacle de talents.'
+    },
+    "TALENT_SHOW_PARTICIPANT_DISQUALIFIED_SUCCESS": {
+        'en_us': 'Participant disqualified successfully!',
+        'es_co': '¡Participante descalificado con éxito!',
+        'fr_fr': 'Participant disqualifié avec succès !'
+    },
+    "TALENT_SHOW_RTDB_UPDATE_FAILED": {
+        'en_us': 'Failed to update real-time database. Please try again.',
+        'es_co': 'Error al actualizar la base de datos en tiempo real. Inténtelo de nuevo.',
+        'fr_fr': 'Échec de la mise à jour de la base de données en temps réel. Veuillez réessayer.'
+    },
+    "TALENT_SHOW_MAX_ROUNDS_REACHED": {
+        'en_us': 'Maximum rounds reached. Cannot advance to next round.',
+        'es_co': 'Se alcanzó el máximo de rondas. No se puede avanzar a la siguiente ronda.',
+        'fr_fr': 'Nombre maximum de tours atteint. Impossible de passer au tour suivant.'
+    },
+    "TALENT_SHOW_NO_QUALIFIED_PARTICIPANTS": {
+        'en_us': 'No qualified participants found for next round.',
+        'es_co': 'No se encontraron participantes calificados para la siguiente ronda.',
+        'fr_fr': 'Aucun participant qualifié trouvé pour le prochain tour.'
+    },
+    "TALENT_SHOW_ROUND_CHANGED_SUCCESS": {
+        'en_us': 'Talent show round changed successfully!',
+        'es_co': '¡Ronda de show de talentos cambiada con éxito!',
+        'fr_fr': 'Tour du spectacle de talents changé avec succès !'
+    },
+    "TALENT_SHOW_PERFORMER_HISTORY_FETCH_SUCCESS": {
+        'en_us': 'Performer history fetched successfully!',
+        'es_co': '¡Historial de artista obtenido con éxito!',
+        'fr_fr': 'Historique de l\'artiste récupéré avec succès !'
+    },
+    "TALENT_SHOW_FRANCHISEE_HISTORY_FETCH_SUCCESS": {
+        'en_us': 'Franchisee talent show history fetched successfully!',
+        'es_co': '¡Historial de show de talentos del franquiciado obtenido con éxito!',
+        'fr_fr': 'Historique du spectacle de talents du franchisé récupéré avec succès !'
+    },
+    "TALENT_SHOW_SCOREBOARD_FETCH_SUCCESS": {
+        'en_us': 'Scoreboard fetched successfully!',
+        'es_co': '¡Tabla de puntuación obtenida con éxito!',
+        'fr_fr': 'Tableau des scores récupéré avec succès !'
+    },
+    "TALENT_SHOW_SESSION_RDTB_FETCH_SUCCESS": {
+        'en_us': 'Real-time database data fetched successfully!',
+        'es_co': '¡Datos de base de datos en tiempo real obtenidos con éxito!',
+        'fr_fr': 'Données de la base de données en temps réel récupérées avec succès !'
+    },
+    "TALENT_SHOW_PIN_OR_QR_REQUIRED": {
+        'en_us': 'PIN or QR code is required to join.',
+        'es_co': 'Se requiere PIN o código QR para unirse.',
+        'fr_fr': 'PIN ou code QR requis pour rejoindre.'
+    },
+    "TALENT_SHOW_PIN_INVALID": {
+        'en_us': 'Invalid PIN or QR code.',
+        'es_co': 'PIN o código QR inválido.',
+        'fr_fr': 'PIN ou code QR invalide.'
+    },
+    "CLIENTID_INVALID": {
+        'en_us': 'Invalid client ID.',
+        'es_co': 'ID de cliente inválido.',
+        'fr_fr': 'ID client invalide.'
+    },
+    "STATUS_REQUIRED": {
+        'en_us': 'Status is required.',
+        'es_co': 'Se requiere el estado.',
+        'fr_fr': 'Le statut est requis.'
+    },
+    "FRANCHISE_INFO_NOT_FOUND": {
+        'en_us': 'Franchise information not found.',
+        'es_co': 'Información de franquicia no encontrada.',
+        'fr_fr': 'Informations de franchise non trouvées.'
+    },
+    "FRANCHISE_INFO_ID_INVALID": {
+        'en_us': 'Invalid franchise info ID.',
+        'es_co': 'ID de información de franquicia inválido.',
+        'fr_fr': 'ID d\'information de franchise invalide.'
+    },
     
 };
 

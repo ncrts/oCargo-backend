@@ -937,8 +937,12 @@ const scoreBoard = catchAsync(async (req, res) => {
         }));
     }
 
-    // Remove _id and roundData from response for clean output
-    result = result.map(r => ({ score: r.score, participantObj: r.participantObj }));
+    // Include isQualified in response
+    result = result.map(r => ({ 
+        score: r.score, 
+        participantObj: r.participantObj,
+        isQualified: r.roundData?.isQualified || false
+    }));
 
     return res.status(httpStatus.OK).json({
         success: true,
@@ -948,8 +952,306 @@ const scoreBoard = catchAsync(async (req, res) => {
 });
 
 const changedTalentRound = catchAsync(async (req, res) => {
-    // To be implemented
+    const { sessionId } = req.body;
+    const language = res.locals.language;
 
+    // Validate sessionId
+    if (!sessionId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate sessionId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Get session from MongoDB
+    const session = await TalentShowSession.findById(sessionId);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    const currentRound = session.currentRound || 1;
+    const newRound = currentRound + 1;
+
+    // Check if we can advance to next round
+    if (newRound > (session.totalSessionShowRound || 2)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_MAX_ROUNDS_REACHED", language),
+            data: null
+        });
+    }
+
+    // Get all participants with current round qualification status
+    const allParticipants = await TalentShowJoin.find({
+        talentShowId: sessionId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate({
+        path: 'clientId',
+        select: 'pseudoName profileAvatar talent talentDesc'
+    });
+
+    // Filter qualified participants for current round
+    const qualifiedParticipants = allParticipants.filter(p => {
+        const roundData = (p.roundData || []).find(r => r.round === currentRound);
+        return roundData && roundData.isQualified === true;
+    });
+
+    if (qualifiedParticipants.length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_NO_QUALIFIED_PARTICIPANTS", language),
+            data: null
+        });
+    }
+
+    // Build participants object for RTDB
+    const participantsData = {};
+    qualifiedParticipants.forEach(p => {
+        if (p.clientId && p.clientId._id) {
+            participantsData[p.clientId._id.toString()] = {
+                participantName: p.clientId.pseudoName || 'Anonymous',
+                talent: p.clientId.talent || '',
+                talentDesc: p.clientId.talentDesc || '',
+                participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
+                pseudoName: p.clientId.pseudoName || ''
+            };
+        }
+    });
+
+    // Get first qualified participant ID
+    const firstQualifiedId = qualifiedParticipants.length > 0 && qualifiedParticipants[0].clientId 
+        ? qualifiedParticipants[0].clientId._id.toString() 
+        : '';
+
+    // Update MongoDB session
+    session.currentRound = newRound;
+    await session.save();
+
+    // Update TalentShowJoin currentRound for all qualified participants
+    await TalentShowJoin.updateMany(
+        {
+            talentShowId: sessionId,
+            joinType: 'Participant',
+            clientId: { $in: qualifiedParticipants.map(p => p.clientId._id) },
+            isDeleted: false,
+            isRemoved: false
+        },
+        {
+            $set: { 
+                currentRound: newRound,
+                isPerformed: false
+            }
+        }
+    );
+
+    // Remove non-qualified participants (soft removal)
+    const nonQualifiedIds = allParticipants
+        .filter(p => !qualifiedParticipants.find(qp => qp._id.toString() === p._id.toString()))
+        .map(p => p._id);
+
+    if (nonQualifiedIds.length > 0) {
+        await TalentShowJoin.updateMany(
+            { _id: { $in: nonQualifiedIds } },
+            { $set: { isRemoved: true } }
+        );
+    }
+
+    // Update RTDB
+    try {
+        const rtdbUpdate = {
+            participants: participantsData,
+            currentParticipantId: firstQualifiedId,
+            currentRound: newRound,
+            totalRounds: session.totalSessionShowRound || 2,
+            votingTimeInSec: 120,
+            canVote: true,
+            sessionStatus: session.status || 'Start',
+            talentShowName: session.name || ''
+        };
+
+        // Update RTDB - set new data
+        await firebaseDB.ref(`talentShowSession/${sessionId}`).update(rtdbUpdate);
+
+        // Remove alreadyPerformed and score arrays
+        await firebaseDB.ref(`talentShowSession/${sessionId}/alreadyPerformed`).remove();
+        await firebaseDB.ref(`talentShowSession/${sessionId}/score`).remove();
+
+    } catch (err) {
+        console.error('RTDB update error:', err);
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_RTDB_UPDATE_FAILED", language),
+            data: null
+        });
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_ROUND_CHANGED_SUCCESS", language),
+        data: {
+            sessionId: session._id,
+            previousRound: currentRound,
+            currentRound: newRound,
+            totalQualified: qualifiedParticipants.length,
+            totalRemoved: nonQualifiedIds.length,
+            qualifiedParticipants: qualifiedParticipants.map(p => ({
+                clientId: p.clientId._id,
+                pseudoName: p.clientId.pseudoName,
+                sequence: p.sequence
+            }))
+        }
+    });
+});
+
+const disqualifyParticipant = catchAsync(async (req, res) => {
+    const { sessionId, clientId } = req.body;
+    const language = res.locals.language;
+
+    // Validate sessionId
+    if (!sessionId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate clientId
+    if (!clientId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("CLIENTID_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate sessionId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Validate clientId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(clientId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("CLIENTID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Get session from MongoDB
+    const session = await TalentShowSession.findById(sessionId);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Find participant join record
+    const participantJoin = await TalentShowJoin.findOne({
+        talentShowId: sessionId,
+        clientId: clientId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate({
+        path: 'clientId',
+        select: 'pseudoName profileAvatar talent talentDesc'
+    });
+
+    if (!participantJoin) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Update MongoDB - set isRemoved to true
+    participantJoin.isRemoved = true;
+    await participantJoin.save();
+
+    // Update RTDB
+    try {
+        const sessionRef = firebaseDB.ref(`talentShowSession/${sessionId}`);
+        const snapshot = await sessionRef.once('value');
+        const sessionData = snapshot.val();
+
+        if (sessionData) {
+            const participants = sessionData.participants || {};
+            const score = sessionData.score || {};
+            const disqualifiedParticipants = sessionData.disqualifiedParticipants || {};
+
+            // Get participant data before removing
+            const participantData = participants[clientId] || null;
+            const participantScore = score[clientId] || null;
+
+            // Create disqualified entry
+            if (participantData || participantScore) {
+                disqualifiedParticipants[clientId] = {
+                    participantInfo: participantData,
+                    score: participantScore,
+                    disqualifiedAt: Date.now(),
+                    reason: 'Manual disqualification'
+                };
+            }
+
+            // Remove from participants and score
+            if (participants[clientId]) {
+                delete participants[clientId];
+            }
+            if (score[clientId]) {
+                delete score[clientId];
+            }
+
+            // Update RTDB with new data
+            await sessionRef.update({
+                participants: participants,
+                score: score,
+                disqualifiedParticipants: disqualifiedParticipants
+            });
+        }
+    } catch (err) {
+        console.error('RTDB update error:', err);
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_RTDB_UPDATE_FAILED", language),
+            data: null
+        });
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_PARTICIPANT_DISQUALIFIED_SUCCESS", language),
+        data: {
+            sessionId: session._id,
+            participantId: clientId,
+            participantName: participantJoin.clientId?.pseudoName || 'Anonymous',
+            disqualifiedAt: Date.now()
+        }
+    });
 });
 
 const talentShowPerformerHistory = catchAsync(async (req, res) => {
@@ -1242,6 +1544,7 @@ const talentShowFranchiseeHistory = catchAsync(async (req, res) => {
 });
 
 
+
 module.exports = {
     createTalentShowSession,
     updateTalentShowSession,
@@ -1252,6 +1555,7 @@ module.exports = {
     manageVoteOnOffAftherCompleteRounds,
     scoreBoard,
     changedTalentRound,
+    disqualifyParticipant,
     talentShowPerformerHistory,
     talentShowFranchiseeHistory
 };

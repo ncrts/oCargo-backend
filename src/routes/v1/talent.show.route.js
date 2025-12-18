@@ -47,4 +47,6 @@ router.post('/session/performer-history', authToken.commonProtectForFranchiseeAn
 
 router.post('/session/talent-history', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.talentShowFranchiseeHistory);
 
+router.post('/session/disqualify-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.disqualifyParticipant);
+
 module.exports = router;
