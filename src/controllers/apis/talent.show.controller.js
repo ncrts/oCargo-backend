@@ -1000,7 +1000,7 @@ const changedTalentRound = catchAsync(async (req, res) => {
     if (currentRound === totalRounds) {
         try {
             // Update MongoDB session status to completed
-            session.status = 'completed';
+            session.status = 'Completed';
             await session.save();
 
             // Update RTDB session status to Completed
@@ -1045,7 +1045,7 @@ const changedTalentRound = catchAsync(async (req, res) => {
         isRemoved: false
     }).populate({
         path: 'clientId',
-        select: 'pseudoName profileAvatar talent talentDesc'
+        select: 'pseudoName profileAvatar talent talentDesc profileImageCloudId'
     });
 
     // Filter qualified participants for current round
