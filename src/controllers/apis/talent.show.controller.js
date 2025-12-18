@@ -227,6 +227,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
             participants.forEach(p => {
                 if (p.clientId && p.clientId._id) {
                     participantData[p.clientId._id] = {
+                        participantId: p.clientId._id,
                         participantName: p.perfomerName ? p.perfomerName : (p.clientId.pseudoName || 'Anonymous'),
                         talent: p.performanceTitle || '',
                         talentDesc: p.performanceDescription || '',
@@ -884,11 +885,12 @@ const scoreBoard = catchAsync(async (req, res) => {
         if (p.clientId) {
             participantObj = {
                 participantId: p.clientId._id,
-                participantName: p.clientId.pseudoName || 'Anonymous',
-                talent: p.clientId.talent || '',
-                talentDesc: p.clientId.talentDesc || '',
-                participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
-                pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : ''
+                participantName: p.perfomerName ? p.perfomerName : (p.clientId.pseudoName || 'Anonymous'),
+                talent: p.performanceTitle || '',
+                talentDesc: p.performanceDescription || '',
+                participantProfilePic: (p.clientId.profileImageCloudId || '') ? (s3BaseUrl + p.clientId.profileImageCloudId) : '',
+                pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : '',
+                sequence: p.sequence || null
             };
         }
         return {
@@ -1065,12 +1067,13 @@ const changedTalentRound = catchAsync(async (req, res) => {
     qualifiedParticipants.forEach(p => {
         if (p.clientId && p.clientId._id) {
             participantsData[p.clientId._id.toString()] = {
+                participantId: p.clientId._id,
                 participantName: p.perfomerName ? p.perfomerName : (p.clientId.pseudoName || 'Anonymous'),
                 talent: p.performanceTitle || '',
                 talentDesc: p.performanceDescription || '',
-                participantProfilePic: (p.clientId.profileAvatar || '') ? (s3BaseUrl + p.clientId.profileAvatar) : '',
-                pseudoName: p.clientId.pseudoName || '',
-                sequence: p.sequence || 0
+                participantProfilePic: (p.clientId.profileImageCloudId || '') ? (s3BaseUrl + p.clientId.profileImageCloudId) : '',
+                pseudoName: p.clientId.pseudoName ? p.clientId.pseudoName : '',
+                sequence: p.sequence || null
             };
         }
     });
