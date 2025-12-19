@@ -157,7 +157,12 @@ const createTalentShowSession = catchAsync(async (req, res) => {
  * Request body:
  *   status: String (required)
  *
- * If status is set to 'Lobby' by a franchisee user, and startTime is in the future, set startTime to now.
+ * State Transition Rules:
+ * - Schedule → Lobby
+ * - Lobby → Start
+ * - Start → Stop | Completed | Cancelled
+ * - Stop → Completed | Cancelled
+ * - Completed/Cancelled: No further transitions allowed
  */
 const updateTalentShowSession = catchAsync(async (req, res) => {
     const { id } = req.params;
@@ -172,7 +177,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         });
     }
 
-    const validStatuses = ['Schedule', 'Lobby', 'Start', 'Stop', 'completed', 'Cancelled'];
+    const validStatuses = ['Schedule', 'Lobby', 'Start', 'Stop', 'Completed', 'Cancelled'];
     if (!validStatuses.includes(status)) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
@@ -190,6 +195,52 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         });
     }
 
+    const currentStatus = session.status || 'Schedule';
+
+    // Idempotent check: if status is already set, return success without updating
+    if (currentStatus === status) {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("TALENT_SHOW_STATUS_ALREADY_SET", language) || `Status already set to ${status}`,
+            data: session,
+            statusUpdated: false
+        });
+    }
+
+    // Define allowed state transitions
+    const allowedTransitions = {
+        'Schedule': ['Lobby'],
+        'Lobby': ['Start'],
+        'Start': ['Stop', 'Completed', 'Cancelled'],
+        'Stop': ['Completed', 'Cancelled'],
+        'Completed': [],
+        'Cancelled': []
+    };
+
+    // Check if the transition is allowed
+    const allowedNextStates = allowedTransitions[currentStatus] || [];
+    
+    // If current status is Completed or Cancelled, no transitions allowed
+    if (currentStatus === 'Completed' || currentStatus === 'Cancelled') {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_STATUS_FINAL", language) || `Session is already ${currentStatus}. No further transitions allowed.`,
+            data: null,
+            statusUpdated: false
+        });
+    }
+
+    // If transition is not allowed, return success with message (no update)
+    if (!allowedNextStates.includes(status)) {
+        return res.status(httpStatus.OK).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_STATUS_TRANSITION_INVALID", language) || `Status unchanged - cannot transition from ${currentStatus} to ${status}`,
+            data: null,
+            statusUpdated: false
+        });
+    }
+
+    // Transition is valid, proceed with update
     let updateFields = { status };
     let isLobbyTransition = false;
     let isStartTransition = false;
@@ -197,23 +248,25 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
     if (
         req.franchiseeUser &&
         status === 'Lobby' &&
-        session.status !== 'Lobby'
+        currentStatus !== 'Lobby'
     ) {
         updateFields.startTime = Date.now();
         isLobbyTransition = true;
     }
 
     // Detect transition to Start
-    if (status === 'Start' && session.status !== 'Start') {
+    if (status === 'Start' && currentStatus !== 'Start') {
         isStartTransition = true;
     }
 
+    // Update MongoDB
     session.set(updateFields);
     await session.save();
 
-    // If transitioning to Lobby, create RTDB entry for session and participants
-    if (isLobbyTransition) {
-        try {
+    // Update RTDB to maintain consistency
+    try {
+        // If transitioning to Lobby, create RTDB entry for session and participants
+        if (isLobbyTransition) {
             const participants = await TalentShowJoin.find({
                 talentShowId: session._id,
                 joinType: 'Participant',
@@ -251,24 +304,33 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
             };
 
             await firebaseDB.ref(`talentShowSession/${session._id}`).set(sessionInfo);
-        } catch (err) {
-            console.error('RTDB write error:', err);
-        }
-    }
-
-    // If transitioning to Start, update sessionStatus in RTDB
-    if (isStartTransition) {
-        try {
+        } else if (isStartTransition) {
+            // If transitioning to Start, update sessionStatus in RTDB
             await firebaseDB.ref(`talentShowSession/${session._id}/sessionStatus`).set('Start');
-        } catch (err) {
-            console.error('RTDB update error (Start):', err);
+        } else {
+            // For other status updates (Stop, Completed, Cancelled), update RTDB sessionStatus
+            await firebaseDB.ref(`talentShowSession/${session._id}/sessionStatus`).set(status);
         }
+    } catch (err) {
+        console.error('RTDB update error:', err);
+        // Rollback MongoDB change if RTDB update fails to maintain consistency
+        session.status = currentStatus;
+        await session.save();
+        
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_RTDB_UPDATE_FAILED", language) || 'Failed to update session status in real-time database',
+            data: null
+        });
     }
 
     return res.status(httpStatus.OK).json({
         success: true,
         message: getMessage("TALENT_SHOW_SESSION_UPDATED_SUCCESS", language),
-        data: session
+        data: session,
+        statusUpdated: true,
+        previousStatus: currentStatus,
+        newStatus: status
     });
 });
 
@@ -283,7 +345,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
      * - Pagination: limit, skip, totalCount, totalPages
      */
 const getTalentShowSessionsList = catchAsync(async (req, res) => {
-    let { id, name, startTimeFrom, startTimeTo, franchiseInfoId, limit = 20, skip = 0 } = req.query;
+    let { id, name, startTimeFrom, startTimeTo, franchiseInfoId, status, limit = 20, skip = 0 } = req.query;
     const language = res.locals.language;
 
     // Determine franchiseInfoId based on user type
@@ -300,6 +362,15 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
         filter.startTime = {};
         if (startTimeFrom) filter.startTime.$gte = Number(startTimeFrom);
         if (startTimeTo) filter.startTime.$lte = Number(startTimeTo);
+    }
+    if (status) {
+        // Handle multiple status values (comma-separated or array)
+        const statusArray = Array.isArray(status) ? status : status.split(',').map(s => s.trim());
+        if (statusArray.length === 1) {
+            filter.status = statusArray[0];
+        } else {
+            filter.status = { $in: statusArray };
+        }
     }
 
     // Parse limit and skip as integers
@@ -332,6 +403,7 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
         }
     });
 })
+
 /**
      * Join a Talent Show Session as Jury, Audience, or Participant
      * POST /talent-show/session/:id/join
