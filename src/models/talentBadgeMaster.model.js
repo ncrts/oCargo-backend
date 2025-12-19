@@ -48,8 +48,8 @@ const talentBadgeMasterSchema = new mongoose.Schema({
 });
 
 // Indexes
-talentBadgeMasterSchema.index({ badgeCode: 1 });
-talentBadgeMasterSchema.index({ isActive: 1 });
+// talentBadgeMasterSchema.index({ badgeCode: 1 });
+// talentBadgeMasterSchema.index({ isActive: 1 });
 
 // Add plugins
 talentBadgeMasterSchema.plugin(toJSON);
