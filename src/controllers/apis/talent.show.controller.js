@@ -508,14 +508,14 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
 /**
      * Get list of Talent Show Sessions with filtering and pagination
      * GET /talent-show/sessions
-     * Query parameters: id, name, startTime, franchiseInfoId, limit, skip
+     * Query parameters: id, name, search, startTime, franchiseInfoId, limit, skip
      * - If req.franchiseeUser: use their franchiseInfoId
      * - If req.franchisorUser: use req.query.franchiseInfoId (required)
-     * - Filters: id (exact), name (regex), startTime (gte/lte)
+     * - Filters: id (exact), name (regex), search (regex on name and description), startTime (gte/lte)
      * - Pagination: limit, skip, totalCount, totalPages
      */
 const getTalentShowSessionsList = catchAsync(async (req, res) => {
-    let { id, name, startTimeFrom, startTimeTo, franchiseInfoId, status, limit = 20, skip = 0 } = req.query;
+    let { id, name, search, startTimeFrom, startTimeTo, franchiseInfoId, status, limit = 20, skip = 0 } = req.query;
     const language = res.locals.language;
 
     // Determine franchiseInfoId based on user type
@@ -528,6 +528,15 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
     if (franchiseInfoId) filter.franchiseInfoId = franchiseInfoId;
     if (id) filter._id = id;
     if (name) filter.name = { $regex: name, $options: 'i' };
+    
+    // Search filter - searches across name and description fields
+    if (search) {
+        filter.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
     if (startTimeFrom || startTimeTo) {
         filter.startTime = {};
         if (startTimeFrom) filter.startTime.$gte = Number(startTimeFrom);
