@@ -94,8 +94,8 @@ const createTalentShowSession = catchAsync(async (req, res) => {
     let createdBy = null;
     if (req.franchiseeUser && req.franchiseeUser._id) {
         createdBy = req.franchiseeUser._id;
-    } else if (req.user && req.user._id) {
-        createdBy = req.user._id;
+    } else if (req.franchisorUser && req.franchisorUser._id) {
+        createdBy = req.franchisorUser._id;
     }
     if (!createdBy) {
         return res.status(httpStatus.UNAUTHORIZED).json({
@@ -130,7 +130,7 @@ const createTalentShowSession = catchAsync(async (req, res) => {
         name: name.trim(),
         description: description || '',
         createdBy,
-        status: 'Schedule',
+        status: 'Draft',
         startTime: startTime || null,
         audienceGamePin,
         audienceQrCode,
@@ -148,6 +148,176 @@ const createTalentShowSession = catchAsync(async (req, res) => {
         data: session
     });
 });
+
+/**
+ * Update talent show session details (name, description, startTime, franchiseInfoId, createdBy, status)
+ * PUT /v1/talent-show/session/:id/details
+ * 
+ * Request body (all optional):
+ * {
+ *   name: String,
+ *   description: String,
+ *   startTime: Number (timestamp),
+ *   franchiseInfoId: ObjectId,
+ *   createdBy: ObjectId,
+ *   status: 'Draft' | 'Schedule' | 'Cancelled'
+ * }
+ * 
+ * Status update rules:
+ * - Can toggle between Draft ↔ Schedule
+ * - Can change to Cancelled from any status
+ * - Cannot update status if already in Lobby, Start, Stop, or Completed
+ */
+const updateTalentShowSessionDetails = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { name, description, startTime, franchiseInfoId, createdBy, status } = req.body;
+    const language = res.locals.language;
+
+    // Find session
+    const session = await TalentShowSession.findById(id);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session is in final state (Completed or Cancelled) - no updates allowed
+    if (session.status === 'Completed' || session.status === 'Cancelled') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_STATUS_UPDATE_NOT_ALLOWED", language),
+            data: null
+        });
+    }
+
+    // Check if there's any data to update
+    if (!name && !description && startTime === undefined && !franchiseInfoId && !createdBy && !status) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NO_UPDATE_DATA", language),
+            data: null
+        });
+    }
+
+    // Prepare update fields
+    const updateFields = {};
+
+    // Update name
+    if (name) {
+        if (typeof name !== 'string' || !name.trim()) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_NAME_REQUIRED", language),
+                data: null
+            });
+        }
+        updateFields.name = name.trim();
+    }
+
+    // Update description
+    if (description !== undefined) {
+        updateFields.description = description || '';
+    }
+
+    // Update startTime
+    if (startTime !== undefined) {
+        // Validate startTime is not in the past (if provided and not null)
+        if (startTime) {
+            const now = Date.now();
+            if (startTime < now) {
+                return res.status(httpStatus.BAD_REQUEST).json({
+                    success: false,
+                    message: getMessage("TALENT_SHOW_STARTTIME_IN_PAST", language),
+                    data: null
+                });
+            }
+        }
+        updateFields.startTime = startTime || null;
+    }
+
+    // Update franchiseInfoId (same logic as createTalentShowSession)
+    if (franchiseInfoId) {
+        // Determine who can update franchiseInfoId
+        if (req.franchiseeUser) {
+            // Franchisee can only use their own franchiseInfoId
+            updateFields.franchiseInfoId = req.franchiseeUser.franchiseeInfoId;
+        } else if (req.franchisorUser) {
+            // Franchisor can set any franchiseInfoId
+            updateFields.franchiseInfoId = franchiseInfoId;
+        }
+    }
+
+    // Update createdBy (same logic as createTalentShowSession)
+    if (createdBy !== undefined) {
+        let newCreatedBy = null;
+        if (req.franchiseeUser && req.franchiseeUser._id) {
+            newCreatedBy = req.franchiseeUser._id;
+        } else if (req.franchisorUser && req.franchisorUser._id) {
+            newCreatedBy = req.franchisorUser._id;
+        }
+        if (newCreatedBy) {
+            updateFields.createdBy = newCreatedBy;
+        }
+    }
+
+    // Update status with specific rules
+    if (status) {
+        const currentStatus = session.status || 'Draft';
+        const validStatusesForUpdate = ['Draft', 'Schedule', 'Cancelled'];
+        
+        if (!validStatusesForUpdate.includes(status)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_STATUS_UPDATE_INVALID", language),
+                data: null
+            });
+        }
+
+        // Check if current status allows updates
+        const nonUpdatableStatuses = ['Lobby', 'Start', 'Stop', 'Completed'];
+        if (nonUpdatableStatuses.includes(currentStatus)) {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_STATUS_UPDATE_NOT_ALLOWED", language),
+                data: null
+            });
+        }
+
+        // Status transition rules:
+        // Draft ↔ Schedule
+        // Any status → Cancelled
+        if (status === 'Cancelled') {
+            // Can always change to Cancelled
+            updateFields.status = status;
+        } else if ((currentStatus === 'Draft' && status === 'Schedule') || 
+                   (currentStatus === 'Schedule' && status === 'Draft')) {
+            // Can toggle between Draft and Schedule
+            updateFields.status = status;
+        } else if (currentStatus === status) {
+            // Status unchanged, skip
+        } else {
+            return res.status(httpStatus.BAD_REQUEST).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_STATUS_TRANSITION_INVALID", language),
+                data: null
+            });
+        }
+    }
+
+    // Apply updates
+    Object.assign(session, updateFields);
+    await session.save();
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_SESSION_DETAILS_UPDATED_SUCCESS", language),
+        data: session
+    });
+});
+
+
 
 
 /**
@@ -219,7 +389,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
 
     // Check if the transition is allowed
     const allowedNextStates = allowedTransitions[currentStatus] || [];
-    
+
     // If current status is Completed or Cancelled, no transitions allowed
     if (currentStatus === 'Completed' || currentStatus === 'Cancelled') {
         return res.status(httpStatus.OK).json({
@@ -316,7 +486,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
         // Rollback MongoDB change if RTDB update fails to maintain consistency
         session.status = currentStatus;
         await session.save();
-        
+
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: getMessage("TALENT_SHOW_RTDB_UPDATE_FAILED", language) || 'Failed to update session status in real-time database',
@@ -503,12 +673,12 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
     }
 
     // Check if already joined as Jury
-    const existingAsJury = await TalentShowJoin.findOne({ 
-        talentShowId: id, 
-        clientId, 
-        joinType: 'Jury', 
-        isDeleted: false, 
-        isRemoved: false 
+    const existingAsJury = await TalentShowJoin.findOne({
+        talentShowId: id,
+        clientId,
+        joinType: 'Jury',
+        isDeleted: false,
+        isRemoved: false
     });
     if (existingAsJury) {
         return res.status(httpStatus.BAD_REQUEST).json({
@@ -624,7 +794,7 @@ const updateTalentShowParticipant = catchAsync(async (req, res) => {
     if (req.franchiseeUser) {
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
         const participantFranchiseId = participantJoin.franchiseeInfoId.toString();
-        
+
         if (userFranchiseId !== participantFranchiseId) {
             return res.status(httpStatus.FORBIDDEN).json({
                 success: false,
@@ -724,7 +894,7 @@ const deleteParticipant = catchAsync(async (req, res) => {
     if (req.franchiseeUser) {
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
         const participantFranchiseId = participantJoin.franchiseeInfoId.toString();
-        
+
         if (userFranchiseId !== participantFranchiseId) {
             return res.status(httpStatus.FORBIDDEN).json({
                 success: false,
@@ -811,7 +981,7 @@ const deleteJury = catchAsync(async (req, res) => {
     if (req.franchiseeUser) {
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
         const juryFranchiseId = juryJoin.franchiseeInfoId.toString();
-        
+
         if (userFranchiseId !== juryFranchiseId) {
             return res.status(httpStatus.FORBIDDEN).json({
                 success: false,
@@ -937,12 +1107,12 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
     }
 
     // Check if already joined as Participant
-    const existingAsParticipant = await TalentShowJoin.findOne({ 
-        talentShowId: id, 
-        clientId, 
-        joinType: 'Participant', 
-        isDeleted: false, 
-        isRemoved: false 
+    const existingAsParticipant = await TalentShowJoin.findOne({
+        talentShowId: id,
+        clientId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
     });
     if (existingAsParticipant) {
         return res.status(httpStatus.BAD_REQUEST).json({
@@ -1175,13 +1345,13 @@ const manageVoteOnOffAftherCompleteRounds = catchAsync(async (req, res) => {
         const performerVotes = scoreObj[performerId];
         for (const clientId in performerVotes) {
             const { isJury, rating } = performerVotes[clientId];
-            
+
             // Validate rating exists before pushing
             if (rating === undefined || rating === null) {
                 console.warn(`Missing rating for performer ${performerId}, voter ${clientId}`);
                 continue; // Skip this vote
             }
-            
+
             votes.push({
                 talentShowId,
                 participantId: performerId,
@@ -1291,7 +1461,7 @@ async function awardSpecialBadges(sessionId, finalRound) {
     // Find winners for each category
     for (const participant of participants) {
         const finalRoundData = (participant.roundData || []).find(r => r.round === finalRound);
-        
+
         if (!finalRoundData) continue;
 
         // Best Performer (highest overall average)
@@ -1514,19 +1684,19 @@ const changedTalentRound = catchAsync(async (req, res) => {
 
             // Map to store special badge winners
             const specialBadgeWinners = new Map();
-            
+
             if (specialBadges.bestPerformer) {
                 const pId = specialBadges.bestPerformer.participantId.toString();
                 if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
                 specialBadgeWinners.get(pId).push('BEST_PERFORMER');
             }
-            
+
             if (specialBadges.juryFavorite) {
                 const pId = specialBadges.juryFavorite.participantId.toString();
                 if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
                 specialBadgeWinners.get(pId).push('JURY_FAVORITE');
             }
-            
+
             if (specialBadges.publicFavorite) {
                 const pId = specialBadges.publicFavorite.participantId.toString();
                 if (!specialBadgeWinners.has(pId)) specialBadgeWinners.set(pId, []);
@@ -2261,9 +2431,9 @@ const bulkInsertTalentBadges = catchAsync(async (req, res) => {
 
     try {
         // Use insertMany with ordered:false to continue on duplicate errors
-        const result = await TalentBadgeMaster.insertMany(processedBadges, { 
+        const result = await TalentBadgeMaster.insertMany(processedBadges, {
             ordered: false,
-            rawResult: true 
+            rawResult: true
         });
 
         return res.status(httpStatus.CREATED).json({
@@ -2304,6 +2474,188 @@ const bulkInsertTalentBadges = catchAsync(async (req, res) => {
     }
 });
 
+
+/**
+ * Get participant details with round data for a talent show session
+ * GET /v1/talent-show/session/:sessionId/participants-details
+ * 
+ * Returns:
+ * - All participants with their complete information
+ * - Round 1 data (roundData[0]) with qualification status
+ * - Round 2 data (roundData[1]) if available
+ * - Participants without roundData are marked as removed
+ * - Results sorted by round 2 average vote (descending) if round 2 exists
+ */
+const getParticipantDetailsWithRounds = catchAsync(async (req, res) => {
+    const { sessionId } = req.params;
+    const language = res.locals.language;
+
+    // Validate session ID
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Get session
+    const session = await TalentShowSession.findById(sessionId);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Authorization check for franchisee users
+    if (req.franchiseeUser) {
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const sessionFranchiseId = session.franchiseInfoId.toString();
+
+        if (userFranchiseId !== sessionFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_SESSION_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+
+    // Get all participants (including removed ones to check roundData)
+    const allParticipants = await TalentShowJoin.find({
+        talentShowId: sessionId,
+        joinType: 'Participant',
+        isDeleted: false
+    })
+    .populate({
+        path: 'clientId',
+        select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
+    })
+    .populate({
+        path: 'joinedBy',
+        select: 'name email'
+    });
+
+    // Process each participant with round data
+    const participantsWithRoundData = allParticipants.map(participant => {
+        const roundData = participant.roundData || [];
+        
+        // Check if participant has no round data (removed from session)
+        const isRemovedFromSession = roundData.length === 0;
+        
+        // Get round 1 data
+        const round1Data = roundData.find(r => r.round === 1) || null;
+        const isQualifiedRound1 = round1Data ? (round1Data.isQualified || false) : false;
+        
+        // Get round 2 data
+        const round2Data = roundData.find(r => r.round === 2) || null;
+        
+        return {
+            _id: participant._id,
+            clientId: participant.clientId?._id || null,
+            pseudoName: participant.clientId?.pseudoName || null,
+            email: participant.clientId?.email || null,
+            phone: participant.clientId?.phonenoPrefix && participant.clientId?.phoneno
+                ? `${participant.clientId.phonenoPrefix}${participant.clientId.phoneno}`
+                : null,
+            profileImage: participant.clientId?.profileImageCloudId
+                ? `${s3BaseUrl}${participant.clientId.profileImageCloudId}`
+                : (participant.clientId?.profileAvatar || null),
+            perfomerName: participant.perfomerName || null,
+            performanceTitle: participant.performanceTitle || null,
+            performanceDescription: participant.performanceDescription || null,
+            sequence: participant.sequence || null,
+            currentRound: participant.currentRound || 1,
+            isPerformed: participant.isPerformed || false,
+            isRemoved: participant.isRemoved || false,
+            isRemovedFromSession: isRemovedFromSession,
+            joinedAt: participant.joinedAt,
+            joinedBy: participant.joinedBy || null,
+            
+            // Round 1 data
+            round1: round1Data ? {
+                round: round1Data.round,
+                totalJuryCount: round1Data.totalJuryCount || 0,
+                totalJuryVotePoint: round1Data.totalJuryVotePoint || 0,
+                totalAvgOfVoteJury: round1Data.totalAvgOfVoteJury || 0,
+                totalAudience: round1Data.totalAudience || 0,
+                totalAudienceVotePoint: round1Data.totalAudienceVotePoint || 0,
+                totalAvgVoteOfAudience: round1Data.totalAvgVoteOfAudience || 0,
+                totalVoterCount: round1Data.totalVoterCount || 0,
+                totalAvgVote: round1Data.totalAvgVote || 0,
+                isQualified: round1Data.isQualified || false
+            } : null,
+            isQualifiedForRound2: isQualifiedRound1,
+            
+            // Round 2 data
+            round2: round2Data ? {
+                round: round2Data.round,
+                totalJuryCount: round2Data.totalJuryCount || 0,
+                totalJuryVotePoint: round2Data.totalJuryVotePoint || 0,
+                totalAvgOfVoteJury: round2Data.totalAvgOfVoteJury || 0,
+                totalAudience: round2Data.totalAudience || 0,
+                totalAudienceVotePoint: round2Data.totalAudienceVotePoint || 0,
+                totalAvgVoteOfAudience: round2Data.totalAvgVoteOfAudience || 0,
+                totalVoterCount: round2Data.totalVoterCount || 0,
+                totalAvgVote: round2Data.totalAvgVote || 0,
+                isQualified: round2Data.isQualified || false
+            } : null,
+            
+            // For sorting purposes
+            round2AvgVote: round2Data ? (round2Data.totalAvgVote || 0) : 0
+        };
+    });
+
+    // Sort by round 2 average vote (descending) if round 2 data exists
+    participantsWithRoundData.sort((a, b) => {
+        // If both have round 2 data, sort by round 2 average vote
+        if (a.round2 && b.round2) {
+            return b.round2AvgVote - a.round2AvgVote;
+        }
+        // If only one has round 2 data, prioritize it
+        if (a.round2 && !b.round2) return -1;
+        if (!a.round2 && b.round2) return 1;
+        
+        // If neither has round 2 data, sort by round 1 average vote
+        if (a.round1 && b.round1) {
+            return (b.round1.totalAvgVote || 0) - (a.round1.totalAvgVote || 0);
+        }
+        // If only one has round 1 data, prioritize it
+        if (a.round1 && !b.round1) return -1;
+        if (!a.round1 && b.round1) return 1;
+        
+        // If neither has any round data, sort by sequence
+        return (a.sequence || 0) - (b.sequence || 0);
+    });
+
+    // Remove the sorting helper field from response
+    const finalParticipants = participantsWithRoundData.map(({ round2AvgVote, ...rest }) => rest);
+
+    // Calculate summary statistics
+    const summary = {
+        totalParticipants: allParticipants.length,
+        totalWithRoundData: participantsWithRoundData.filter(p => !p.isRemovedFromSession).length,
+        totalRemoved: participantsWithRoundData.filter(p => p.isRemovedFromSession).length,
+        totalQualifiedRound1: participantsWithRoundData.filter(p => p.isQualifiedForRound2).length,
+        totalWithRound2Data: participantsWithRoundData.filter(p => p.round2 !== null).length,
+        currentRound: session.currentRound || 1,
+        totalRounds: session.totalSessionShowRound || 2
+    };
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_PARTICIPANTS_DETAILS_FETCH_SUCCESS", language),
+        data: {
+            sessionId: session._id,
+            sessionName: session.name,
+            sessionStatus: session.status,
+            summary: summary,
+            participants: finalParticipants
+        }
+    });
+});
 
 /**
  * Get detailed information about a specific talent show session
@@ -2355,7 +2707,7 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
         // Franchisee users can only see their own franchise's sessions
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
         const sessionFranchiseId = session.franchiseInfoId._id.toString();
-        
+
         if (userFranchiseId !== sessionFranchiseId) {
             return res.status(httpStatus.FORBIDDEN).json({
                 success: false,
@@ -2373,15 +2725,15 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
         isDeleted: false,
         isRemoved: false
     })
-    .populate({
-        path: 'clientId',
-        select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
-    })
-    .populate({
-        path: 'joinedBy',
-        select: 'name email'
-    })
-    .sort({ sequence: 1 });
+        .populate({
+            path: 'clientId',
+            select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
+        })
+        .populate({
+            path: 'joinedBy',
+            select: 'name email'
+        })
+        .sort({ sequence: 1 });
 
     // Get jury list
     const jury = await TalentShowJoin.find({
@@ -2390,15 +2742,15 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
         isDeleted: false,
         isRemoved: false
     })
-    .populate({
-        path: 'clientId',
-        select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
-    })
-    .populate({
-        path: 'joinedBy',
-        select: 'name email'
-    })
-    .sort({ joinedAt: 1 });
+        .populate({
+            path: 'clientId',
+            select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
+        })
+        .populate({
+            path: 'joinedBy',
+            select: 'name email'
+        })
+        .sort({ joinedAt: 1 });
 
     // Get audience count
     const audienceCount = await TalentShowJoin.countDocuments({
@@ -2414,11 +2766,11 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
         clientId: p.clientId?._id || null,
         pseudoName: p.clientId?.pseudoName || null,
         email: p.clientId?.email || null,
-        phone: p.clientId?.phonenoPrefix && p.clientId?.phoneno 
-            ? `${p.clientId.phonenoPrefix}${p.clientId.phoneno}` 
+        phone: p.clientId?.phonenoPrefix && p.clientId?.phoneno
+            ? `${p.clientId.phonenoPrefix}${p.clientId.phoneno}`
             : null,
-        profileImage: p.clientId?.profileImageCloudId 
-            ? `${s3BaseUrl}${p.clientId.profileImageCloudId}` 
+        profileImage: p.clientId?.profileImageCloudId
+            ? `${s3BaseUrl}${p.clientId.profileImageCloudId}`
             : (p.clientId?.profileAvatar || null),
         performanceTitle: p.performanceTitle || null,
         performanceDescription: p.performanceDescription || null,
@@ -2437,11 +2789,11 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
         clientId: j.clientId?._id || null,
         pseudoName: j.clientId?.pseudoName || null,
         email: j.clientId?.email || null,
-        phone: j.clientId?.phonenoPrefix && j.clientId?.phoneno 
-            ? `${j.clientId.phonenoPrefix}${j.clientId.phoneno}` 
+        phone: j.clientId?.phonenoPrefix && j.clientId?.phoneno
+            ? `${j.clientId.phonenoPrefix}${j.clientId.phoneno}`
             : null,
-        profileImage: j.clientId?.profileImageCloudId 
-            ? `${s3BaseUrl}${j.clientId.profileImageCloudId}` 
+        profileImage: j.clientId?.profileImageCloudId
+            ? `${s3BaseUrl}${j.clientId.profileImageCloudId}`
             : (j.clientId?.profileAvatar || null),
         currentRound: j.currentRound || 1,
         isConnectedJury: j.isConnectedJury || false,
@@ -2488,8 +2840,10 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
 
 
 
+
 module.exports = {
     createTalentShowSession,
+    updateTalentShowSessionDetails,
     updateTalentShowSession,
     getTalentShowSessionsList,
     joinTalentShowAsParticipant,
@@ -2505,5 +2859,6 @@ module.exports = {
     talentShowPerformerHistory,
     talentShowFranchiseeHistory,
     bulkInsertTalentBadges,
-    getTalentShowSessionDetails
+    getTalentShowSessionDetails,
+    getParticipantDetailsWithRounds
 };

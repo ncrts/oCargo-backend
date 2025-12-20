@@ -1,4 +1,24 @@
 const languageLocalization = {
+    "TALENT_SHOW_SESSION_NO_UPDATE_DATA": {
+        'en_us': 'No update data provided. Please provide at least one field to update.',
+        'es_co': 'No se proporcionaron datos de actualización. Proporcione al menos un campo para actualizar.',
+        'fr_fr': 'Aucune donnée de mise à jour fournie. Veuillez fournir au moins un champ à mettre à jour.'
+    },
+    "TALENT_SHOW_SESSION_DETAILS_UPDATED_SUCCESS": {
+        'en_us': 'Talent show session details updated successfully.',
+        'es_co': 'Detalles de la sesión de talent show actualizados con éxito.',
+        'fr_fr': 'Détails de la session de talent show mis à jour avec succès.'
+    },
+    "TALENT_SHOW_STATUS_UPDATE_INVALID": {
+        'en_us': 'Invalid status for update. Only Draft, Schedule, or Cancelled are allowed.',
+        'es_co': 'Estado inválido para actualización. Solo se permiten Draft, Schedule o Cancelled.',
+        'fr_fr': 'Statut invalide pour la mise à jour. Seuls Draft, Schedule ou Cancelled sont autorisés.'
+    },
+    "TALENT_SHOW_STATUS_UPDATE_NOT_ALLOWED": {
+        'en_us': 'Status cannot be updated when session is in Lobby, Start, Stop, or Completed state.',
+        'es_co': 'El estado no se puede actualizar cuando la sesión está en estado Lobby, Start, Stop o Completed.',
+        'fr_fr': 'Le statut ne peut pas être mis à jour lorsque la session est en état Lobby, Start, Stop ou Completed.'
+    },
     "TALENT_SHOW_JURY_NOT_FOUND": {
         'en_us': 'Jury member not found.',
         'es_co': 'Miembro del jurado no encontrado.',
@@ -18,6 +38,11 @@ const languageLocalization = {
         'en_us': 'Jury member deleted successfully.',
         'es_co': 'Miembro del jurado eliminado con éxito.',
         'fr_fr': 'Membre du jury supprimé avec succès.'
+    },
+    "TALENT_SHOW_PARTICIPANTS_DETAILS_FETCH_SUCCESS": {
+        'en_us': 'Participant details with round data fetched successfully.',
+        'es_co': 'Detalles de participantes con datos de ronda obtenidos con éxito.',
+        'fr_fr': 'Détails des participants avec données de tour récupérés avec succès.'
     },
     "TALENT_SHOW_JURY_JOIN_ONLY_SCHEDULE": {
         'en_us': 'Jury members can only be added when session status is Schedule.',

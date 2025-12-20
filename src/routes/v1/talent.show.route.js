@@ -22,6 +22,9 @@ const talentShowController = require('../../controllers/apis/talent.show.control
 // POST /v1/talent-show/session
 router.post('/session', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.createTalentShowSession);
 
+// PUT /v1/talent-show/session/:id/details
+router.put('/session/:id/details', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.updateTalentShowSessionDetails);
+
 // PATCH /v1/talent-show/session/:id
 router.patch('/session/:id', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.updateTalentShowSession);
 
@@ -30,6 +33,9 @@ router.get('/sessions', authToken.commonProtectForFranchiseeAndFranchisor, langu
 
 // GET /v1/talent-show/session/:id/details
 router.get('/session/:id/details', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getTalentShowSessionDetails);
+
+// GET /v1/talent-show/session/:sessionId/participants-details
+router.get('/session/:sessionId/participants-details', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getParticipantDetailsWithRounds);
 
 // POST /v1/talent-show/session/:id/join-participant
 router.post('/session/:id/join-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsParticipant);

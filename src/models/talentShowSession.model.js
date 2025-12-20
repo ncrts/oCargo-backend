@@ -57,8 +57,8 @@ const talentShowSessionSchema = new mongoose.Schema({
   // Status // Schedule, 'Lobby', Live, 'Result awaited', "Completed", "Cancelled"
   status: {
     type: String,
-    enum: ['Schedule', 'Lobby', 'Start', 'Stop', 'Completed', 'Cancelled'],
-    default: 'Schedule',
+    enum: ['Draft', 'Schedule', 'Lobby', 'Start', 'Stop', 'Completed', 'Cancelled'],
+    default: 'Draft',
     description: 'Current status of the talent show session.'
   },
   // Total number of show rounds in this session
