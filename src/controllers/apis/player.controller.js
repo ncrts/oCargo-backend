@@ -1355,6 +1355,70 @@ const resetPassword = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Get player auto-suggestions based on pseudoName search
+ * Returns first 20 players matching the search query
+ * @async
+ * @function getPlayerAutoSuggestions
+ * @param {Object} req - Express request object containing search query parameter
+ * @param {Object} res - Express response object used to send the result
+ * @returns {Promise<void>} Sends a response with matching players
+ */
+const getPlayerAutoSuggestions = catchAsync(async (req, res) => {
+    const { search } = req.query;
+    const language = res.locals.language;
+
+    // Validate search query
+    if (!search || search.trim().length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage('PLAYER_SEARCH_QUERY_REQUIRED', language),
+            data: null
+        });
+    }
+    
+    if(search.trim().length < 2) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage('PLAYER_SEARCH_QUERY_TOO_SHORT', language),
+            data: null
+        });
+    }
+
+    // Search for players by pseudoName (case-insensitive, partial match)
+    const players = await Player.find({
+        pseudoName: { $regex: search.trim(), $options: 'i' },
+        isDeleted: false,
+        isActive: true
+    })
+    .select('_id pseudoName email profileImageCloudId')
+    .limit(20)
+    .lean();
+
+    // Add S3 base URL to profile images
+    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION 
+        ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/`
+        : '';
+
+    const playersWithImages = players.map(player => ({
+        _id: player._id,
+        pseudoName: player.pseudoName,
+        email: player.email,
+        profileImage: player.profileImageCloudId ? `${s3BaseUrl}${player.profileImageCloudId}` : null
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage('PLAYER_SUGGESTIONS_FETCHED_SUCCESS', language),
+        data: playersWithImages,
+        count: playersWithImages.length
+    });
+});
+
+
+
+
+
 module.exports = {
     signup,
     signin,
@@ -1374,5 +1438,6 @@ module.exports = {
     verifyPlayerPhoneNumber,
     sendForgotPasswordOtp,
     verifyForgotPasswordOtp,
-    resetPassword
+    resetPassword,
+    getPlayerAutoSuggestions
 };

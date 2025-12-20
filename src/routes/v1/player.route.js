@@ -42,4 +42,6 @@ router.post('/auth/forgot-password/send-otp', languageDetectionMiddleware, playe
 router.post('/auth/forgot-password/verify-otp', languageDetectionMiddleware, playerController.verifyForgotPasswordOtp);
 router.post('/auth/forgot-password/reset', languageDetectionMiddleware, playerController.resetPassword);
 
+router.get('/auto-suggestions', languageDetectionMiddleware, authToken.commonProtect, playerController.getPlayerAutoSuggestions);
+
 module.exports = router;

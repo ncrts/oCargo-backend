@@ -28,8 +28,20 @@ router.patch('/session/:id', authToken.commonProtectForFranchiseeAndFranchisor, 
 // GET /v1/talent-show/sessions
 router.get('/sessions', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getTalentShowSessionsList);
 
+// GET /v1/talent-show/session/:id/details
+router.get('/session/:id/details', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getTalentShowSessionDetails);
+
 // POST /v1/talent-show/session/:id/join-participant
 router.post('/session/:id/join-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsParticipant);
+
+// PATCH /v1/talent-show/participant/:joinId
+router.patch('/session/participant/:joinId', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.updateTalentShowParticipant);
+
+// DELETE /v1/talent-show/participant/:joinId
+router.delete('/session/participant/:joinId', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.deleteParticipant);
+
+// DELETE /v1/talent-show/jury/:joinId
+router.delete('/session/jury/:joinId', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.deleteJury);
 
 // POST /v1/talent-show/session/join-jury
 router.post('/session/:id/join-jury', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsJuryFromWeb);

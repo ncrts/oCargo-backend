@@ -404,6 +404,9 @@ const getTalentShowSessionsList = catchAsync(async (req, res) => {
     });
 })
 
+
+
+
 /**
      * Join a Talent Show Session as Jury, Audience, or Participant
      * POST /talent-show/session/:id/join
@@ -438,6 +441,15 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
         return res.status(httpStatus.NOT_FOUND).json({
             success: false,
             message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session status is 'Schedule' - only allow joins during Schedule phase
+    if (session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_JOIN_ONLY_SCHEDULE", language),
             data: null
         });
     }
@@ -490,6 +502,22 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
         });
     }
 
+    // Check if already joined as Jury
+    const existingAsJury = await TalentShowJoin.findOne({ 
+        talentShowId: id, 
+        clientId, 
+        joinType: 'Jury', 
+        isDeleted: false, 
+        isRemoved: false 
+    });
+    if (existingAsJury) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_ALREADY_JOINED_AS_JURY", language),
+            data: null
+        });
+    }
+
     // Prevent duplicate join
     const existing = await TalentShowJoin.findOne({ talentShowId: id, clientId, joinType, isDeleted: false, isRemoved: false });
     if (existing) {
@@ -537,6 +565,289 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
         data: join
     });
 });
+
+/**
+ * Update participant information in a talent show session
+ * PATCH /v1/talent-show/participant/:joinId
+ * 
+ * Request body:
+ * {
+ *   perfomerName: String (optional),
+ *   performanceTitle: String (optional),
+ *   performanceDescription: String (optional)
+ * }
+ * 
+ * Authorization: Franchisee or Franchisor users only
+ * Restriction: Can only update when session status is 'Schedule'
+ */
+const updateTalentShowParticipant = catchAsync(async (req, res) => {
+    const { joinId } = req.params;
+    const { perfomerName, performanceTitle, performanceDescription } = req.body;
+    const language = res.locals.language;
+
+    // Validate joinId
+    if (!mongoose.Types.ObjectId.isValid(joinId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JOIN_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Find the participant join record
+    const participantJoin = await TalentShowJoin.findOne({
+        _id: joinId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate('talentShowId', 'franchiseInfoId status');
+
+    if (!participantJoin) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session status is 'Schedule' only
+    const session = participantJoin.talentShowId;
+    if (!session || session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_SCHEDULE", language),
+            data: null
+        });
+    }
+
+    // Authorization check for franchisee users
+    if (req.franchiseeUser) {
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const participantFranchiseId = participantJoin.franchiseeInfoId.toString();
+        
+        if (userFranchiseId !== participantFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_PARTICIPANT_UPDATE_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+    // Franchisor users can update any participant (no restriction)
+
+    // Prepare update fields
+    const updateFields = {};
+    if (perfomerName !== undefined) updateFields.perfomerName = perfomerName;
+    if (performanceTitle !== undefined) updateFields.performanceTitle = performanceTitle;
+    if (performanceDescription !== undefined) updateFields.performanceDescription = performanceDescription;
+
+    // Check if there's anything to update
+    if (Object.keys(updateFields).length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_NO_UPDATE_DATA", language),
+            data: null
+        });
+    }
+
+    // Update the participant
+    Object.assign(participantJoin, updateFields);
+    await participantJoin.save();
+
+    // Populate clientId for response
+    await participantJoin.populate('clientId', 'pseudoName email profileImageCloudId');
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_PARTICIPANT_UPDATED_SUCCESS", language),
+        data: {
+            _id: participantJoin._id,
+            clientId: participantJoin.clientId?._id,
+            pseudoName: participantJoin.clientId?.pseudoName,
+            perfomerName: participantJoin.perfomerName,
+            performanceTitle: participantJoin.performanceTitle,
+            performanceDescription: participantJoin.performanceDescription,
+            sequence: participantJoin.sequence,
+            currentRound: participantJoin.currentRound
+        }
+    });
+});
+
+/**
+ * Delete participant from a talent show session
+ * DELETE /v1/talent-show/participant/:joinId
+ * 
+ * Authorization: Franchisee or Franchisor users only
+ * Restriction: Can only delete when session status is 'Schedule'
+ * Note: Hard delete from MongoDB (permanent deletion)
+ */
+const deleteParticipant = catchAsync(async (req, res) => {
+    const { joinId } = req.params;
+    const language = res.locals.language;
+
+    // Validate joinId
+    if (!mongoose.Types.ObjectId.isValid(joinId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JOIN_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Find the participant join record
+    const participantJoin = await TalentShowJoin.findOne({
+        _id: joinId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    }).populate('talentShowId', 'franchiseInfoId status');
+
+    if (!participantJoin) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session status is 'Schedule' only
+    const session = participantJoin.talentShowId;
+    if (!session || session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_DELETE_ONLY_SCHEDULE", language),
+            data: null
+        });
+    }
+
+    // Authorization check for franchisee users
+    if (req.franchiseeUser) {
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const participantFranchiseId = participantJoin.franchiseeInfoId.toString();
+        
+        if (userFranchiseId !== participantFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_PARTICIPANT_DELETE_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+    // Franchisor users can delete any participant (no restriction)
+
+    // Store participant info for response before deletion
+    const deletedParticipantInfo = {
+        _id: participantJoin._id,
+        clientId: participantJoin.clientId,
+        sequence: participantJoin.sequence,
+        talentShowId: participantJoin.talentShowId._id
+    };
+
+    // Hard delete from MongoDB
+    await TalentShowJoin.deleteOne({ _id: joinId });
+
+    // Update totalPlayerCount in session
+    const fullSession = await TalentShowSession.findById(session._id);
+    if (fullSession && fullSession.totalPlayerCount > 0) {
+        fullSession.totalPlayerCount = fullSession.totalPlayerCount - 1;
+        await fullSession.save();
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_PARTICIPANT_DELETED_SUCCESS", language),
+        data: deletedParticipantInfo
+    });
+});
+
+/**
+ * Delete jury member from a talent show session
+ * DELETE /v1/talent-show/jury/:joinId
+ * 
+ * Authorization: Franchisee or Franchisor users only
+ * Restriction: Can only delete when session status is 'Schedule'
+ * Note: Hard delete from MongoDB (permanent deletion)
+ */
+const deleteJury = catchAsync(async (req, res) => {
+    const { joinId } = req.params;
+    const language = res.locals.language;
+
+    // Validate joinId
+    if (!mongoose.Types.ObjectId.isValid(joinId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JOIN_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Find the jury join record
+    const juryJoin = await TalentShowJoin.findOne({
+        _id: joinId,
+        joinType: 'Jury',
+        isDeleted: false,
+        isRemoved: false
+    }).populate('talentShowId', 'franchiseInfoId status');
+
+    if (!juryJoin) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JURY_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session status is 'Schedule' only
+    const session = juryJoin.talentShowId;
+    if (!session || session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JURY_DELETE_ONLY_SCHEDULE", language),
+            data: null
+        });
+    }
+
+    // Authorization check for franchisee users
+    if (req.franchiseeUser) {
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const juryFranchiseId = juryJoin.franchiseeInfoId.toString();
+        
+        if (userFranchiseId !== juryFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_JURY_DELETE_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+    // Franchisor users can delete any jury member (no restriction)
+
+    // Store jury info for response before deletion
+    const deletedJuryInfo = {
+        _id: juryJoin._id,
+        clientId: juryJoin.clientId,
+        talentShowId: juryJoin.talentShowId._id
+    };
+
+    // Hard delete from MongoDB
+    await TalentShowJoin.deleteOne({ _id: joinId });
+
+    // Update totalJuryCount in session
+    const fullSession = await TalentShowSession.findById(session._id);
+    if (fullSession && fullSession.totalJuryCount > 0) {
+        fullSession.totalJuryCount = fullSession.totalJuryCount - 1;
+        await fullSession.save();
+    }
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_JURY_DELETED_SUCCESS", language),
+        data: deletedJuryInfo
+    });
+});
+
+
+
 
 const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
     const { id } = req.params; // talentShowSessionId
@@ -587,6 +898,15 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
         });
     }
 
+    // Check if session status is 'Schedule' - only allow jury joins during Schedule phase
+    if (session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_JURY_JOIN_ONLY_SCHEDULE", language),
+            data: null
+        });
+    }
+
     // Get clientId from req.body and validate
     const clientId = req.body.clientId;
     if (!clientId || !mongoose.Types.ObjectId.isValid(clientId)) {
@@ -612,6 +932,22 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
             message: getMessage("TALENT_SHOW_JOIN_TYPE_INVALID", language),
+            data: null
+        });
+    }
+
+    // Check if already joined as Participant
+    const existingAsParticipant = await TalentShowJoin.findOne({ 
+        talentShowId: id, 
+        clientId, 
+        joinType: 'Participant', 
+        isDeleted: false, 
+        isRemoved: false 
+    });
+    if (existingAsParticipant) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_ALREADY_JOINED_AS_PARTICIPANT", language),
             data: null
         });
     }
@@ -657,6 +993,8 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
         data: join
     });
 });
+
+
 
 
 /**
@@ -1967,12 +2305,197 @@ const bulkInsertTalentBadges = catchAsync(async (req, res) => {
 });
 
 
+/**
+ * Get detailed information about a specific talent show session
+ * GET /v1/talent-show/session/:id/details
+ * 
+ * Authorization:
+ * - Franchisee users: Can only view sessions from their own franchise
+ * - Franchisor users: Can view sessions from all franchises
+ * 
+ * Returns:
+ * - Session details with populated franchiseInfoId and createdBy
+ * - Array of participants with populated clientId information
+ * - Array of jury with populated clientId information
+ */
+const getTalentShowSessionDetails = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const language = res.locals.language;
+
+    // Validate session ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Get session with populated data
+    const session = await TalentShowSession.findById(id)
+        .populate({
+            path: 'franchiseInfoId',
+            select: 'name address city state zipCode country phone email'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'name email phone'
+        });
+
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Authorization check
+    if (req.franchiseeUser) {
+        // Franchisee users can only see their own franchise's sessions
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const sessionFranchiseId = session.franchiseInfoId._id.toString();
+        
+        if (userFranchiseId !== sessionFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_SESSION_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+    // Franchisor users can see all sessions (no restriction)
+
+    // Get participants list
+    const participants = await TalentShowJoin.find({
+        talentShowId: id,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    })
+    .populate({
+        path: 'clientId',
+        select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
+    })
+    .populate({
+        path: 'joinedBy',
+        select: 'name email'
+    })
+    .sort({ sequence: 1 });
+
+    // Get jury list
+    const jury = await TalentShowJoin.find({
+        talentShowId: id,
+        joinType: 'Jury',
+        isDeleted: false,
+        isRemoved: false
+    })
+    .populate({
+        path: 'clientId',
+        select: 'pseudoName email phonenoPrefix phoneno profileImageCloudId profileAvatar'
+    })
+    .populate({
+        path: 'joinedBy',
+        select: 'name email'
+    })
+    .sort({ joinedAt: 1 });
+
+    // Get audience count
+    const audienceCount = await TalentShowJoin.countDocuments({
+        talentShowId: id,
+        joinType: 'Audience',
+        isDeleted: false,
+        isRemoved: false
+    });
+
+    // Format participants with S3 base URL
+    const formattedParticipants = participants.map(p => ({
+        _id: p._id,
+        clientId: p.clientId?._id || null,
+        pseudoName: p.clientId?.pseudoName || null,
+        email: p.clientId?.email || null,
+        phone: p.clientId?.phonenoPrefix && p.clientId?.phoneno 
+            ? `${p.clientId.phonenoPrefix}${p.clientId.phoneno}` 
+            : null,
+        profileImage: p.clientId?.profileImageCloudId 
+            ? `${s3BaseUrl}${p.clientId.profileImageCloudId}` 
+            : (p.clientId?.profileAvatar || null),
+        performanceTitle: p.performanceTitle || null,
+        performanceDescription: p.performanceDescription || null,
+        perfomerName: p.perfomerName || null,
+        sequence: p.sequence || null,
+        currentRound: p.currentRound || 1,
+        isPerformed: p.isPerformed || false,
+        joinedAt: p.joinedAt,
+        joinedBy: p.joinedBy || null,
+        roundData: p.roundData || []
+    }));
+
+    // Format jury with S3 base URL
+    const formattedJury = jury.map(j => ({
+        _id: j._id,
+        clientId: j.clientId?._id || null,
+        pseudoName: j.clientId?.pseudoName || null,
+        email: j.clientId?.email || null,
+        phone: j.clientId?.phonenoPrefix && j.clientId?.phoneno 
+            ? `${j.clientId.phonenoPrefix}${j.clientId.phoneno}` 
+            : null,
+        profileImage: j.clientId?.profileImageCloudId 
+            ? `${s3BaseUrl}${j.clientId.profileImageCloudId}` 
+            : (j.clientId?.profileAvatar || null),
+        currentRound: j.currentRound || 1,
+        isConnectedJury: j.isConnectedJury || false,
+        joinedAt: j.joinedAt,
+        joinedBy: j.joinedBy || null
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_SESSION_DETAILS_FETCH_SUCCESS", language),
+        data: {
+            session: {
+                _id: session._id,
+                name: session.name,
+                description: session.description,
+                status: session.status,
+                startTime: session.startTime,
+                currentRound: session.currentRound || 1,
+                totalSessionShowRound: session.totalSessionShowRound || 2,
+                audienceGamePin: session.audienceGamePin,
+                audienceQrCode: session.audienceQrCode,
+                juryJoinGamePin: session.juryJoinGamePin,
+                juryJoinQrCode: session.juryJoinQrCode,
+                totalPlayerCount: session.totalPlayerCount || 0,
+                totalJuryCount: session.totalJuryCount || 0,
+                totalAudienceCount: session.totalAudienceCount || 0,
+                totalJuryConnectCount: session.totalJuryConnectCount || 0,
+                franchiseInfo: session.franchiseInfoId || null,
+                createdBy: session.createdBy || null,
+                createdAt: session.createdAt,
+                updatedAt: session.updatedAt,
+                podium: session.podium || []
+            },
+            participants: formattedParticipants,
+            jury: formattedJury,
+            counts: {
+                totalParticipants: formattedParticipants.length,
+                totalJury: formattedJury.length,
+                totalAudience: audienceCount
+            }
+        }
+    });
+});
+
+
 
 module.exports = {
     createTalentShowSession,
     updateTalentShowSession,
     getTalentShowSessionsList,
     joinTalentShowAsParticipant,
+    updateTalentShowParticipant,
+    deleteParticipant,
+    deleteJury,
     joinTalentShowAsJuryFromWeb,
     joinTalentShowByPinOrQr,
     manageVoteOnOffAftherCompleteRounds,
@@ -1981,5 +2504,6 @@ module.exports = {
     disqualifyParticipant,
     talentShowPerformerHistory,
     talentShowFranchiseeHistory,
-    bulkInsertTalentBadges
+    bulkInsertTalentBadges,
+    getTalentShowSessionDetails
 };

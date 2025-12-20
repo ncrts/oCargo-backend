@@ -1,4 +1,104 @@
 const languageLocalization = {
+    "TALENT_SHOW_JURY_NOT_FOUND": {
+        'en_us': 'Jury member not found.',
+        'es_co': 'Miembro del jurado no encontrado.',
+        'fr_fr': 'Membre du jury non trouvé.'
+    },
+    "TALENT_SHOW_JURY_DELETE_ONLY_SCHEDULE": {
+        'en_us': 'Jury member can only be deleted when session status is Schedule.',
+        'es_co': 'El miembro del jurado solo se puede eliminar cuando el estado de la sesión es Schedule.',
+        'fr_fr': 'Le membre du jury ne peut être supprimé que lorsque le statut de la session est Schedule.'
+    },
+    "TALENT_SHOW_JURY_DELETE_ACCESS_DENIED": {
+        'en_us': 'Access denied. You can only delete jury members from your own franchise.',
+        'es_co': 'Acceso denegado. Solo puede eliminar miembros del jurado de su propia franquicia.',
+        'fr_fr': 'Accès refusé. Vous ne pouvez supprimer que les membres du jury de votre propre franchise.'
+    },
+    "TALENT_SHOW_JURY_DELETED_SUCCESS": {
+        'en_us': 'Jury member deleted successfully.',
+        'es_co': 'Miembro del jurado eliminado con éxito.',
+        'fr_fr': 'Membre du jury supprimé avec succès.'
+    },
+    "TALENT_SHOW_JURY_JOIN_ONLY_SCHEDULE": {
+        'en_us': 'Jury members can only be added when session status is Schedule.',
+        'es_co': 'Los miembros del jurado solo se pueden agregar cuando el estado de la sesión es Schedule.',
+        'fr_fr': 'Les membres du jury ne peuvent être ajoutés que lorsque le statut de la session est Schedule.'
+    },
+    "TALENT_SHOW_PARTICIPANT_DELETE_ONLY_SCHEDULE": {
+        'en_us': 'Participant can only be deleted when session status is Schedule.',
+        'es_co': 'El participante solo se puede eliminar cuando el estado de la sesión es Schedule.',
+        'fr_fr': 'Le participant ne peut être supprimé que lorsque le statut de la session est Schedule.'
+    },
+    "TALENT_SHOW_PARTICIPANT_DELETE_ACCESS_DENIED": {
+        'en_us': 'Access denied. You can only delete participants from your own franchise.',
+        'es_co': 'Acceso denegado. Solo puede eliminar participantes de su propia franquicia.',
+        'fr_fr': 'Accès refusé. Vous ne pouvez supprimer que les participants de votre propre franchise.'
+    },
+    "TALENT_SHOW_PARTICIPANT_DELETED_SUCCESS": {
+        'en_us': 'Participant deleted successfully.',
+        'es_co': 'Participante eliminado con éxito.',
+        'fr_fr': 'Participant supprimé avec succès.'
+    },
+    "TALENT_SHOW_PARTICIPANT_JOIN_ONLY_SCHEDULE": {
+        'en_us': 'Participants can only join when session status is Schedule.',
+        'es_co': 'Los participantes solo pueden unirse cuando el estado de la sesión es Schedule.',
+        'fr_fr': 'Les participants ne peuvent rejoindre que lorsque le statut de la session est Schedule.'
+    },
+    "TALENT_SHOW_ALREADY_JOINED_AS_JURY": {
+        'en_us': 'Cannot join as participant. This player is already joined as a jury member.',
+        'es_co': 'No se puede unir como participante. Este jugador ya está unido como miembro del jurado.',
+        'fr_fr': 'Impossible de rejoindre en tant que participant. Ce joueur est déjà inscrit en tant que membre du jury.'
+    },
+    "TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_SCHEDULE": {
+        'en_us': 'Participant information can only be updated when session status is Schedule.',
+        'es_co': 'La información del participante solo se puede actualizar cuando el estado de la sesión es Schedule.',
+        'fr_fr': 'Les informations du participant ne peuvent être mises à jour que lorsque le statut de la session est Schedule.'
+    },
+    "TALENT_SHOW_JOIN_ID_INVALID": {
+        'en_us': 'Invalid join ID.',
+        'es_co': 'ID de unión inválido.',
+        'fr_fr': 'ID de participation invalide.'
+    },
+    "TALENT_SHOW_PARTICIPANT_UPDATE_ACCESS_DENIED": {
+        'en_us': 'Access denied. You can only update participants from your own franchise.',
+        'es_co': 'Acceso denegado. Solo puede actualizar participantes de su propia franquicia.',
+        'fr_fr': 'Accès refusé. Vous ne pouvez mettre à jour que les participants de votre propre franchise.'
+    },
+    "TALENT_SHOW_PARTICIPANT_NO_UPDATE_DATA": {
+        'en_us': 'No update data provided. Please provide at least one field to update.',
+        'es_co': 'No se proporcionaron datos de actualización. Proporcione al menos un campo para actualizar.',
+        'fr_fr': 'Aucune donnée de mise à jour fournie. Veuillez fournir au moins un champ à mettre à jour.'
+    },
+    "TALENT_SHOW_PARTICIPANT_UPDATED_SUCCESS": {
+        'en_us': 'Participant information updated successfully.',
+        'es_co': 'Información del participante actualizada con éxito.',
+        'fr_fr': 'Informations du participant mises à jour avec succès.'
+    },
+    "TALENT_SHOW_SESSION_DETAILS_FETCH_SUCCESS": {
+        'en_us': 'Talent show session details fetched successfully.',
+        'es_co': 'Detalles de la sesión de talent show obtenidos con éxito.',
+        'fr_fr': 'Détails de la session de talent show récupérés avec succès.'
+    },
+    "TALENT_SHOW_SESSION_ACCESS_DENIED": {
+        'en_us': 'Access denied. You can only view talent show sessions from your own franchise.',
+        'es_co': 'Acceso denegado. Solo puede ver sesiones de talent show de su propia franquicia.',
+        'fr_fr': 'Accès refusé. Vous ne pouvez voir que les sessions de talent show de votre propre franchise.'
+    },
+    "PLAYER_SEARCH_QUERY_TOO_SHORT":{
+        "en_us": 'Search query must be at least 2 characters long.',
+        'es_co': 'La consulta de búsqueda debe tener al menos 2 caracteres.',
+        'fr_fr': 'La requête de recherche doit comporter au moins 2 caractères.'
+    },
+    "PLAYER_SEARCH_QUERY_REQUIRED": {
+        'en_us': 'Search query is required.',
+        'es_co': 'Se requiere una consulta de búsqueda.',
+        'fr_fr': 'La requête de recherche est requise.'
+    },
+    "PLAYER_SUGGESTIONS_FETCHED_SUCCESS": {
+        'en_us': 'Player suggestions fetched successfully.',
+        'es_co': 'Sugerencias de jugadores obtenidas con éxito.',
+        'fr_fr': 'Suggestions de joueurs récupérées avec succès.'
+    },
     "TALENT_SHOW_ALREADY_JOINED_AS_PARTICIPANT":{
         'en_us': 'You have already joined this talent show session as Participant.',
         'es_co': 'Ya te has unido a esta sesión de talent show como participante.',
