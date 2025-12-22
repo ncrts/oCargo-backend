@@ -316,19 +316,19 @@ const updateRestaurant = catchAsync(async (req, res) => {
     if (req.franchiseeUser) {
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
         const restaurantFranchiseId = restaurant.franchiseeInfoId.toString();
-        
+
         if (userFranchiseId !== restaurantFranchiseId) {
-            return res.status(httpStatus.FORBIDDEN).json({ 
-                success: false, 
-                message: getMessage("RESTAURANT_UPDATE_ACCESS_DENIED", language), 
-                data: null 
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("RESTAURANT_UPDATE_ACCESS_DENIED", language),
+                data: null
             });
         }
     } else if (!req.franchisorUser) {
-        return res.status(httpStatus.UNAUTHORIZED).json({ 
-            success: false, 
-            message: getMessage("UNAUTHORIZED", language), 
-            data: null 
+        return res.status(httpStatus.UNAUTHORIZED).json({
+            success: false,
+            message: getMessage("UNAUTHORIZED", language),
+            data: null
         });
     }
 
@@ -344,10 +344,10 @@ const updateRestaurant = catchAsync(async (req, res) => {
         if (key === 'franchiseeInfoId' && value) {
             // Only franchisor users can change franchiseeInfoId
             if (req.franchiseeUser) {
-                return res.status(httpStatus.FORBIDDEN).json({ 
-                    success: false, 
-                    message: getMessage("RESTAURANT_FRANCHISEE_ID_CHANGE_DENIED", language), 
-                    data: null 
+                return res.status(httpStatus.FORBIDDEN).json({
+                    success: false,
+                    message: getMessage("RESTAURANT_FRANCHISEE_ID_CHANGE_DENIED", language),
+                    data: null
                 });
             }
             const franchisee = await FranchiseeInfo.findOne({ _id: value, isDeleted: false });
@@ -464,11 +464,11 @@ const updateRestaurant = catchAsync(async (req, res) => {
 /**
  * Get Restaurant List or Single Restaurant
  * GET /franchisee/restaurant/list
- * Query params: franchiseeInfoId (required), name (optional), id (optional)
- * Returns single restaurant if id provided, otherwise returns filtered list
+ * Query params: franchiseeInfoId (required), name (optional), id (optional), page (optional), limit (optional)
+ * Returns single restaurant if id provided, otherwise returns paginated filtered list
  */
 const getRestaurantList = catchAsync(async (req, res) => {
-    const { franchiseeInfoId, name, id } = req.query;
+    const { franchiseeInfoId, search, id, page, limit } = req.query;
     const language = res.locals.language;
 
     if (!franchiseeInfoId && !id) {
@@ -485,14 +485,45 @@ const getRestaurantList = catchAsync(async (req, res) => {
     }
     // Build filter for list
     let filter = { isDeleted: false, franchiseeInfoId };
-    if (name) {
-        filter.name = { $regex: name, $options: 'i' };
+
+    // Search by restaurant name (case-insensitive)
+    if (search) {
+        filter.name = { $regex: search, $options: 'i' };
     }
 
+    // Pagination parameters
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 20;
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Get total count for pagination
+    const totalCount = await Restaurant.countDocuments(filter);
+
+    // Get paginated restaurants
     const restaurants = await Restaurant.find(filter)
         .populate({ path: 'franchiseeInfoId', select: 'name email phone address location' })
-        .sort({ createdAt: -1 });
-    res.status(httpStatus.OK).json({ success: true, message: getMessage("RESTAURANTS_FETCHED_SUCCESS", language), data: { s3BaseUrl, restaurants, totalCount: restaurants.length } });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("RESTAURANTS_FETCHED_SUCCESS", language),
+        data: {
+            s3BaseUrl,
+            restaurants,
+            totalCount,
+            pagination: {
+                limit: pageSize,
+                skip: skip,
+                page: pageNumber,
+                totalPages: totalPages
+            }
+        },
+    });
 });
 
 
@@ -590,7 +621,7 @@ const findNearestFranchisees = catchAsync(async (req, res) => {
         const R = 6371; // Earth's radius in km
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = 
+        const a =
             Math.sin(dLat / 2) * Math.sin(dLat / 2) +
             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
             Math.sin(dLon / 2) * Math.sin(dLon / 2);
@@ -640,7 +671,7 @@ const findNearestFranchisees = catchAsync(async (req, res) => {
             const closestFranchiseeId = nearbyFranchisees[0]._id;
             await ClientProfile.findByIdAndUpdate(
                 req.player.clientProfileId,
-                { 
+                {
                     favoriteOCargoFoodCourt: closestFranchiseeId,
                     currentOcargoFoodCourt: closestFranchiseeId,
                     updatedAt: new Date()

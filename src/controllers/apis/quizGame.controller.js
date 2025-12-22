@@ -861,6 +861,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
 
     // ===== EXECUTE QUERY WITH PAGINATION =====
     const quizzes = await Quiz.find(filter)
+        .populate({ path: 'franchiseeInfoId', select: 'name' })
         .populate({ path: 'author.id', select: 'firstName lastName email role' })
         .populate({ path: 'category', select: 'name description' })
         .populate({ path: 'questions' })
