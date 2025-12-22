@@ -481,7 +481,7 @@ const getRestaurantList = catchAsync(async (req, res) => {
         if (!restaurant) {
             return res.status(httpStatus.NOT_FOUND).json({ success: false, message: getMessage("RESTAURANT_NOT_FOUND", language), data: null });
         }
-        return res.status(httpStatus.OK).json({ success: true, message: getMessage("RESTAURANT_FETCHED_SUCCESS", language), data: { restaurant, totalCount: 1 } });
+        return res.status(httpStatus.OK).json({ success: true, message: getMessage("RESTAURANT_FETCHED_SUCCESS", language), data: { s3BaseUrl, restaurant, totalCount: 1 } });
     }
     // Build filter for list
     let filter = { isDeleted: false, franchiseeInfoId };
