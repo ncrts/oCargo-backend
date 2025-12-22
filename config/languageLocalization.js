@@ -1,4 +1,29 @@
 const languageLocalization = {
+    "TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_DRAFT_OR_SCHEDULE":{
+        'en_us': 'Participant information can only be updated when session status is Draft or Schedule.',
+        'es_co': 'La información del participante solo se puede actualizar cuando el estado de la sesión es Draft o Schedule.',
+        'fr_fr': 'Les informations du participant ne peuvent être mises à jour que lorsque le statut de la session est Draft ou Schedule.'
+    },
+    "TALENT_SHOW_PARTICIPANT_JOIN_ONLY_DRAFT_OR_SCHEDULE":{
+        'en_us': 'Participants can only join when session status is Draft or Schedule.',
+        'es_co': 'Los participantes solo pueden unirse cuando el estado de la sesión es Draft o Schedule.',
+        'fr_fr': 'Les participants ne peuvent rejoindre que lorsque le statut de la session est Draft ou Schedule.'
+    },
+    "TALENT_SHOW_PARTICIPANT_DELETE_ONLY_DRAFT_OR_SCHEDULE":{
+        'en_us': 'Participants can only be deleted when session status is Draft or Schedule.',
+        'es_co': 'Los participantes solo se pueden eliminar cuando el estado de la sesión es Draft o Schedule.',
+        'fr_fr': 'Les participants ne peuvent être supprimés que lorsque le statut de la session est Draft ou Schedule.'
+    },
+    "TALENT_SHOW_JURY_DELETE_ONLY_DRAFT_OR_SCHEDULE":{
+        'en_us': 'Jury members can only be deleted when session status is Draft or Schedule.',
+        'es_co': 'Los miembros del jurado solo se pueden eliminar cuando el estado de la sesión es Draft o Schedule.',
+        'fr_fr': 'Les membres du jury ne peuvent être supprimés que lorsque le statut de la session est Draft ou Schedule.'
+    },
+    "TALENT_SHOW_JURY_JOIN_ONLY_DRAFT_OR_SCHEDULE":{
+        'en_us': 'Jury members can only be added when session status is Draft or Schedule.',
+        'es_co': 'Los miembros del jurado solo se pueden agregar cuando el estado de la sesión es Draft o Schedule.',
+        'fr_fr': 'Les membres du jury ne peuvent être ajoutés que lorsque le statut de la session est Draft ou Schedule.'
+    },
     "TALENT_SHOW_SESSION_NO_UPDATE_DATA": {
         'en_us': 'No update data provided. Please provide at least one field to update.',
         'es_co': 'No se proporcionaron datos de actualización. Proporcione al menos un campo para actualizar.',
@@ -1131,6 +1156,196 @@ const languageLocalization = {
         'en_us': 'All badges must have a valid badgeCode.',
         'es_co': 'Todas las insignias deben tener un badgeCode válido.',
         'fr_fr': 'Tous les badges doivent avoir un badgeCode valide.'
+    },
+    "RESTAURANT_ID_REQUIRED": {
+        'en_us': 'Restaurant id is required',
+        'es_co': 'Se requiere el ID del restaurante',
+        'fr_fr': 'L\'ID du restaurant est requis'
+    },
+    "RESTAURANT_NOT_FOUND": {
+        'en_us': 'Restaurant not found',
+        'es_co': 'Restaurante no encontrado',
+        'fr_fr': 'Restaurant non trouvé'
+    },
+    "RESTAURANT_NAME_REQUIRED": {
+        'en_us': 'Restaurant name must be a string',
+        'es_co': 'El nombre del restaurante debe ser una cadena',
+        'fr_fr': 'Le nom du restaurant doit être une chaîne'
+    },
+    "RESTAURANT_DESCRIPTION_INVALID": {
+        'en_us': 'Description must be a string',
+        'es_co': 'La descripción debe ser una cadena',
+        'fr_fr': 'La description doit être une chaîne'
+    },
+    "RESTAURANT_BACKGROUND_IMAGE_INVALID": {
+        'en_us': 'backgroundImage must be a string (S3 key)',
+        'es_co': 'backgroundImage debe ser una cadena (clave S3)',
+        'fr_fr': 'backgroundImage doit être une chaîne (clé S3)'
+    },
+    "RESTAURANT_TYPE_INVALID": {
+        'en_us': 'type must be a string',
+        'es_co': 'type debe ser una cadena',
+        'fr_fr': 'type doit être une chaîne'
+    },
+    "RESTAURANT_MENU_CARD_INVALID": {
+        'en_us': 'menuCardS3Key must be a string (S3 key)',
+        'es_co': 'menuCardS3Key debe ser una cadena (clave S3)',
+        'fr_fr': 'menuCardS3Key doit être une chaîne (clé S3)'
+    },
+    "RESTAURANT_OPENING_HOURS_STATUS_INVALID": {
+        'en_us': 'Invalid status for opening hours',
+        'es_co': 'Estado inválido para horario de apertura',
+        'fr_fr': 'Statut invalide pour les heures d\'ouverture'
+    },
+    "RESTAURANT_OPENING_HOURS_TIME_INVALID": {
+        'en_us': 'Opening time must be a string',
+        'es_co': 'La hora de apertura debe ser una cadena',
+        'fr_fr': 'L\'heure d\'ouverture doit être une chaîne'
+    },
+    "RESTAURANT_ADDRESS_INVALID": {
+        'en_us': 'address must be an object',
+        'es_co': 'address debe ser un objeto',
+        'fr_fr': 'address doit être un objet'
+    },
+    "RESTAURANT_ADDRESS_LINE_INVALID": {
+        'en_us': 'address line must be a string',
+        'es_co': 'La línea de dirección debe ser una cadena',
+        'fr_fr': 'La ligne d\'adresse doit être une chaîne'
+    },
+    "RESTAURANT_ADDRESS_CITY_INVALID": {
+        'en_us': 'address.city must be a string',
+        'es_co': 'address.city debe ser una cadena',
+        'fr_fr': 'address.city doit être une chaîne'
+    },
+    "RESTAURANT_ADDRESS_STATE_INVALID": {
+        'en_us': 'address.state must be a string',
+        'es_co': 'address.state debe ser una cadena',
+        'fr_fr': 'address.state doit être une chaîne'
+    },
+    "RESTAURANT_ADDRESS_POSTAL_CODE_INVALID": {
+        'en_us': 'address.postalCode must be a string',
+        'es_co': 'address.postalCode debe ser una cadena',
+        'fr_fr': 'address.postalCode doit être une chaîne'
+    },
+    "RESTAURANT_ADDRESS_COUNTRY_INVALID": {
+        'en_us': 'address.country must be a string',
+        'es_co': 'address.country debe ser una cadena',
+        'fr_fr': 'address.country doit être une chaîne'
+    },
+    "RESTAURANT_LOCATION_INVALID": {
+        'en_us': 'location must be an object',
+        'es_co': 'location debe ser un objeto',
+        'fr_fr': 'location doit être un objet'
+    },
+    "RESTAURANT_LOCATION_PLACE_ID_INVALID": {
+        'en_us': 'location.placeId must be a string',
+        'es_co': 'location.placeId debe ser una cadena',
+        'fr_fr': 'location.placeId doit être une chaîne'
+    },
+    "RESTAURANT_LOCATION_COORDINATES_INVALID": {
+        'en_us': 'location.coordinates must be an object',
+        'es_co': 'location.coordinates debe ser un objeto',
+        'fr_fr': 'location.coordinates doit être un objet'
+    },
+    "RESTAURANT_LOCATION_LATITUDE_INVALID": {
+        'en_us': 'location.coordinates.latitude must be a number',
+        'es_co': 'location.coordinates.latitude debe ser un número',
+        'fr_fr': 'location.coordinates.latitude doit être un nombre'
+    },
+    "RESTAURANT_LOCATION_LONGITUDE_INVALID": {
+        'en_us': 'location.coordinates.longitude must be a number',
+        'es_co': 'location.coordinates.longitude debe ser un número',
+        'fr_fr': 'location.coordinates.longitude doit être un nombre'
+    },
+    "RESTAURANT_FRANCHISEE_INFO_ID_INVALID": {
+        'en_us': 'Invalid franchiseeInfoId',
+        'es_co': 'franchiseeInfoId inválido',
+        'fr_fr': 'franchiseeInfoId invalide'
+    },
+    "RESTAURANT_FRANCHISEE_INFO_ID_REQUIRED_FRANCHISOR": {
+        'en_us': 'franchiseeInfoId is required for franchisor users',
+        'es_co': 'franchiseeInfoId es requerido para usuarios franquiciadores',
+        'fr_fr': 'franchiseeInfoId est requis pour les utilisateurs franchiseurs'
+    },
+    "RESTAURANT_CREATED_SUCCESS": {
+        'en_us': 'Restaurant created successfully',
+        'es_co': 'Restaurante creado con éxito',
+        'fr_fr': 'Restaurant créé avec succès'
+    },
+    "RESTAURANT_UPDATED_SUCCESS": {
+        'en_us': 'Restaurant updated successfully',
+        'es_co': 'Restaurante actualizado con éxito',
+        'fr_fr': 'Restaurant mis à jour avec succès'
+    },
+    "RESTAURANT_UPDATE_ACCESS_DENIED": {
+        'en_us': 'You do not have permission to update this restaurant',
+        'es_co': 'No tienes permiso para actualizar este restaurante',
+        'fr_fr': 'Vous n\'avez pas la permission de mettre à jour ce restaurant'
+    },
+    "RESTAURANT_FRANCHISEE_ID_CHANGE_DENIED": {
+        'en_us': 'Franchisee users cannot change franchiseeInfoId',
+        'es_co': 'Los usuarios franquiciados no pueden cambiar franchiseeInfoId',
+        'fr_fr': 'Les utilisateurs franchisés ne peuvent pas changer franchiseeInfoId'
+    },
+    "RESTAURANT_IS_ACTIVE_INVALID": {
+        'en_us': 'isActive must be a boolean',
+        'es_co': 'isActive debe ser un booleano',
+        'fr_fr': 'isActive doit être un booléen'
+    },
+    "RESTAURANT_IS_DELETED_INVALID": {
+        'en_us': 'isDeleted must be a boolean',
+        'es_co': 'isDeleted debe ser un booleano',
+        'fr_fr': 'isDeleted doit être un booléen'
+    },
+    "RESTAURANT_FRANCHISEE_INFO_ID_OR_ID_REQUIRED": {
+        'en_us': 'franchiseeInfoId or id is required',
+        'es_co': 'franchiseeInfoId o id es requerido',
+        'fr_fr': 'franchiseeInfoId ou id est requis'
+    },
+    "RESTAURANT_FETCHED_SUCCESS": {
+        'en_us': 'Restaurant fetched successfully',
+        'es_co': 'Restaurante obtenido con éxito',
+        'fr_fr': 'Restaurant récupéré avec succès'
+    },
+    "RESTAURANTS_FETCHED_SUCCESS": {
+        'en_us': 'Restaurants fetched successfully',
+        'es_co': 'Restaurantes obtenidos con éxito',
+        'fr_fr': 'Restaurants récupérés avec succès'
+    },
+    "RESTAURANT_DELETED_SUCCESS": {
+        'en_us': 'Restaurant deleted successfully',
+        'es_co': 'Restaurante eliminado con éxito',
+        'fr_fr': 'Restaurant supprimé avec succès'
+    },
+    "LATITUDE_REQUIRED": {
+        'en_us': 'Latitude is required',
+        'es_co': 'La latitud es requerida',
+        'fr_fr': 'La latitude est requise'
+    },
+    "LONGITUDE_REQUIRED": {
+        'en_us': 'Longitude is required',
+        'es_co': 'La longitud es requerida',
+        'fr_fr': 'La longitude est requise'
+    },
+    "LATITUDE_INVALID_RANGE": {
+        'en_us': 'Latitude must be between -90 and 90',
+        'es_co': 'La latitud debe estar entre -90 y 90',
+        'fr_fr': 'La latitude doit être entre -90 et 90'
+    },
+    "LONGITUDE_INVALID_RANGE": {
+        'en_us': 'Longitude must be between -180 and 180',
+        'es_co': 'La longitud debe estar entre -180 y 180',
+        'fr_fr': 'La longitude doit être entre -180 et 180'
+    },
+    "NO_FRANCHISEE_FOUND_IN_RADIUS": {
+        'en_us': 'No franchisees found within the specified radius',
+        'es_co': 'No se encontraron franquicias dentro del radio especificado',
+        'fr_fr': 'Aucune franchise trouvée dans le rayon spécifié'
+    },
+    "FRANCHISEE_FOUND_SUCCESS": {
+        'en_us': 'Franchisees found successfully',
+        'es_co': 'Franquicias encontradas con éxito',
+        'fr_fr': 'Franchises trouvées avec succès'
     },
     
 };

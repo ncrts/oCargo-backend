@@ -624,11 +624,11 @@ const joinTalentShowAsParticipant = catchAsync(async (req, res) => {
         });
     }
 
-    // Check if session status is 'Schedule' - only allow joins during Schedule phase
-    if (session.status !== 'Schedule') {
+    // Check if session status is 'Draft' or 'Schedule' - only allow joins during these phases
+    if (session.status !== 'Draft' && session.status !== 'Schedule') {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_PARTICIPANT_JOIN_ONLY_SCHEDULE", language),
+            message: getMessage("TALENT_SHOW_PARTICIPANT_JOIN_ONLY_DRAFT_OR_SCHEDULE", language),
             data: null
         });
     }
@@ -789,12 +789,12 @@ const updateTalentShowParticipant = catchAsync(async (req, res) => {
         });
     }
 
-    // Check if session status is 'Schedule' only
+    // Check if session status is 'Draft' or 'Schedule' - only allow updates during these phases
     const session = participantJoin.talentShowId;
-    if (!session || session.status !== 'Schedule') {
+    if (!session || (session.status !== 'Draft' && session.status !== 'Schedule')) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_SCHEDULE", language),
+            message: getMessage("TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_DRAFT_OR_SCHEDULE", language),
             data: null
         });
     }
@@ -889,12 +889,12 @@ const deleteParticipant = catchAsync(async (req, res) => {
         });
     }
 
-    // Check if session status is 'Schedule' only
+    // Check if session status is 'Draft' or 'Schedule' - only allow deletes during these phases
     const session = participantJoin.talentShowId;
-    if (!session || session.status !== 'Schedule') {
+    if (!session || (session.status !== 'Draft' && session.status !== 'Schedule')) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_PARTICIPANT_DELETE_ONLY_SCHEDULE", language),
+            message: getMessage("TALENT_SHOW_PARTICIPANT_DELETE_ONLY_DRAFT_OR_SCHEDULE", language),
             data: null
         });
     }
@@ -976,12 +976,12 @@ const deleteJury = catchAsync(async (req, res) => {
         });
     }
 
-    // Check if session status is 'Schedule' only
+    // Check if session status is 'Draft' or 'Schedule' - only allow deletes during these phases
     const session = juryJoin.talentShowId;
-    if (!session || session.status !== 'Schedule') {
+    if (!session || (session.status !== 'Draft' && session.status !== 'Schedule')) {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_JURY_DELETE_ONLY_SCHEDULE", language),
+            message: getMessage("TALENT_SHOW_JURY_DELETE_ONLY_DRAFT_OR_SCHEDULE", language),
             data: null
         });
     }
@@ -1025,9 +1025,13 @@ const deleteJury = catchAsync(async (req, res) => {
     });
 });
 
-
-
-
+/** * Join a Talent Show Session as Jury from web admin
+ * POST /talent-show/session/:id/join-jury
+ *
+ * Request body:
+ *   joinType: 'Jury' (required)
+ *   franchiseeInfoId: ObjectId (required if franchisor user)
+ */
 const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
     const { id } = req.params; // talentShowSessionId
     const { joinType, franchiseeInfoId } = req.body;
@@ -1077,11 +1081,11 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
         });
     }
 
-    // Check if session status is 'Schedule' - only allow jury joins during Schedule phase
-    if (session.status !== 'Schedule') {
+    // Check if session status is 'Draft' or 'Schedule' - only allow jury joins during these phases
+    if (session.status !== 'Draft' && session.status !== 'Schedule') {
         return res.status(httpStatus.BAD_REQUEST).json({
             success: false,
-            message: getMessage("TALENT_SHOW_JURY_JOIN_ONLY_SCHEDULE", language),
+            message: getMessage("TALENT_SHOW_JURY_JOIN_ONLY_DRAFT_OR_SCHEDULE", language),
             data: null
         });
     }
@@ -1172,8 +1176,6 @@ const joinTalentShowAsJuryFromWeb = catchAsync(async (req, res) => {
         data: join
     });
 });
-
-
 
 
 /**
@@ -2508,8 +2510,17 @@ const getParticipantDetailsWithRounds = catchAsync(async (req, res) => {
         });
     }
 
-    // Get session
-    const session = await TalentShowSession.findById(sessionId);
+    // Get session with populated data
+    const session = await TalentShowSession.findById(sessionId)
+        .populate({
+            path: 'franchiseInfoId',
+            select: 'name address city state zipCode country phone email'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'name email phone'
+        });
+
     if (!session) {
         return res.status(httpStatus.NOT_FOUND).json({
             success: false,
@@ -2521,7 +2532,7 @@ const getParticipantDetailsWithRounds = catchAsync(async (req, res) => {
     // Authorization check for franchisee users
     if (req.franchiseeUser) {
         const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
-        const sessionFranchiseId = session.franchiseInfoId.toString();
+        const sessionFranchiseId = session.franchiseInfoId._id.toString();
 
         if (userFranchiseId !== sessionFranchiseId) {
             return res.status(httpStatus.FORBIDDEN).json({
@@ -2657,6 +2668,7 @@ const getParticipantDetailsWithRounds = catchAsync(async (req, res) => {
         success: true,
         message: getMessage("TALENT_SHOW_PARTICIPANTS_DETAILS_FETCH_SUCCESS", language),
         data: {
+            session,
             sessionId: session._id,
             sessionName: session.name,
             sessionStatus: session.status,

@@ -28,16 +28,16 @@ router.get('/info/list', authToken.commonProtect, languageDetectionMiddleware, f
 router.post('/info/find-nearest', authToken.commonProtect, languageDetectionMiddleware, franchiseeController.findNearestFranchisees);
 
 // Create Restaurant (requires franchisee authentication)
-router.post('/restaurant', authToken.franchiseeProtect, franchiseeController.createRestaurant);
+router.post('/restaurant', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.createRestaurant);
 
 // Update Restaurant (requires franchisee authentication)
-router.patch('/restaurant/:id', authToken.franchiseeProtect, franchiseeController.updateRestaurant);
+router.patch('/restaurant/:id', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.updateRestaurant);
 
 // Get Restaurant List or Single Restaurant (requires common authentication)
 router.get('/restaurant/list', authToken.commonProtect, franchiseeController.getRestaurantList);
 
 // Delete Restaurant (soft delete, requires franchisee authentication)
-router.patch('/restaurant/delete/:id', authToken.franchiseeProtect, franchiseeController.deleteRestaurant);
+router.patch('/restaurant/delete/:id', authToken.commonProtectForFranchiseeAndFranchisor, franchiseeController.deleteRestaurant);
 
 
 
