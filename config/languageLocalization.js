@@ -1347,6 +1347,36 @@ const languageLocalization = {
         'es_co': 'Franquicias encontradas con éxito',
         'fr_fr': 'Franchises trouvées avec succès'
     },
+    "TALENT_SHOW_PARTICIPANTS_ARRAY_REQUIRED": {
+        'en_us': 'Participants array is required and must not be empty',
+        'es_co': 'Se requiere el array de participantes y no debe estar vacío',
+        'fr_fr': 'Le tableau des participants est requis et ne doit pas être vide'
+    },
+    "TALENT_SHOW_PARTICIPANT_SEQUENCE_INVALID": {
+        'en_us': 'All participants must have valid joinId and sequence number',
+        'es_co': 'Todos los participantes deben tener joinId y número de secuencia válidos',
+        'fr_fr': 'Tous les participants doivent avoir un joinId et un numéro de séquence valides'
+    },
+    "TALENT_SHOW_PARTICIPANT_NOT_FOUND_FOR_UPDATE": {
+        'en_us': 'One or more participants not found in this session',
+        'es_co': 'Uno o más participantes no encontrados en esta sesión',
+        'fr_fr': 'Un ou plusieurs participants introuvables dans cette session'
+    },
+    "TALENT_SHOW_SEQUENCE_UPDATE_SUCCESS": {
+        'en_us': 'Participant sequences updated successfully',
+        'es_co': 'Secuencias de participantes actualizadas con éxito',
+        'fr_fr': 'Séquences des participants mises à jour avec succès'
+    },
+    "TALENT_SHOW_SEQUENCE_DUPLICATE_ERROR": {
+        'en_us': 'Duplicate sequence numbers are not allowed',
+        'es_co': 'No se permiten números de secuencia duplicados',
+        'fr_fr': 'Les numéros de séquence en double ne sont pas autorisés'
+    },
+    "TALENT_SHOW_SEQUENCE_UPDATE_ONLY_DRAFT_OR_SCHEDULE": {
+        'en_us': 'Participant sequences can only be updated when session status is Draft or Schedule',
+        'es_co': 'Las secuencias de participantes solo se pueden actualizar cuando el estado de la sesión es Draft o Schedule',
+        'fr_fr': 'Les séquences des participants ne peuvent être mises à jour que lorsque le statut de la session est Draft ou Schedule'
+    },
     
 };
 

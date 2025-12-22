@@ -445,7 +445,7 @@ const updateTalentShowSession = catchAsync(async (req, res) => {
             }).populate({
                 path: 'clientId',
                 select: 'profileAvatar pseudoName profileImageCloudId'
-            });
+            }).sort({ sequence: 1 });
 
             const participantData = {};
             participants.forEach(p => {
@@ -2860,6 +2860,168 @@ const getTalentShowSessionDetails = catchAsync(async (req, res) => {
 });
 
 
+/**
+ * Bulk update participant sequences for a talent show session
+ * PUT /v1/talent-show/session/:sessionId/participants/sequences
+ * 
+ * Request body:
+ * {
+ *   participants: [
+ *     { joinId: ObjectId, sequence: Number },
+ *     { joinId: ObjectId, sequence: Number }
+ *   ]
+ * }
+ * 
+ * Authorization: Franchisee or Franchisor users only
+ * Restriction: Can only update when session status is Draft or Schedule
+ * Updates sequence numbers for multiple participants in a single request
+ */
+const bulkUpdateParticipantSequence = catchAsync(async (req, res) => {
+    const { sessionId } = req.params;
+    const { participants } = req.body;
+    const language = res.locals.language;
+
+    // Validate sessionId
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_ID_INVALID", language),
+            data: null
+        });
+    }
+
+    // Validate participants array
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANTS_ARRAY_REQUIRED", language),
+            data: null
+        });
+    }
+
+    // Validate each participant has joinId and sequence
+    const invalidParticipants = participants.filter(p => 
+        !p.joinId || 
+        !mongoose.Types.ObjectId.isValid(p.joinId) || 
+        typeof p.sequence !== 'number' || 
+        p.sequence < 1
+    );
+
+    if (invalidParticipants.length > 0) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_SEQUENCE_INVALID", language),
+            data: { invalidParticipants }
+        });
+    }
+
+    // Check for duplicate sequences
+    const sequences = participants.map(p => p.sequence);
+    const uniqueSequences = new Set(sequences);
+    if (sequences.length !== uniqueSequences.size) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SEQUENCE_DUPLICATE_ERROR", language),
+            data: null
+        });
+    }
+
+    // Get session
+    const session = await TalentShowSession.findById(sessionId);
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SESSION_NOT_FOUND", language),
+            data: null
+        });
+    }
+
+    // Check if session status is 'Draft' or 'Schedule' - only allow updates during these phases
+    if (session.status !== 'Draft' && session.status !== 'Schedule') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_SEQUENCE_UPDATE_ONLY_DRAFT_OR_SCHEDULE", language),
+            data: null
+        });
+    }
+
+    // Authorization check for franchisee users
+    if (req.franchiseeUser) {
+        const userFranchiseId = req.franchiseeUser.franchiseeInfoId.toString();
+        const sessionFranchiseId = session.franchiseInfoId.toString();
+
+        if (userFranchiseId !== sessionFranchiseId) {
+            return res.status(httpStatus.FORBIDDEN).json({
+                success: false,
+                message: getMessage("TALENT_SHOW_SESSION_ACCESS_DENIED", language),
+                data: null
+            });
+        }
+    }
+
+    // Get all joinIds to verify they exist and belong to this session
+    const joinIds = participants.map(p => p.joinId);
+    const existingParticipants = await TalentShowJoin.find({
+        _id: { $in: joinIds },
+        talentShowId: sessionId,
+        joinType: 'Participant',
+        isDeleted: false,
+        isRemoved: false
+    });
+
+    // Check if all participants were found
+    if (existingParticipants.length !== participants.length) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("TALENT_SHOW_PARTICIPANT_NOT_FOUND_FOR_UPDATE", language),
+            data: null
+        });
+    }
+
+    // Perform bulk update
+    const bulkOps = participants.map(p => ({
+        updateOne: {
+            filter: { _id: p.joinId },
+            update: { $set: { sequence: p.sequence } }
+        }
+    }));
+
+    await TalentShowJoin.bulkWrite(bulkOps);
+
+    // Fetch updated participants to return
+    const updatedParticipants = await TalentShowJoin.find({
+        _id: { $in: joinIds }
+    })
+    .populate({
+        path: 'clientId',
+        select: 'pseudoName profileImageCloudId profileAvatar'
+    })
+    .sort({ sequence: 1 });
+
+    // Format response
+    const formattedParticipants = updatedParticipants.map(p => ({
+        _id: p._id,
+        clientId: p.clientId?._id || null,
+        pseudoName: p.clientId?.pseudoName || null,
+        perfomerName: p.perfomerName || null,
+        performanceTitle: p.performanceTitle || null,
+        sequence: p.sequence,
+        profileImage: p.clientId?.profileImageCloudId
+            ? `${s3BaseUrl}${p.clientId.profileImageCloudId}`
+            : (p.clientId?.profileAvatar || null)
+    }));
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("TALENT_SHOW_SEQUENCE_UPDATE_SUCCESS", language),
+        data: {
+            sessionId: session._id,
+            sessionName: session.name,
+            updatedCount: updatedParticipants.length,
+            participants: formattedParticipants
+        }
+    });
+});
 
 
 module.exports = {
@@ -2881,5 +3043,6 @@ module.exports = {
     talentShowFranchiseeHistory,
     bulkInsertTalentBadges,
     getTalentShowSessionDetails,
-    getParticipantDetailsWithRounds
+    getParticipantDetailsWithRounds,
+    bulkUpdateParticipantSequence
 };

@@ -37,6 +37,9 @@ router.get('/session/:id/details', authToken.commonProtectForFranchiseeAndFranch
 // GET /v1/talent-show/session/:sessionId/participants-details
 router.get('/session/:sessionId/participants-details', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.getParticipantDetailsWithRounds);
 
+// PUT /v1/talent-show/session/:sessionId/participants/sequences
+router.put('/session/:sessionId/participants/sequences', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.bulkUpdateParticipantSequence);
+
 // POST /v1/talent-show/session/:id/join-participant
 router.post('/session/:id/join-participant', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, talentShowController.joinTalentShowAsParticipant);
 
