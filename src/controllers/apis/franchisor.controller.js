@@ -403,6 +403,7 @@ const createFranchiseeInfo = async (req, res) => {
 			phone,
 			email,
 			icon,
+			googleReviewLink,
 			address,
 			location
 		} = req.body;
@@ -463,6 +464,13 @@ const createFranchiseeInfo = async (req, res) => {
 			}
 		}
 
+		// googleReviewLink is optional but if provided must be a valid URL string
+		if (googleReviewLink !== undefined && googleReviewLink !== null && googleReviewLink !== '') {
+			if (typeof googleReviewLink !== 'string' || !validator.isURL(googleReviewLink, { require_protocol: true })) {
+				return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: getMessage("FRANCHISEE_INPUT_INVALID", res.locals.language), data: 'googleReviewLink must be a valid URL' });
+			}
+		}
+
 		// Find active franchisor (first one found) and set its id
 		const franchisor = await FranchisorInfo.findOne({ isDeleted: false, isActive: true });
 		if (!franchisor) {
@@ -477,6 +485,7 @@ const createFranchiseeInfo = async (req, res) => {
 			phone: phone.trim(),
 			email: normalizedEmail,
 			icon: icon ? icon.trim() : null,
+			googleReviewLink: googleReviewLink ? googleReviewLink.trim() : null,
 			address,
 			location,
 			isEmailVerified: true,
@@ -585,6 +594,14 @@ const updateFranchiseeInfo = async (req, res) => {
 				return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: getMessage("FRANCHISEE_INPUT_INVALID", res.locals.language), data: 'icon must be a string URL' });
 			}
 			franchiseeInfo.icon = updates.icon.trim();
+		}
+
+		// Validate and update googleReviewLink if provided (optional)
+		if (updates.googleReviewLink !== undefined && updates.googleReviewLink !== null && updates.googleReviewLink !== '') {
+			if (typeof updates.googleReviewLink !== 'string' || !validator.isURL(updates.googleReviewLink, { require_protocol: true })) {
+				return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: getMessage("FRANCHISEE_INPUT_INVALID", res.locals.language), data: 'googleReviewLink must be a valid URL' });
+			}
+			franchiseeInfo.googleReviewLink = updates.googleReviewLink.trim();
 		}
 
 		franchiseeInfo.updatedAt = Date.now();

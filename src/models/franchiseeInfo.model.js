@@ -79,7 +79,7 @@ const franchiseeInfoSchema = new mongoose.Schema({
         description: 'URL for the franchisee icon or logo.'
     },
 
-    
+
 
     /**
      * 📍 Address
@@ -91,8 +91,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🏠 Line 1
          * Primary address line (e.g., street name and number).
          */
-        line1: { 
-            type: String, 
+        line1: {
+            type: String,
             default: null,
             description: 'Street address or first address line.'
         },
@@ -101,8 +101,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🏙️ City
          * City where the franchise is located.
          */
-        city: { 
-            type: String, 
+        city: {
+            type: String,
             default: null,
             description: 'City name where the franchise is located.'
         },
@@ -111,8 +111,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🗺️ State / Region
          * State or province of the franchise location.
          */
-        state: { 
-            type: String, 
+        state: {
+            type: String,
             default: null,
             description: 'State, province, or region of the franchise location.'
         },
@@ -121,8 +121,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🔢 Postal Code
          * Postal or ZIP code for the franchise location.
          */
-        postalCode: { 
-            type: String, 
+        postalCode: {
+            type: String,
             default: null,
             description: 'Postal or ZIP code for the franchise address.'
         },
@@ -131,8 +131,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🌍 Country
          * Country where the franchise operates.
          */
-        country: { 
-            type: String, 
+        country: {
+            type: String,
             default: null,
             description: 'Country where the franchise is located.'
         }
@@ -147,8 +147,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
          * 🗺️ Place ID
          * Google Maps or internal ID for the location, if integrated with APIs.
          */
-        placeId: { 
-            type: String, 
+        placeId: {
+            type: String,
             default: null,
             description: 'External place identifier (e.g., Google Maps Place ID).'
         },
@@ -162,8 +162,8 @@ const franchiseeInfoSchema = new mongoose.Schema({
              * 📍 Latitude
              * North/South coordinate for the franchise’s exact position.
              */
-            latitude: { 
-                type: Number, 
+            latitude: {
+                type: Number,
                 default: null,
                 description: 'Latitude coordinate of the franchise location.'
             },
@@ -172,14 +172,20 @@ const franchiseeInfoSchema = new mongoose.Schema({
              * 📍 Longitude
              * East/West coordinate for the franchise’s exact position.
              */
-            longitude: { 
-                type: Number, 
+            longitude: {
+                type: Number,
                 default: null,
                 description: 'Longitude coordinate of the franchise location.'
             }
         }
     },
-
+    //** 🌟 Google Review Link
+    // Optional link to the franchise's Google review page for customer feedback.
+    googleReviewLink: {
+        type: String,
+        default: null,
+        description: 'URL to the franchise’s Google review page for customer feedback.'
+    },
     /**
      * 🕒 Created Timestamp
      * Automatically records when the franchise record was created in the system.

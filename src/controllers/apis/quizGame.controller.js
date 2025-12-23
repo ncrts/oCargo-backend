@@ -84,7 +84,7 @@ const getAverageQuizRatings = catchAsync(async (req, res) => {
 
 const getRecentFranchiseeReviews = catchAsync(async (req, res) => {
     let franchiseeInfoId;
-    let { limit = 20, skip = 0 } = req.query;
+    let { limit = 10, skip = 0 } = req.query;
 
     // If manager, use their franchiseeInfoId
     if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
@@ -133,12 +133,12 @@ const getRecentFranchiseeReviews = catchAsync(async (req, res) => {
     const reviews = feedbacks.map(fb => ({
         quizTitle: fb.quizId && fb.quizId.title ? fb.quizId.title : null,
         playerName: fb.playerId ? `${fb.playerId.firstName || ''} ${fb.playerId.lastName || ''}`.trim() : null,
-        pseudoName: fb.pseudoName || null,
+        pseudoName: fb.playerId ? fb.playerId.pseudoName || null : null,
         franchiseName: fb.franchiseId && fb.franchiseId.name ? fb.franchiseId.name : null,
         rating: fb.rating,
         feedbackText: fb.feedbackText,
         submittedAt: fb.submittedAt
-    }));
+    }))
 
     return res.status(200).json({
         success: true,
