@@ -38,7 +38,7 @@ router
 // Franchisee Info Management
 router.post('/franchisee-info', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('createFranchiseeInfo'), franchisorController.createFranchiseeInfo);
 router.patch('/franchisee-info/:id', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('updateFranchiseeInfo'), franchisorController.updateFranchiseeInfo);
-router.get('/franchisee-info', authToken.franchisorProtect, languageDetectionMiddleware, accessRoleRights('getFranchiseeInfoList'), franchisorController.getFranchiseeInfoList);
+router.get('/franchisee-info', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, franchisorController.getFranchiseeInfoList);
 
 // Franchisee User Management
 router.post('/franchisee-user', authToken.commonProtectForFranchiseeAndFranchisor, languageDetectionMiddleware, accessRoleRights('createFranchiseeUser'), franchisorController.createFranchiseeUser);

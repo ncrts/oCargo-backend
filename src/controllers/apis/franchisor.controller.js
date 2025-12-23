@@ -12,6 +12,7 @@ const FranchisorUser = require('../../models/franchisor.user.model');
 const FranchisorInfo = require('../../models/franchisorInfo.model');
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 const FranchiseeUser = require('../../models/franchisee.user.model');
+const Quiz = require('../../models/quiz.model');
 const XpRule = require('../../models/xpRule.model');
 const Badge = require('../../models/badges.model');
 const BadgeMaster = require('../../models/badge.master.model');
@@ -623,6 +624,12 @@ const getFranchiseeInfoList = async (req, res) => {
 		const { name, isActive, limit = 20, skip = 0 } = req.query;
 
 		const filter = { isDeleted: false };
+
+		// If franchiseeUser is authenticated, filter by their franchiseeInfoId
+		if (req.franchiseeUser && req.franchiseeUser.franchiseeInfoId) {
+			filter._id = req.franchiseeUser.franchiseeInfoId;
+		}
+
 		if (name) {
 			filter.name = { $regex: name, $options: 'i' }; // Case-insensitive regex match
 		}
@@ -642,12 +649,37 @@ const getFranchiseeInfoList = async (req, res) => {
 			.limit(pageLimit)
 			.skip(pageSkip);
 
+		// Aggregate counts for franchisee users and quizzes for each franchisee
+		const franchiseeInfosWithCounts = await Promise.all(
+			franchiseeInfos.map(async (franchiseeInfo) => {
+				const franchiseeObj = franchiseeInfo.toObject();
+
+				// Count franchisee users for this franchisee
+				const userCount = await FranchiseeUser.countDocuments({
+					franchiseeInfoId: franchiseeInfo._id,
+					isDeleted: false
+				});
+
+				// Count quizzes for this franchisee
+				console.log("Franchisee Info ID:", franchiseeInfo._id);
+				const quizCount = await Quiz.countDocuments({
+					franchiseeInfoId: franchiseeInfo._id
+				});
+
+				return {
+					...franchiseeObj,
+					franchiseeUserCount: userCount,
+					quizCount: quizCount
+				};
+			})
+		);
+
 		res.status(httpStatus.OK).json({
 			success: true,
 			message: getMessage("FRANCHISEE_INFO_LIST_FETCH_SUCCESS", res.locals.language),
-			data: franchiseeInfos,
+			data: franchiseeInfosWithCounts,
 			s3BaseUrl,
-			count: franchiseeInfos.length,
+			count: franchiseeInfosWithCounts.length,
 			totalCount: totalCount,
 			pagination: {
 				limit: pageLimit,
@@ -1284,25 +1316,25 @@ const bulkInsertBadgeMasters = async (req, res) => {
 };
 
 module.exports = {
-    createFranchisorInfo,
-    updateFranchisorInfo,
-    getFranchisorInfo,
-    createFranchisorUser,
+	createFranchisorInfo,
+	updateFranchisorInfo,
+	getFranchisorInfo,
+	createFranchisorUser,
 	updateFranchisorUser,
 	getFranchisorUser,
 	getFranchisorUsersList,
 	deleteFranchisorUser,
-    signinFranchisorUser,
-    signoutFranchisorUser,
-    createFranchiseeInfo,
-    updateFranchiseeInfo,
-    getFranchiseeInfoList,
-    createFranchiseeUser,
-    updateFranchiseeUser,
-    getFranchiseeUser,
-    getFranchiseeUsersList,
-    deleteFranchiseeUser,
-    bulkInsertXpRules,
+	signinFranchisorUser,
+	signoutFranchisorUser,
+	createFranchiseeInfo,
+	updateFranchiseeInfo,
+	getFranchiseeInfoList,
+	createFranchiseeUser,
+	updateFranchiseeUser,
+	getFranchiseeUser,
+	getFranchiseeUsersList,
+	deleteFranchiseeUser,
+	bulkInsertXpRules,
 	bulkInsertBadges,
 	bulkInsertBadgeMasters
 };
