@@ -869,11 +869,28 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         .limit(pageLimit)
         .skip(pageSkip);
 
+    // Add played count for each quiz from QuizGameSession
+    const quizzesWithPlayCount = await Promise.all(
+        quizzes.map(async (quiz) => {
+            const quizObj = quiz.toObject();
+            
+            // Count how many times this quiz has been played
+            const playedCount = await QuizGameSession.countDocuments({
+                quizId: quiz._id
+            });
+            
+            return {
+                ...quizObj,
+                timesPlayed: playedCount
+            };
+        })
+    );
+
     return res.status(httpStatus.OK).json({
         success: true,
         message: getMessage("QUIZ_LIST_FETCH_SUCCESS", res.locals.language),
         data: {
-            quizzes,
+            quizzes: quizzesWithPlayCount,
             totalCount: totalCount,
             pagination: {
                 limit: pageLimit,
@@ -885,7 +902,92 @@ const getQuizInstantList = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Get quiz game session history for a specific quiz
+ * GET /quiz/game-session/history/:quizId
+ * 
+ * Fetches all game sessions for a given quiz with:
+ * - Populated franchiseeInfo
+ * - Sorted by startTime (newest first)
+ * - Player count for each session
+ * 
+ * Query Parameters:
+ * - limit: Maximum number of sessions to return (default: 20, max: 100)
+ * - skip: Number of sessions to skip for pagination (default: 0)
+ * 
+ * Returns: List of game sessions with player counts and pagination info
+ */
+const getQuizGameSessionHistory = catchAsync(async (req, res) => {
+    const { quizId } = req.params;
+    const { limit = 20, skip = 0 } = req.query;
 
+    // ===== VALIDATION: Quiz ID =====
+    if (!quizId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_ID_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // Validate quiz exists
+    const quizExists = await Quiz.findById(quizId);
+    if (!quizExists) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("QUIZ_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+
+    // Parse limit and skip as integers
+    const pageLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+    const pageSkip = Math.max(0, parseInt(skip) || 0);
+
+    // Get total count for pagination info
+    const totalCount = await QuizGameSession.countDocuments({ quizId });
+
+    // Fetch game sessions for the quiz
+    const sessions = await QuizGameSession.find({ quizId })
+        .populate({ path: 'franchiseId', select: 'name address city state country' })
+        .populate({ path: 'hostId', select: 'firstName lastName email' })
+        .populate({ path: 'quizId', select: 'title description' })
+        .sort({ startTime: -1 }) // Sort by startTime (newest first)
+        .limit(pageLimit)
+        .skip(pageSkip);
+
+    // Add player count for each session
+    const sessionsWithPlayerCount = await Promise.all(
+        sessions.map(async (session) => {
+            const sessionObj = session.toObject();
+            
+            // Count players who joined this session
+            const playerCount = await QuizSessionPlayer.countDocuments({
+                quizGameSessionId: session._id
+            });
+            
+            return {
+                ...sessionObj,
+                playerCount
+            };
+        })
+    );
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("QUIZ_GAME_SESSION_HISTORY_FETCH_SUCCESS", res.locals.language),
+        data: {
+            sessions: sessionsWithPlayerCount,
+            totalCount,
+            pagination: {
+                limit: pageLimit,
+                skip: pageSkip,
+                page: Math.floor(pageSkip / pageLimit) + 1,
+                totalPages: Math.ceil(totalCount / pageLimit)
+            }
+        }
+    });
+});
 
 
 /**
@@ -2677,7 +2779,94 @@ const getQuizGameSessionById = catchAsync(async (req, res) => {
     });
 });
 
+/**
+ * Bulk update quiz game session status to Completed.
+ * PATCH /quiz/game-session/bulk-update-status
+ * 
+ * Updates all sessions with status InProgress or Lobby to Completed status.
+ * Optionally filters by franchiseId (required for franchisee users).
+ * 
+ * Request body:
+ * {
+ *   franchiseId (optional for franchisor, auto-set for franchisee users),
+ *   sessionIds (optional - array of specific session IDs to update)
+ * }
+ * 
+ * Returns: count of updated sessions and their IDs
+ */
+const bulkUpdateQuizSessionStatus = catchAsync(async (req, res) => {
+    let { franchiseId, sessionIds } = req.body;
 
+    // Determine franchiseId based on user type
+    if (req.franchiseeUser) {
+        // Franchisee user - use their franchiseeInfoId
+        franchiseId = req.franchiseeUser.franchiseeInfoId;
+    } else if (req.franchisorUser) {
+        // Franchisor user - franchiseId is optional
+        // If provided, validate it exists
+        if (franchiseId) {
+            const franchise = await FranchiseeInfo.findById(franchiseId);
+            if (!franchise) {
+                return res.status(httpStatus.NOT_FOUND).json({
+                    success: false,
+                    message: getMessage("FRANCHISE_NOT_FOUND", res.locals.language),
+                    data: null
+                });
+            }
+        }
+    }
+
+    // Build filter for sessions to update
+    const filter = {
+        status: { $in: ['InProgress', 'Lobby'] }
+    };
+
+    if (franchiseId) {
+        filter.franchiseId = franchiseId;
+    }
+
+    // If specific session IDs provided, add to filter
+    if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
+        filter._id = { $in: sessionIds };
+    }
+
+    // Find sessions matching the filter
+    const sessionsToUpdate = await QuizGameSession.find(filter).select('_id status franchiseId');
+
+    if (sessionsToUpdate.length === 0) {
+        return res.status(httpStatus.OK).json({
+            success: true,
+            message: getMessage("NO_SESSIONS_TO_UPDATE", res.locals.language),
+            data: {
+                updatedCount: 0,
+                sessionIds: []
+            }
+        });
+    }
+
+    // Update sessions to Completed status
+    const sessionIdsToUpdate = sessionsToUpdate.map(session => session._id);
+    
+    const updateResult = await QuizGameSession.updateMany(
+        { _id: { $in: sessionIdsToUpdate } },
+        { 
+            $set: { 
+                status: 'Completed',
+                endTime: Date.now()
+            } 
+        }
+    );
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("QUIZ_SESSION_BULK_UPDATE_SUCCESS", res.locals.language),
+        data: {
+            updatedCount: updateResult.modifiedCount,
+            sessionIds: sessionIdsToUpdate,
+            totalMatched: updateResult.matchedCount
+        }
+    });
+});
 
 /**
  * Lists quiz game sessions with optional filters and pagination.
@@ -2731,7 +2920,7 @@ const getQuizGameSessions = catchAsync(async (req, res) => {
             filter.status = statusArr;
         }
     } else {
-        filter.status = { $in: ['Scheduled'] };
+        filter.status = { $in: ['Scheduled', 'InProgress'] };
     }
 
     if (req.query.startTime) {
@@ -3100,6 +3289,101 @@ const deleteQuizGameSession = catchAsync(async (req, res) => {
         data: null
     });
 });
+
+/**
+ * Get quiz session details with quiz information and joined player list.
+ * GET /quiz/quiz-session-details-info/:sessionId
+ * 
+ * Returns:
+ * - Complete quiz game session details with populated quiz
+ * - List of all players who joined the session with:
+ *   - Pseudo name
+ *   - Profile avatar (with S3 bucket URL)
+ *   - Join timestamp
+ *   - Player status (active/inactive)
+ * 
+ * Returns: session details and player list
+ */
+const getQuizSessionDetailsInfo = catchAsync(async (req, res) => {
+    const { sessionId } = req.params;
+
+    // ===== VALIDATION: Session ID =====
+    if (!sessionId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("SESSION_ID_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    // Fetch quiz game session with populated references
+    const session = await QuizGameSession.findById(sessionId)
+        .populate({ path: 'hostId', select: 'firstName lastName email role franchiseeInfoId' })
+        .populate({ 
+            path: 'quizId', 
+            select: 'title description category visibility language questions difficaltyLavel',
+            populate: { path: 'category', select: 'name description' }
+        })
+        .populate({ path: 'franchiseId', select: 'franchiseeName location address city state country' });
+
+    if (!session) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("QUIZ_GAME_SESSION_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+
+    // Fetch all players who joined this session
+    const players = await QuizSessionPlayer.find({ 
+        quizGameSessionId: sessionId,
+        isDeleted: false 
+    })
+        .populate({ 
+            path: 'clientId', 
+            select: 'pseudoName profileAvatar firstName lastName email' 
+        })
+        .select('clientId joinedAt leftAt isActive isBooted totalScore streak answers')
+        .sort({ joinedAt: 1 }); // Sort by join time (earliest first)
+
+    // Format player data with S3 bucket URL for avatar
+    const formattedPlayers = players.map(player => {
+        const playerObj = player.toObject();
+        
+        // Add S3 bucket URL to profile avatar if exists
+        if (playerObj.clientId && playerObj.clientId.profileAvatar) {
+            playerObj.clientId.profileAvatar = `${s3BaseUrl}${playerObj.clientId.profileAvatar}`;
+        }
+        
+        return {
+            playerId: playerObj.clientId?._id,
+            pseudoName: playerObj.clientId?.pseudoName,
+            profileAvatar: playerObj.clientId?.profileAvatar,
+            firstName: playerObj.clientId?.firstName,
+            lastName: playerObj.clientId?.lastName,
+            email: playerObj.clientId?.email,
+            joinedAt: playerObj.joinedAt,
+            leftAt: playerObj.leftAt,
+            isActive: playerObj.isActive,
+            isBooted: playerObj.isBooted,
+            totalScore: playerObj.totalScore,
+            streak: playerObj.streak,
+            answersCount: playerObj.answers?.length || 0
+        };
+    });
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("QUIZ_SESSION_DETAILS_FETCH_SUCCESS", res.locals.language),
+        data: {
+            session: session,
+            players: formattedPlayers,
+            totalPlayers: formattedPlayers.length,
+            activePlayers: formattedPlayers.filter(p => p.isActive).length
+        }
+    });
+});
+
 
 // ================================
 // 📌 QUIZ GAME SESSION PLAYER APIs
@@ -4885,6 +5169,8 @@ module.exports = {
     getQuizGameSessions,
     updateQuizGameSession,
     deleteQuizGameSession,
+    bulkUpdateQuizSessionStatus,
+    getQuizSessionDetailsInfo,
     joinQuizGameSession,
     submitQuizAnswer,
     leaveQuizGameSession,
@@ -4903,5 +5189,6 @@ module.exports = {
     getAverageQuizRatings,
     getRecentFranchiseeReviews,
     getFranchiseeRatingDistribution,
-    controlGameSessionPlayerBoot
+    controlGameSessionPlayerBoot,
+    getQuizGameSessionHistory
 }

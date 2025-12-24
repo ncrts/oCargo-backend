@@ -661,7 +661,6 @@ const getFranchiseeInfoList = async (req, res) => {
 				});
 
 				// Count quizzes for this franchisee
-				console.log("Franchisee Info ID:", franchiseeInfo._id);
 				const quizCount = await Quiz.countDocuments({
 					franchiseeInfoId: franchiseeInfo._id
 				});

@@ -13,7 +13,7 @@ exports.protect = asyncHandler(async(req,res,next)=>{
         token = req.headers.authorization.split(' ')[1]
     }
     if(!token){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
     try{
         const decoded = jwt.verify(token,process.env.JWT_SECRET)
@@ -24,7 +24,7 @@ exports.protect = asyncHandler(async(req,res,next)=>{
         req.user = user
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -45,7 +45,7 @@ exports.optionalProtect = asyncHandler(async(req,res,next)=>{
         req.user = user
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -55,7 +55,7 @@ exports.playerProtect = asyncHandler(async(req,res,next)=>{
         token = req.headers.authorization.split(' ')[1]
     }
     if(!token){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
     try{
         const decoded = jwt.verify(token,process.env.JWT_FOR_CLIENT)
@@ -66,7 +66,7 @@ exports.playerProtect = asyncHandler(async(req,res,next)=>{
         req.player = player
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -87,7 +87,7 @@ exports.playerOptionalProtect = asyncHandler(async(req,res,next)=>{
         req.player = player
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -98,7 +98,7 @@ exports.franchisorProtect = asyncHandler(async(req,res,next)=>{
         token = req.headers.authorization.split(' ')[1]
     }
     if(!token){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
     try{
         const decoded = jwt.verify(token,process.env.JWT_FOR_FRANCHISOR_USER)
@@ -109,7 +109,7 @@ exports.franchisorProtect = asyncHandler(async(req,res,next)=>{
         req.franchisorUser = franchisorUser
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -131,7 +131,7 @@ exports.franchisorOptionalProtect = asyncHandler(async(req,res,next)=>{
         req.franchisorUser = franchisorUser
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -143,7 +143,7 @@ exports.franchiseeProtect = asyncHandler(async(req,res,next)=>{
         token = req.headers.authorization.split(' ')[1]
     }
     if(!token){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
     try{
         const decoded = jwt.verify(token,process.env.JWT_FOR_FRANCHISEE_USER)
@@ -154,7 +154,7 @@ exports.franchiseeProtect = asyncHandler(async(req,res,next)=>{
         req.franchiseeUser = franchiseeUser
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -176,7 +176,7 @@ exports.franchiseeOptionalProtect = asyncHandler(async(req,res,next)=>{
         req.franchiseeUser = franchiseeUser
         next()
     }catch(err){
-        return next(new ErrorResponse('Not authorize to access this route',401))
+        return next(new ErrorResponse('You are not authorized to view this information',401))
     }
 })
 
@@ -191,7 +191,7 @@ exports.commonProtect = asyncHandler(async (req, res, next) => {
         token = req.headers.authorization.split(' ')[1];
     }
     if (!token) {
-        return next(new ErrorResponse('Not authorize to access this route', 401));
+        return next(new ErrorResponse('You are not authorized to view this information', 401));
     }
 
     // Try each token type in order
@@ -225,7 +225,7 @@ exports.commonProtect = asyncHandler(async (req, res, next) => {
         }
     } catch (e) {}
 
-    return next(new ErrorResponse('Not authorize to access this route', 401));
+    return next(new ErrorResponse('You are not authorized to view this information', 401));
 });
 
 /**
@@ -240,7 +240,7 @@ exports.commonProtectForFranchiseeAndFranchisor = asyncHandler(async (req, res, 
         token = req.headers.authorization.split(' ')[1];
     }
     if (!token) {
-        return next(new ErrorResponse('Not authorize to access this route', 401));
+        return next(new ErrorResponse('You are not authorized to view this information', 401));
     }
 
     // Try Franchisee first
@@ -263,6 +263,6 @@ exports.commonProtectForFranchiseeAndFranchisor = asyncHandler(async (req, res, 
         }
     } catch (e) {}
 
-    return next(new ErrorResponse('Not authorize to access this route', 401));
+    return next(new ErrorResponse('You are not authorized to view this information', 401));
 });
 

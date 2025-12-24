@@ -37,7 +37,8 @@ const signinFranchiseeUser = async (req, res) => {
             return res.status(httpStatus.OK).json({ success: false, message: getMessage("EMAIL_NOT_VERIFIED", res.locals.language), data: null });
         }
         const token = await franchiseeUser.generateAuthToken();
-        res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNIN_SUCCESS", res.locals.language), data: { franchiseeUser, token } });
+        const franchiseeInfo = await FranchiseeInfo.findById(franchiseeUser.franchiseeInfoId);
+        res.status(httpStatus.OK).json({ success: true, message: getMessage("FRANCHISEE_SIGNIN_SUCCESS", res.locals.language), data: { franchiseeUser, franchiseeInfo, token } });
     } catch (err) {
         res.status(httpStatus.OK).json({ success: false, message: err.message, data: null });
     }

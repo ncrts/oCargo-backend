@@ -30,6 +30,9 @@ router.patch('/quiz/instant/:id', languageDetectionMiddleware, authToken.commonP
 // Instant Quiz List
 router.get('/quiz/instant/list', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizInstantList);
 
+// Quiz Game Session History (by Quiz ID)
+router.get('/quiz/game-session/history/:quizId', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizGameSessionHistory);
+
 // Fetch Average Quiz Ratings
 router.get('/quiz/average-ratings', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getAverageQuizRatings);
 router.get('/quiz/recent-franchisee-reviews', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getRecentFranchiseeReviews);
@@ -62,6 +65,12 @@ router.get('/quiz/game-sessions', languageDetectionMiddleware, authToken.commonP
 router.patch('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.updateQuizGameSession);
 
 router.delete('/quiz/game-session/:id', languageDetectionMiddleware, authToken.franchiseeProtect, quizGameController.deleteQuizGameSession);
+
+// Bulk Update Quiz Session Status
+router.patch('/quiz/game-session-bulk-update-status', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.bulkUpdateQuizSessionStatus);
+
+// Quiz Session Details with Players Info
+router.get('/quiz/quiz-session-details-info/:sessionId', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizSessionDetailsInfo);
 
 
 // Quiz Game Session Player Routes

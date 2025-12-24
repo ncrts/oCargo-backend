@@ -360,6 +360,26 @@ const languageLocalization = {
         'es_co': 'Cuestionario no encontrado.',
         'fr_fr': 'Quiz non trouvé.'
     },
+    "QUIZ_GAME_SESSION_HISTORY_FETCH_SUCCESS": {
+        'en_us': 'Quiz game session history fetched successfully!',
+        'es_co': '¡Historial de sesiones de juego del cuestionario obtenido con éxito!',
+        'fr_fr': 'Historique des sessions de jeu de quiz récupéré avec succès !'
+    },
+    "QUIZ_SESSION_BULK_UPDATE_SUCCESS": {
+        'en_us': 'Quiz sessions updated successfully to Completed status!',
+        'es_co': '¡Sesiones de cuestionario actualizadas exitosamente al estado Completado!',
+        'fr_fr': 'Sessions de quiz mises à jour avec succès vers le statut Terminé !'
+    },
+    "NO_SESSIONS_TO_UPDATE": {
+        'en_us': 'No quiz sessions found to update.',
+        'es_co': 'No se encontraron sesiones de cuestionario para actualizar.',
+        'fr_fr': 'Aucune session de quiz trouvée à mettre à jour.'
+    },
+    "FRANCHISE_NOT_FOUND": {
+        'en_us': 'Franchise not found.',
+        'es_co': 'Franquicia no encontrada.',
+        'fr_fr': 'Franchise non trouvée.'
+    },
     "QUIZ_UPDATED_SUCCESS": {
         'en_us': 'Quiz updated successfully!',
         'es_co': '¡Cuestionario actualizado con éxito!',
@@ -744,6 +764,16 @@ const languageLocalization = {
         'en_us': 'Quiz game session not found.',
         'es_co': 'Sesión de juego de cuestionario no encontrada.',
         'fr_fr': 'Session de jeu de quiz non trouvée.'
+    },
+    "SESSION_ID_REQUIRED": {
+        'en_us': 'Session ID is required.',
+        'es_co': 'Se requiere el ID de sesión.',
+        'fr_fr': 'L\'ID de session est requis.'
+    },
+    "QUIZ_SESSION_DETAILS_FETCH_SUCCESS": {
+        'en_us': 'Quiz session details fetched successfully!',
+        'es_co': '¡Detalles de la sesión de cuestionario obtenidos con éxito!',
+        'fr_fr': 'Détails de la session de quiz récupérés avec succès !'
     },
     "INVALID_RATING_VALUE": {
         'en_us': 'Rating must be between 1 and 5.',
