@@ -454,7 +454,19 @@ const quizQuestionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
     description: 'Timestamp when this question was created.'
+  },
+
+  numberOfAttempts: {
+    type: Number,
+    default: 0,
+    description: 'Total number of attempts made on this question.'
+  },
+  numberOfCorrectAttempts: {
+    type: Number,
+    default: 0,
+    description: 'Total number of correct attempts on this question.'
   }
+  
 });
 
 module.exports = mongoose.model('QuizQuestion', quizQuestionSchema);

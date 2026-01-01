@@ -1,4 +1,9 @@
 const languageLocalization = {
+    "QUIZ_ID_REQUIRED":{
+        'en_us': 'Quiz ID is required.',
+        'es_co': 'Se requiere el ID del cuestionario.',
+        'fr_fr': 'L\'ID du quiz est requis.'
+    },
     "TALENT_SHOW_PARTICIPANT_UPDATE_ONLY_DRAFT_OR_SCHEDULE":{
         'en_us': 'Participant information can only be updated when session status is Draft or Schedule.',
         'es_co': 'La información del participante solo se puede actualizar cuando el estado de la sesión es Draft o Schedule.',
@@ -354,6 +359,11 @@ const languageLocalization = {
         'en_us': 'Quiz created successfully!',
         'es_co': '¡Cuestionario creado con éxito!',
         'fr_fr': 'Quiz créé avec succès !'
+    },
+    "QUIZ_ANALYTICS_FETCH_SUCCESS": {
+        'en_us': 'Quiz analytics fetched successfully!',
+        'es_co': '¡Análisis de cuestionarios obtenidos con éxito!',
+        'fr_fr': 'Analyse des quiz récupérée avec succès !'
     },
     "QUIZ_NOT_FOUND": {
         'en_us': 'Quiz not found.',

@@ -990,6 +990,93 @@ const getQuizGameSessionHistory = catchAsync(async (req, res) => {
 });
 
 
+
+const getGameSessionQuizAnalyticByQuizId = catchAsync(async (req, res) => { 
+    const { quizId } = req.params;
+    if (!quizId) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+            success: false,
+            message: getMessage("QUIZ_ID_REQUIRED", res.locals.language),
+            data: null
+        });
+    }
+
+    const quiz = await Quiz.findById(quizId)
+        .populate({
+            path: 'category',
+            select: 'name description'
+        })
+        .populate({
+            path: 'author.id',
+            select: 'firstName lastName email role'
+        })
+        .populate({
+            path: 'questions',
+            populate: [
+                { path: 'categoryId', select: 'name description' }
+            ]
+        });
+
+    if (!quiz) {
+        return res.status(httpStatus.NOT_FOUND).json({
+            success: false,
+            message: getMessage("QUIZ_NOT_FOUND", res.locals.language),
+            data: null
+        });
+    }
+
+    const questions = await QuizQuestion.find({ quizId }).select('maxScore');
+    const totalMaxScore = questions.reduce((sum, q) => sum + (q.maxScore || 0), 0);
+
+    const topPlayers = await QuizSessionPlayer.find({ quizId })
+        .sort({ totalScore: -1 })
+        .limit(3)
+        .select('clientId totalScore')
+        .populate({ path: 'clientId', select: 'firstName lastName pseudoName profileAvatar' });
+
+    const topScorers = topPlayers.map(player => ({
+        clientId: player.clientId?._id,
+        firstName: player.clientId?.firstName,
+        lastName: player.clientId?.lastName,
+        pseudoName: player.clientId?.pseudoName,
+        profileAvatar: s3BaseUrl + player.clientId?.profileAvatar,
+        totalScore: player.totalScore,
+        percentage: totalMaxScore > 0 ? Number(((player.totalScore / totalMaxScore) * 100).toFixed(2)) : 0
+    }));
+
+
+    const questionStats = await QuizQuestion.find({ quizId, type: { $ne: 'Slide' } })
+        .select('sequence questionText type numberOfAttempts numberOfCorrectAttempts');
+
+    // Calculate correct percentage for each question
+    const questionStatsWithPercentage = questionStats.map(q => {
+        let percentage = 0;
+        if (q.numberOfAttempts > 0) {
+            percentage = Number(((q.numberOfCorrectAttempts / q.numberOfAttempts) * 100).toFixed(2));
+        }
+        return {
+            ...q.toObject(),
+            correctPercentage: percentage
+        };
+    });
+
+    // Sort by correctPercentage descending (highest first)
+    questionStatsWithPercentage.sort((a, b) => b.correctPercentage - a.correctPercentage);
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: getMessage("QUIZ_ANALYTICS_FETCH_SUCCESS", res.locals.language),
+        data: {
+            quiz,
+            topScorers,
+            questionStatsWithPercentage,
+            totalMaxScore,
+            questionCount: questions.length
+        }
+    });
+
+})
+
 /**
  * Creates a quiz question with type-specific validation.
  * POST /quiz/question
@@ -5190,5 +5277,6 @@ module.exports = {
     getRecentFranchiseeReviews,
     getFranchiseeRatingDistribution,
     controlGameSessionPlayerBoot,
-    getQuizGameSessionHistory
+    getQuizGameSessionHistory,
+    getGameSessionQuizAnalyticByQuizId
 }

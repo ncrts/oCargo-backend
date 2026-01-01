@@ -40,4 +40,8 @@ router
     .patch(authToken.franchisorProtect, accessRoleRights('manageCms'), validate(cmsValidation.updateCms), commonController.updateCms)
 
 
+router
+    .route('/admin-dashboard')
+    .get(authToken.commonProtectForFranchiseeAndFranchisor, commonController.getAdminDashboardData)
+
 module.exports = router;

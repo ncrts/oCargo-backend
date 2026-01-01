@@ -10,6 +10,9 @@ const AvatarMaster = require('../../models/avatar.model');
 const Food = require('../../models/food.model');
 const BadgeMaster = require('../../models/badge.master.model');
 const Cms = require('../../models/cms.model');
+const Player = require('../../models/client.model');
+const Quiz = require('../../models/quiz.model');
+const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 
 const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({
@@ -153,6 +156,28 @@ const getCms = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({ success: true, message: `${req.params.slug} cms fetched successfully`, data: { cmsData } })
 })
 
+
+
+
+const getAdminDashboardData = catchAsync(async (req, res) => {
+    // Placeholder for actual dashboard data retrieval logic
+    const playerCount = await Player.countDocuments({ isActive: true, isDeleted: false });
+    const localQuizCount = await Quiz.countDocuments({ visibility: 'Local', status: 'ActiveLocal' });
+    const nationalQuizCount = await Quiz.countDocuments({ visibility: 'National', status: 'ActiveNational' });
+    const franchiseeCount = await FranchiseeInfo.countDocuments({ isActive: true, isDeleted: false });
+
+
+    return res.status(httpStatus.OK).json({
+        success: true,
+        message: 'Admin dashboard data retrieved successfully',
+        data: {
+            totalActivePlayers: playerCount,
+            totalNumberOfQuizzes: localQuizCount + nationalQuizCount,
+            totalActiveFranchisees: franchiseeCount
+        }
+    });
+})
+
 module.exports = {
     commonS3FileUploadedKeys,
     sendRequestBodyData,
@@ -163,5 +188,6 @@ module.exports = {
     getAllBadges,
     createdCms,
     updateCms,
-    getCms
+    getCms,
+    getAdminDashboardData
 }

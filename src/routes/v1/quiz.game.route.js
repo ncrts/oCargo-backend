@@ -33,6 +33,10 @@ router.get('/quiz/instant/list', languageDetectionMiddleware, authToken.commonPr
 // Quiz Game Session History (by Quiz ID)
 router.get('/quiz/game-session/history/:quizId', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getQuizGameSessionHistory);
 
+// Quiz Game Session analytics (by Quiz ID)
+router.get('/quiz/game-session/analytics-by-quiz/:quizId', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getGameSessionQuizAnalyticByQuizId);
+
+
 // Fetch Average Quiz Ratings
 router.get('/quiz/average-ratings', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getAverageQuizRatings);
 router.get('/quiz/recent-franchisee-reviews', languageDetectionMiddleware, authToken.commonProtectForFranchiseeAndFranchisor, quizGameController.getRecentFranchiseeReviews);
