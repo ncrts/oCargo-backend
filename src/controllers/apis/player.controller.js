@@ -21,7 +21,9 @@ const Quiz = require('../../models/quiz.model');
 
 const { getMessage } = require("../../../config/languageLocalization");
 
-const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+// const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+
+const s3BaseUrl = process.env.S3_CDN ? `https://${process.env.S3_CDN}/` : '';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -924,7 +926,7 @@ const updatePlayerProfile = catchAsync(async (req, res) => {
  */
 const updatePlayerProfilePicture = catchAsync(async (req, res) => {
     // Construct S3 base URL
-    const profilePicturePath = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/`;
+    const profilePicturePath = s3BaseUrl;
     let staticUrl = {
         baseUrl: profilePicturePath
     };
@@ -1395,10 +1397,6 @@ const getPlayerAutoSuggestions = catchAsync(async (req, res) => {
     .limit(20)
     .lean();
 
-    // Add S3 base URL to profile images
-    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION 
-        ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/`
-        : '';
 
     const playersWithImages = players.map(player => ({
         _id: player._id,

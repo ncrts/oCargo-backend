@@ -20,8 +20,9 @@ const Restaurant = require('../../models/restaurant.model');
 
 const { getMessage } = require("../../../config/languageLocalization");
 
-const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+// const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
 
+const s3BaseUrl = process.env.S3_CDN ? `https://${process.env.S3_CDN}/` : '';
 
 /**
  * FranchiseeUser Signin

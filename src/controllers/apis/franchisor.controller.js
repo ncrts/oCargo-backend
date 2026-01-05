@@ -21,8 +21,9 @@ const { getMessage } = require("../../../config/languageLocalization");
 const validator = require('validator');
 
 
-const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+// const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
 
+const s3BaseUrl = process.env.S3_CDN ? `https://${process.env.S3_CDN}/` : '';
 
 /**
  * Create a new franchisor info record

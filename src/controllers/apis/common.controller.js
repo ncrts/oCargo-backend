@@ -14,6 +14,9 @@ const Player = require('../../models/client.model');
 const Quiz = require('../../models/quiz.model');
 const FranchiseeInfo = require('../../models/franchiseeInfo.model');
 
+// const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
+const s3BaseUrl = process.env.S3_CDN ? `https://${process.env.S3_CDN}/` : '';
+
 const commonS3FileUploadedKeys = catchAsync(async (req, res) => {
     return res.status(httpStatus.OK).json({
         success: true,
@@ -53,7 +56,6 @@ const insertMultipleAvatars = catchAsync(async (req, res) => {
 });
 
 const getAllAvatars = catchAsync(async (req, res) => {
-    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
     const avatars = await AvatarMaster.find({ isDeleted: false }).select('_id name imageUrl').lean();
     return res.status(httpStatus.OK).json({
         success: true,
@@ -98,7 +100,6 @@ const getAllFoods = catchAsync(async (req, res) => {
 
 
 const getAllBadges = catchAsync(async (req, res) => {
-    const s3BaseUrl = process.env.S3_BUCKET_NAME && process.env.S3_REGION ? `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/` : '';
     const badges = await BadgeMaster.find().select('_id name iconUrl')
 
     let badgeList = [];
