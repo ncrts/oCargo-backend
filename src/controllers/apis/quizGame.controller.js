@@ -1732,8 +1732,12 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
         explanation,
         timeLimit,
         difficaltyLavel,
-        categoryId
+        categoryId,
+        imagePinFile,
+        imagePinArrObj
     } = req.body;
+
+    let normalizedImagePins = null;
 
     // Fetch existing question to validate type consistency
     const existingQuestion = await QuizQuestion.findById(id);
@@ -1927,7 +1931,7 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
 
     // Validate and add basic fields
     if (type !== undefined) {
-        const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide'];
+        const validTypes = ['Quiz', 'TrueFalse', 'TypeAnswer', 'Puzzle', 'Slider', 'Slide', 'imagePin'];
         if (!validTypes.includes(type)) {
             return res.status(httpStatus.OK).json({
                 success: false,
@@ -1998,7 +2002,9 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
             puzzleOrder: '',
             slider: '',
             slideContent: '',
-            backgroundImage: ''
+            backgroundImage: '',
+            imagePinFile: '',
+            imagePinArrObj: ''
         };
 
         // Remove old fields from updateFields if they exist
@@ -2293,6 +2299,119 @@ const updateQuizQuestion = catchAsync(async (req, res) => {
                 updateFields.slideContent = slideContent;
             }
         }
+
+    } else if (questionType === 'imagePin') {
+        // If type change: require imagePinFile and imagePinArrObj
+
+        if (isTypeChange) {
+            // TYPE CHANGE TO IMAGEPIN - All required fields must be provided
+            if (!imagePinFile || typeof imagePinFile !== 'string') {
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: 'For imagePin type: imagePinFile is required and must be a string when changing to this type',
+                    data: null
+                });
+            }
+            if (!Array.isArray(imagePinArrObj) || imagePinArrObj.length === 0) {
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: 'For imagePin type: imagePinArrObj must be a non-empty array when changing to this type',
+                    data: null
+                });
+            }
+
+            // Validate polygon structure
+            const polygonsValid = imagePinArrObj.every(area => {
+                if (!area || typeof area !== 'object') {
+                    return false;
+                }
+                if (!Array.isArray(area.polygonCoordinates) || area.polygonCoordinates.length === 0) {
+                    return false;
+                }
+                return area.polygonCoordinates.every(point => {
+                    if (!point || typeof point !== 'object') {
+                        return false;
+                    }
+                    const { xAxis, yAxis } = point;
+                    return typeof xAxis === 'number' && typeof yAxis === 'number';
+                });
+            });
+
+            if (!polygonsValid) {
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: 'For imagePin type: polygonCoordinates must contain numeric xAxis and yAxis values',
+                    data: null
+                });
+            }
+
+            normalizedImagePins = imagePinArrObj.map(area => ({
+                polygonCoordinates: area.polygonCoordinates.map(point => ({
+                    xAxis: point.xAxis,
+                    yAxis: point.yAxis
+                }))
+            }));
+
+            updateFields.imagePinFile = imagePinFile;
+            updateFields.imagePinArrObj = normalizedImagePins;
+        } else {
+            // NO TYPE CHANGE - Validate only if provided
+            if (imagePinFile !== undefined && (typeof imagePinFile !== 'string' || !imagePinFile)) {
+                return res.status(httpStatus.OK).json({
+                    success: false,
+                    message: 'For imagePin type: imagePinFile must be a non-empty string',
+                    data: null
+                });
+            }
+            if (imagePinArrObj !== undefined) {
+                if (!Array.isArray(imagePinArrObj) || imagePinArrObj.length === 0) {
+                    return res.status(httpStatus.OK).json({
+                        success: false,
+                        message: 'For imagePin type: imagePinArrObj must be a non-empty array',
+                        data: null
+                    });
+                }
+
+                // Validate polygon structure
+                const polygonsValid = imagePinArrObj.every(area => {
+                    if (!area || typeof area !== 'object') {
+                        return false;
+                    }
+                    if (!Array.isArray(area.polygonCoordinates) || area.polygonCoordinates.length === 0) {
+                        return false;
+                    }
+                    return area.polygonCoordinates.every(point => {
+                        if (!point || typeof point !== 'object') {
+                            return false;
+                        }
+                        const { xAxis, yAxis } = point;
+                        return typeof xAxis === 'number' && typeof yAxis === 'number';
+                    });
+                });
+
+                if (!polygonsValid) {
+                    return res.status(httpStatus.OK).json({
+                        success: false,
+                        message: 'For imagePin type: polygonCoordinates must contain numeric xAxis and yAxis values',
+                        data: null
+                    });
+                }
+
+                normalizedImagePins = imagePinArrObj.map(area => ({
+                    polygonCoordinates: area.polygonCoordinates.map(point => ({
+                        xAxis: point.xAxis,
+                        yAxis: point.yAxis
+                    }))
+                }));
+
+                updateFields.imagePinArrObj = normalizedImagePins;
+            }
+
+            if (imagePinFile !== undefined) updateFields.imagePinFile = imagePinFile;
+        }
+
+        // Optional fields for imagePin
+        if (questionText !== undefined) updateFields.questionText = questionText;
     }
 
     // Perform the update with validation
