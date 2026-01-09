@@ -320,7 +320,8 @@ const createQuizInstant = catchAsync(async (req, res) => {
         category,
         visibility,
         language,
-        difficaltyLavel
+        difficaltyLavel,
+        backgroundImage
     } = req.body;
 
     // ===== VALIDATION: franchiseeInfoId or franchisorInfoId =====
@@ -473,6 +474,7 @@ const createQuizInstant = catchAsync(async (req, res) => {
     if (franchiseeInfoId) quizData.franchiseeInfoId = franchiseeInfoId;
     if (franchisorInfoId) quizData.franchisorInfoId = franchisorInfoId;
     if (difficaltyLavel) quizData.difficaltyLavel = difficaltyLavel;
+    if (backgroundImage) quizData.backgroundImage = backgroundImage;
 
     // Create and save quiz
     const quiz = new Quiz(quizData);
@@ -527,7 +529,8 @@ const updateQuizInstant = catchAsync(async (req, res) => {
         visibility,
         language,
         status,
-        difficaltyLavel
+        difficaltyLavel,
+        backgroundImage
     } = req.body;
 
     // ===== VALIDATION: Quiz ID =====
@@ -594,6 +597,17 @@ const updateQuizInstant = catchAsync(async (req, res) => {
             });
         }
         updateFields.title = title.trim();
+    }
+    // ===== VALIDATION: backgroundImage =====
+    if (backgroundImage !== undefined) {
+        if (backgroundImage !== null && typeof backgroundImage !== 'string') {
+            return res.status(httpStatus.OK).json({
+                success: false,
+                message: getMessage("QUIZ_BACKGROUND_IMAGE_INVALID", res.locals.language) || "backgroundImage must be a string or null",
+                data: null
+            });
+        }
+        updateFields.backgroundImage = backgroundImage;
     }
     // Add franchiseeInfoId/franchisorInfoId if provided
     if (franchiseeInfoId) updateFields.franchiseeInfoId = franchiseeInfoId;
@@ -891,6 +905,7 @@ const getQuizInstantList = catchAsync(async (req, res) => {
         success: true,
         message: getMessage("QUIZ_LIST_FETCH_SUCCESS", res.locals.language),
         data: {
+            s3BaseUrl: s3BaseUrl,
             quizzes: quizzesWithPlayCount,
             totalCount: totalCount,
             pagination: {
@@ -1337,17 +1352,24 @@ const createQuizQuestion = catchAsync(async (req, res) => {
             });
         }
         // Validate options structure: each must have text and isCorrect
-        const validOptions = options.every(opt => {
-            // Required fields
-            if (!opt.text || typeof opt.isCorrect !== 'boolean') {
-                return false;
-            }
-            // If image is provided, it must be a string
-            if (opt.image !== undefined && opt.image !== null && typeof opt.image !== 'string') {
-                return false;
-            }
-            return true;
-        });
+            const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+            const validOptions = options.every(opt => {
+                // Required fields
+                if (!opt.text || typeof opt.isCorrect !== 'boolean') {
+                    return false;
+                }
+                // If image is provided, it must be a string
+                if (opt.image !== undefined && opt.image !== null && typeof opt.image !== 'string') {
+                    return false;
+                }
+                // If colourCode is provided, it must be a valid hex color string
+                if (opt.colourCode !== undefined && opt.colourCode !== null) {
+                    if (typeof opt.colourCode !== 'string' || !hexColorRegex.test(opt.colourCode)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
         if (!validOptions) {
             return res.status(httpStatus.OK).json({
                 success: false,

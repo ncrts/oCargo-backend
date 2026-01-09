@@ -185,6 +185,15 @@ const quizQuestionSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
       description: 'Marks this option as correct (true) or incorrect (false).'
+    },
+    /**
+     * Hex color code for the option.
+     */
+    colourCode: {
+      type: String,
+      match: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
+      default: null,
+      description: 'Hex color code for the option (e.g., "#FF5733").'
     }
   }],
 
@@ -441,7 +450,7 @@ const quizQuestionSchema = new mongoose.Schema({
     default: 100,
     description: 'Maximum score achievable for this question.'
   },
-  
+
   // ------------------------------------------------
   // 🔹 Metadata
   // ------------------------------------------------
@@ -466,7 +475,7 @@ const quizQuestionSchema = new mongoose.Schema({
     default: 0,
     description: 'Total number of correct attempts on this question.'
   }
-  
+
 });
 
 module.exports = mongoose.model('QuizQuestion', quizQuestionSchema);
